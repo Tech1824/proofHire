@@ -468,3 +468,119 @@ html, body, .frame, .workspace, .workspace main { background: var(--bg); color: 
 @media (max-width: 560px) {
   .sidebar .brand-mark { width: 32px; height: 32px; flex-basis: 32px; }
 }
+
+:root {
+  color-scheme: light; font-family: Inter, system-ui, sans-serif;
+  --side: #06070a; --bg: #f5f7ff; --card: #fff; --raise: #eaeeff; --line: #d9dff2;
+  --t1: #06070a; --t2: #3f475a; --t3: #5d667c; --head: #06070a;
+  --btn: #3d5afe; --btn-t: #fff; --btn-h: #2f49db; --link: #2a3fd6; --accent: #ff2fa3;
+  --ok: #0b7a5a; --ok-bg: #d5f5e9; --warn: #9a4a00; --warn-bg: #ffe8d0;
+  --bad: #c21e3a; --bad-bg: #ffe1e6; --focus: #2a3fd6;
+  --glow: radial-gradient(700px 340px at 10% -5%, rgba(61, 90, 254, .12), transparent 65%), radial-gradient(600px 320px at 100% 100%, rgba(255, 47, 163, .08), transparent 65%);
+  --card-g: #fff; --shadow: 0 1px 3px rgba(6, 7, 10, .08); --edge: rgba(61, 90, 254, .25);
+  --raised: var(--raise); --border: var(--line);
+  --text: var(--t1); --muted: var(--t2); --faint: var(--t3); --heading: var(--head);
+  --primary: var(--btn); --primary-hover: var(--btn-h); --verified: var(--ok); --verified-bg: var(--ok-bg);
+  --concern: var(--warn); --concern-bg: var(--warn-bg); --risk: var(--bad); --risk-bg: var(--bad-bg);
+  --line: var(--border); --green: var(--ok); --amber: var(--warn); --red: var(--bad); --soft: var(--ok);
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --side: #030406; --bg: #06070a; --card: #0e111b; --raise: #161b2a; --line: #242b40;
+  --t1: #f5f7ff; --t2: #aeb6c2; --t3: #7c8596; --head: #f5f7ff;
+  --btn: #3d5afe; --btn-t: #fff; --btn-h: #5873ff; --link: #8fa0ff; --accent: #ff2fa3;
+  --ok: #34d8a0; --ok-bg: rgba(52, 216, 160, .14); --warn: #ff8a1e; --warn-bg: rgba(255, 138, 30, .15);
+  --bad: #ff5c7a; --bad-bg: rgba(255, 92, 122, .15); --focus: #8fa0ff;
+  --glow: radial-gradient(700px 360px at 10% -5%, rgba(61, 90, 254, .3), transparent 65%), radial-gradient(600px 340px at 100% 100%, rgba(255, 47, 163, .15), transparent 65%);
+  --card-g: linear-gradient(180deg, rgba(61, 90, 254, .1), rgba(14, 17, 27, .92)); --shadow: none; --edge: rgba(61, 90, 254, .45);
+  --raised: var(--raise); --border: var(--line);
+  --text: var(--t1); --muted: var(--t2); --faint: var(--t3); --heading: var(--head);
+  --primary: var(--btn); --primary-hover: var(--btn-h); --verified: var(--ok); --verified-bg: var(--ok-bg);
+  --concern: var(--warn); --concern-bg: var(--warn-bg); --risk: var(--bad); --risk-bg: var(--bad-bg);
+  --green: var(--ok); --amber: var(--warn); --red: var(--bad); --soft: var(--ok);
+}
+html, body, .frame, .workspace, .workspace main { background: var(--glow), var(--bg); background-repeat: no-repeat; background-attachment: fixed; color: var(--text); }
+body, .workspace main { font: 400 15px/1.5 Inter, system-ui, sans-serif; }
+.sidebar { background: var(--side); color: #aeb6c2; }
+.sidebar .nav.selected { background: rgba(61, 90, 254, .2); border-left-color: var(--accent); }
+.sidebar .nav.selected::before { background: var(--accent); }
+.sidebar .nav-group-label, .sidebar .sidebar-system-label { color: var(--t3); }
+.sidebar .brand strong, .sidebar .brand-name { color: #f5f7ff; font: 700 19px 'Space Grotesk', Inter, sans-serif; }
+.topbar, .panel, .form, .graph-panel, .graph-aside { border-color: var(--line); background: var(--card-g); box-shadow: var(--shadow); }
+.topbar { background: var(--card); }
+.page-heading h1, .page-heading h2, .job-row h2, .job-side b, .candidate-title h2, .task-title h2,
+.side-note h3, .num, .big-stat b { color: var(--head); font-family: 'Space Grotesk', Inter, sans-serif; }
+.page-heading h1 { font-size: 34px; line-height: 1.15; font-weight: 600; }
+.page-heading h2, .candidate-title h2, .task-title h2 { font-size: 22px; font-weight: 600; }
+.page-heading p, .job-row p, .candidate > p, .task-title p, .side-note p, .graph-note p,
+.metric-meta, .footer, .stat { color: var(--t2); }
+.eyebrow, .rail, .panel-head, .panel-head small, .rank small, .profile > small, .graph-note small { color: var(--t3); }
+.rail, .panel-head, .panel, .form, .divider, .candidate details, .footer { border-color: var(--line); }
+.primary, .button.primary, .btn { border-color: transparent; background: var(--btn); color: var(--btn-t); }
+.primary:hover:not(:disabled), .button.primary:hover:not(:disabled), .btn:hover { background: var(--btn-h); }
+.outline, .ghost { border-color: var(--btn); background: transparent; color: var(--link); }
+.breadcrumb a, .bottom-note > a, .text-link, .text-button { color: var(--link); }
+.mode-badge, .mode-badge.demo { border-color: transparent; background: var(--warn-bg); color: var(--warn); }
+.mode-badge.live { background: var(--ok-bg); color: var(--ok); }
+.theme-toggle { border-color: var(--line); background: var(--card); color: var(--t1); }
+.form input, .form textarea, .padded textarea, .answer-form textarea,
+.list-controls input, .list-controls select { border-color: var(--line); background: var(--raise); color: var(--t1); }
+.form input::placeholder, textarea::placeholder, .list-controls input::placeholder { color: var(--t3); }
+.form input:focus, .form textarea:focus, .padded textarea:focus, .answer-form textarea:focus,
+.list-controls input:focus, .list-controls select:focus { border-color: var(--focus); outline: 2px solid color-mix(in srgb, var(--focus) 35%, transparent); }
+.form .code, .padded .code, .message pre, .candidate details blockquote, .evidence blockquote { font-family: 'JetBrains Mono', ui-monospace, monospace; }
+.message.interviewer { border-left-color: var(--ok); background: var(--ok-bg); }
+.message.candidate { border-left-color: var(--warn); background: var(--warn-bg); }
+.message p, .candidate details blockquote, .evidence blockquote { color: var(--t1); }
+.message pre { border-color: var(--line); background: var(--raise); color: var(--t2); }
+.evidence blockquote, .candidate details blockquote { border-left: 3px solid var(--ok); background: var(--raise); }
+.badge, .review { border-color: transparent; background: var(--ok-bg); color: var(--ok); }
+.badge.negative { background: var(--bad-bg); color: var(--bad); }
+.signals > div { border-left: 3px solid var(--ok); background: var(--ok-bg); }
+.signals > div:last-child { border-color: var(--warn); background: var(--warn-bg); }
+.signals > div:last-child small { color: var(--warn); }
+.signals small, .signals p, .divider span, .form-actions { color: var(--t2); }
+.candidate-meta, .candidate-meta b, .profile b, .graph-note > b { color: var(--ok); font-variant-numeric: tabular-nums; }
+.score-track { background: var(--raise); }
+.score-track i { background: linear-gradient(90deg, #3d5afe, #ff2fa3); }
+.review { background: var(--ok-bg); color: var(--ok); }
+.legend, .graph-note, .graph-aside { color: var(--t2); }
+.graph-note small, .graph-note > span, .big-stat span { color: var(--t3); }
+.score-row > div:first-child > strong, .num { background: linear-gradient(135deg, #3d5afe, #ff2fa3); background-clip: text; -webkit-background-clip: text; color: transparent; -webkit-text-fill-color: transparent; font-variant-numeric: tabular-nums; }
+.score-row > div:first-child > strong em { color: var(--t3); -webkit-text-fill-color: var(--t3); }
+.candidate-meta { color: var(--ok); font-variant-numeric: tabular-nums; }
+.live, .local-label i { background: var(--ok); box-shadow: none; }
+:root { --green-soft: var(--ok); --green-muted: var(--ok); --cyan: var(--link); --bright: var(--ok); }
+:root[data-theme="dark"] { --green-soft: var(--ok); --green-muted: var(--ok); --cyan: var(--link); --bright: var(--ok); }
+.job-index { color: var(--t3); }
+.company, .stat b { color: var(--ok); }
+.list-controls > b { color: var(--t2); }
+.page-heading .eyebrow, .panel-head, .list-controls label, .candidate details footer { letter-spacing: .02em; }
+:root[data-theme="light"] .page-heading h1, :root[data-theme="light"] .page-heading h2,
+:root[data-theme="light"] .candidate-title h2, :root[data-theme="light"] .task-title h2 { font-weight: 700; }
+:root[data-theme="dark"] body, :root[data-theme="dark"] .workspace main { line-height: 1.6; }
+:root[data-theme="dark"] .page-heading h1, :root[data-theme="dark"] .page-heading h2,
+:root[data-theme="dark"] .candidate-title h2, :root[data-theme="dark"] .task-title h2 { font-weight: 600; }
+.score-row > div:first-child > strong, .num { background: linear-gradient(135deg, #3d5afe, #ff2fa3); background-clip: text; -webkit-background-clip: text; color: transparent; -webkit-text-fill-color: transparent; font-variant-numeric: tabular-nums; }
+.score-row > div:first-child > strong em { color: var(--t3); -webkit-text-fill-color: var(--t3); }
+.eyebrow, .rail, .panel-head, .panel-head small, .list-controls label, .rank small,
+.profile > small, .message small, .candidate details summary, .candidate details footer,
+.graph-note small, .graph-note > span, .mode-badge { font-size: 12px; }
+.workspace main { line-height: 1.5; }
+:root[data-theme="dark"] .sidebar .nav.selected { background: rgba(61, 90, 254, .2); }
+.node-map { background-color: var(--card); background-image: radial-gradient(var(--edge) 1px, transparent 1px); }
+.node { border-color: var(--line); background: var(--card); color: var(--text); box-shadow: var(--shadow); }
+.candidate-node { border-color: var(--btn); color: var(--btn); }
+.project-node, .file-node, .function-node { border-color: var(--ok); color: var(--ok); }
+.skill-one, .skill-two, .skill-api { border-color: var(--warn); color: var(--warn); }
+.claim-node { border-color: var(--bad); color: var(--bad); }
+.edge-label { border-color: var(--line); background: var(--card); color: var(--t2); }
+.graph-links .contains { stroke: var(--t3); }
+.graph-links .uses { stroke: var(--ok); }
+.graph-links .claims { stroke: var(--bad); }
+.graph-links #graph-arrow-contains path { fill: var(--t3); }
+.graph-links #graph-arrow-uses path { fill: var(--ok); }
+.graph-links #graph-arrow-claims path { fill: var(--bad); }
+.big-stat b { color: var(--btn); }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+:root[data-theme="dark"] .candidate-node { border-color: var(--btn); color: var(--link); }

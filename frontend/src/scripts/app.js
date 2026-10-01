@@ -33,6 +33,7 @@ function confidenceDescription(scorePercent) {
 
 // Builds the persistent navigation and workspace frame.
 function shell(content) {
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', document.documentElement.dataset.theme === 'dark' ? '#06070A' : '#F5F7FF');
   const active = state.route;
   const pageLabel = routes.find(([key]) => key === active)?.[2] ?? 'Jobs';
   const selectedJob = state.jobs.find((job) => job.job_id === state.selectedJobId);
@@ -86,6 +87,7 @@ function shell(content) {
 function toggleTheme() {
   const nextTheme = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
   document.documentElement.dataset.theme = nextTheme;
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', nextTheme === 'dark' ? '#06070A' : '#F5F7FF');
   localStorage.setItem('proofhire-theme', nextTheme);
   const button = document.querySelector('#theme-toggle');
   button.textContent = nextTheme === 'dark' ? '☀' : '☾';
@@ -297,8 +299,8 @@ async function renderGraph() {
   state.candidate = candidate;
   const darkTheme = document.documentElement.dataset.theme === 'dark';
   const colorMap = darkTheme
-    ? { candidate: '#a5b4fc', project: '#2dd4bf', file: '#94a3b8', function: '#2dd4bf', class: '#67e8f9', skill: '#fbbf24', claim: '#f87171' }
-    : { candidate: '#4338ca', project: '#0f766e', file: '#64748b', function: '#0f766e', class: '#0891b2', skill: '#b45309', claim: '#b91c1c' };
+    ? { candidate: '#8fa0ff', project: '#34d8a0', file: '#aeb6c2', function: '#34d8a0', class: '#8fa0ff', skill: '#ff8a1e', claim: '#ff5c7a' }
+    : { candidate: '#3d5afe', project: '#0b7a5a', file: '#5d667c', function: '#0b7a5a', class: '#2a3fd6', skill: '#9a4a00', claim: '#c21e3a' };
   shell(`${heading('06 / KNOWLEDGE MAP', 'Work graph<span class="heading-dot">.</span>', 'A compact map of code, skills, and profile claims used to find relevant questions.', '<a href="#depth" class="button button-outline">Open depth check <span>↗</span></a>')}
     <div class="graph-layout"><section class="graph-panel panel"><div class="panel-topline"><span>NODE-LINK VIEW / ${escapeHTML(candidate.name)}</span><span>${graph.nodes.length} NODES · ${graph.edges.length} EDGES</span></div><div id="graph-canvas" class="graph-canvas" role="img" aria-label="Candidate project knowledge graph"></div><div class="graph-legend">${Object.entries(colorMap).map(([type, color]) => `<span><i style="--legend-color:${color}"></i>${escapeHTML(type)}</span>`).join('')}</div></section><aside class="graph-aside panel"><div class="panel-topline"><span>GRAPH SUMMARY</span><span class="live-tag"><i class="status-dot online"></i> ${escapeHTML(candidate.graph_status ?? 'ready')}</span></div><div class="graph-summary-number"><strong>${candidate.graph_summary?.nodes ?? graph.nodes.length}</strong><span>nodes indexed</span></div><div class="graph-summary-number"><strong>${candidate.graph_summary?.edges ?? graph.edges.length}</strong><span>relationships found</span></div><div class="graph-skills"><span class="metric-label">MATCHED SKILLS</span><div class="skill-list">${(candidate.graph_summary?.skills ?? ['python']).map((skill) => `<span class="skill-tag">${escapeHTML(skill)}</span>`).join('')}</div></div><div class="token-note"><span>WHY GRAPH CONTEXT</span><p>Focused retrieval helps each question use the smallest relevant part of the candidate’s work.</p><div class="token-note-metric"><b>−${Math.round((1 - 412 / 6800) * 100)}%</b><span>sample context vs full project</span></div></div></aside></div>`);
   const elements = [

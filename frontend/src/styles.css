@@ -791,6 +791,134 @@ html, body { background: var(--bg); color: var(--text); }
   .sidebar .brand-symbol { width: 32px; height: 32px; flex-basis: 32px; }
 }
 
+:root {
+  color-scheme: light;
+  font-family: Inter, system-ui, sans-serif;
+  --side: #06070a; --bg: #f5f7ff; --card: #fff; --raised: #eaeeff; --border: #d9dff2;
+  --text: #06070a; --muted: #3f475a; --faint: #5d667c; --heading: #06070a;
+  --primary: #3d5afe; --primary-hover: #2f49db; --link: #2a3fd6; --accent: #ff2fa3;
+  --verified: #0b7a5a; --verified-bg: #d5f5e9; --concern: #9a4a00; --concern-bg: #ffe8d0;
+  --risk: #c21e3a; --risk-bg: #ffe1e6; --focus: #2a3fd6;
+  --glow: radial-gradient(700px 340px at 10% -5%, rgba(61, 90, 254, .12), transparent 65%), radial-gradient(600px 320px at 100% 100%, rgba(255, 47, 163, .08), transparent 65%);
+  --card-gradient: #fff; --card-shadow: 0 1px 3px rgba(6, 7, 10, .08); --edge: rgba(61, 90, 254, .25);
+  --panel: var(--card); --panel-raised: var(--raised); --line: var(--border); --line-bright: var(--edge);
+  --green: var(--verified); --green-soft: var(--verified); --green-muted: var(--verified);
+  --amber: var(--concern); --red: var(--risk); --cyan: var(--link);
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --side: #030406; --bg: #06070a; --card: #0e111b; --raised: #161b2a; --border: #242b40;
+  --text: #f5f7ff; --muted: #aeb6c2; --faint: #7c8596; --heading: #f5f7ff;
+  --primary: #3d5afe; --primary-hover: #5873ff; --link: #8fa0ff; --accent: #ff2fa3;
+  --verified: #34d8a0; --verified-bg: rgba(52, 216, 160, .14); --concern: #ff8a1e; --concern-bg: rgba(255, 138, 30, .15);
+  --risk: #ff5c7a; --risk-bg: rgba(255, 92, 122, .15); --focus: #8fa0ff;
+  --glow: radial-gradient(700px 360px at 10% -5%, rgba(61, 90, 254, .3), transparent 65%), radial-gradient(600px 340px at 100% 100%, rgba(255, 47, 163, .15), transparent 65%);
+  --card-gradient: linear-gradient(180deg, rgba(61, 90, 254, .1), rgba(14, 17, 27, .92)); --card-shadow: none; --edge: rgba(61, 90, 254, .45);
+  --panel: var(--card); --panel-raised: var(--raised); --line: var(--border); --line-bright: var(--edge);
+  --green: var(--verified); --green-soft: var(--verified); --green-muted: var(--verified);
+  --amber: var(--concern); --red: var(--risk); --cyan: var(--link);
+}
+html, body { background: var(--glow), var(--bg); background-repeat: no-repeat; background-attachment: fixed; color: var(--text); font-family: Inter, system-ui, sans-serif; }
+body { font-size: 15px; line-height: 1.5; }
+.app-frame, .workspace { background: transparent; color: var(--text); }
+.sidebar { background: var(--side); }
+.sidebar .nav-link.active { background: rgba(61, 90, 254, .2); }
+.sidebar .nav-link.active::before { background: var(--accent); }
+.sidebar .nav-icon, .sidebar .nav-link.active .nav-icon { color: var(--primary); }
+.sidebar .brand-name { color: #f5f7ff; font-family: 'Space Grotesk', Inter, sans-serif; font-weight: 700; }
+.sidebar .nav-link { color: #aeb6c2; }
+.sidebar .nav-group-label, .sidebar .sidebar-system-label { color: #7c8596; }
+.topbar, .panel, .terminal-form, .loading-panel { border-color: var(--border); background: var(--card-gradient); box-shadow: var(--card-shadow); }
+.topbar { background: var(--card); }
+.breadcrumb, .breadcrumb-role, .page-subtitle, .job-main p, .candidate-summary,
+.strength-concerns p, .metric-meta, .form-hint, .evidence-quote p, .evidence-list footer,
+.token-note p, .graph-summary-number span { color: var(--muted); }
+.breadcrumb strong, h1, h2, h3, .job-metrics strong { color: var(--heading); }
+h1, h2, h3, .page-heading h1, .task-heading h2, .candidate-title h2, .score-number,
+.graph-summary-number strong, .brand-name { font-family: 'Space Grotesk', Inter, sans-serif; }
+h1 { font-size: 34px; line-height: 1.15; font-weight: 600; }
+h2, .job-main h2, .task-heading h2 { font-size: 22px; font-weight: 600; }
+.eyebrow, .section-rail, .panel-topline, .metric-label, .job-metrics .metric-label,
+.rank-cell span, .list-label, .profile-row, .dimension-row, .evidence-footer { color: var(--faint); }
+.section-rail, .panel-topline, .form-topline, .field-divider, .dimension-list,
+.evidence-details, .app-footer, .note-separator, .graph-skills, .graph-summary-number,
+.job-row, .evidence-details { border-color: var(--border); }
+.button-primary, .button.primary, .primary { border-color: transparent; background: var(--primary); color: #fff; }
+.button-primary:hover:not(:disabled), .button.primary:hover:not(:disabled), .primary:hover:not(:disabled) { border-color: transparent; background: var(--primary-hover); }
+.button-outline, .button-quiet, .outline { border-color: var(--primary); background: transparent; color: var(--link); }
+.text-link, .text-button, .breadcrumb a { color: var(--link); }
+.theme-toggle { border-color: var(--border); background: var(--card); color: var(--text); }
+.theme-toggle:hover { background: var(--raised); }
+.mode-badge, .mode-badge.demo { border-color: transparent; background: var(--concern-bg); color: var(--concern); }
+.mode-badge.live { background: var(--verified-bg); color: var(--verified); }
+.status-dot.online, .status-dot.verified, .live, .local-label i { background: var(--verified); box-shadow: none; }
+.status-dot.caution, .sidebar-mode i { background: var(--concern); box-shadow: none; }
+.status-dot.offline { background: var(--risk); }
+.skill-tag, .tags span { border-color: var(--border); background: var(--raised); color: var(--muted); }
+.terminal-form, .panel { border-radius: 12px; background: var(--card-gradient); box-shadow: var(--card-shadow); }
+.terminal-form input, .terminal-form textarea, .answer-form textarea, .notes-input,
+.submission-code, .role-switcher select, .job-select-line select { border-color: var(--border); border-radius: 9px; background: var(--raised); color: var(--text); }
+.terminal-form input::placeholder, textarea::placeholder { color: var(--faint); }
+.terminal-form input:focus, .terminal-form textarea:focus, .answer-form textarea:focus,
+.notes-input:focus { border-color: var(--focus); outline: 2px solid color-mix(in srgb, var(--focus) 35%, transparent); }
+.code-input, .submission-code, .snippet, .evidence-quote blockquote, .evidence-list blockquote p { font-family: 'JetBrains Mono', ui-monospace, monospace !important; }
+.chat-message { border-left-color: var(--verified); background: var(--verified-bg); }
+.chat-message p, .answer-message .message-stamp { color: var(--text); }
+.answer-message { border-left-color: var(--concern); background: var(--concern-bg); }
+.follow-up { border-left-color: var(--link); background: color-mix(in srgb, var(--link) 12%, var(--card)); }
+.snippet { border-color: var(--border); background: var(--raised); color: var(--text); }
+.score-number, .dimension-row b, .profile-row b, .graph-summary-number strong { color: var(--verified); font-variant-numeric: tabular-nums; }
+.score-number { font-size: 46px; font-weight: 700; }
+.score-track, .dimension-track, .token-track, .empty-meter { background: var(--raised); }
+.score-track i, .token-track i { background: linear-gradient(90deg, #3d5afe, #ff2fa3); }
+.dimension-track i, .empty-meter span { background: var(--verified); }
+.recommendation, .badge { border-color: transparent; border-radius: 999px; background: var(--verified-bg); color: var(--verified); }
+.rec-no, .badge.negative { background: var(--risk-bg); color: var(--risk); }
+.rec-maybe, .rec-needs_more_evidence { background: var(--concern-bg); color: var(--concern); }
+.strength-concerns > div, .signals > div { border-left-color: var(--verified); background: var(--verified-bg); }
+.strength-concerns > div:last-child, .signals > div:last-child { border-left-color: var(--concern); background: var(--concern-bg); }
+.strength-concerns > div:last-child .list-label, .signals > div:last-child small { color: var(--concern); }
+.evidence-quote, .evidence-list blockquote { border: 0; border-left: 3px solid var(--verified); border-radius: 0 9px 9px 0; background: var(--raised); }
+.evidence-quote blockquote, .evidence-list blockquote p { color: var(--text); }
+.flag-tag { border-color: transparent; border-radius: 999px; background: var(--concern-bg); color: var(--concern); }
+.review-stamp, .review { border-color: transparent; background: var(--verified-bg); color: var(--verified); }
+.graph-canvas { background-color: var(--card); }
+.graph-legend span, .graph-legend i { color: var(--muted); }
+.graph-summary-number strong { color: var(--primary); }
+.graph-links .contains { stroke: var(--muted); }
+.graph-links .uses { stroke: var(--verified); }
+.graph-links .claims { stroke: var(--risk); }
+.graph-links #graph-arrow-contains path { fill: var(--muted); }
+.graph-links #graph-arrow-uses path { fill: var(--verified); }
+.graph-links #graph-arrow-claims path { fill: var(--risk); }
+.node { background: var(--card); color: var(--text); }
+.candidate-node { border-color: var(--primary); color: var(--primary); }
+.project-node, .file-node, .function-node { border-color: var(--verified); color: var(--verified); }
+.skill-one, .skill-two, .skill-api { border-color: var(--concern); color: var(--concern); }
+.claim-node { border-color: var(--risk); color: var(--risk); }
+.graph-panel, .graph-aside { border-radius: 12px; background: var(--card-gradient); box-shadow: var(--card-shadow); }
+.app-footer, .footer { color: var(--muted); }
+.error-panel { border-color: var(--risk); background: var(--risk-bg); box-shadow: var(--card-shadow); }
+.error-panel h2, .error-panel p, .inline-error { color: var(--risk); }
+.score-number { background: linear-gradient(135deg, #3d5afe, #ff2fa3); background-clip: text; -webkit-background-clip: text; color: transparent; -webkit-text-fill-color: transparent; font-variant-numeric: tabular-nums; }
+.score-number small { color: var(--muted); -webkit-text-fill-color: var(--muted); }
+:root { --green-soft: var(--verified); --green-muted: var(--verified); --cyan: var(--link); }
+:root[data-theme="dark"] { --green-soft: var(--verified); --green-muted: var(--verified); --cyan: var(--link); }
+.job-index { color: var(--faint); }
+.job-company, .live-tag, .result-callout .status-dot { color: var(--verified); }
+.app-footer b { color: var(--link); }
+:root[data-theme="light"] h1, :root[data-theme="light"] h2, :root[data-theme="light"] h3,
+:root[data-theme="light"] .page-heading h1, :root[data-theme="light"] .task-heading h2,
+:root[data-theme="light"] .candidate-name-row h2 { font-weight: 700; }
+:root[data-theme="dark"] body { line-height: 1.6; }
+:root[data-theme="dark"] h1, :root[data-theme="dark"] h2, :root[data-theme="dark"] h3,
+:root[data-theme="dark"] .page-heading h1, :root[data-theme="dark"] .task-heading h2,
+:root[data-theme="dark"] .candidate-name-row h2 { font-weight: 600; }
+.eyebrow, .section-rail, .panel-topline, .metric-label, .rank-cell span, .list-label,
+.form-hint, .candidate-meta, .profile-row, .dimension-row, .token-head, .quote-head,
+.message-stamp, .mode-badge, .graph-legend span { font-size: 12px; }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme]) {
     --bg: #0b1220; --card: #111a2e; --raised: #17233b; --sidebar: #070d19;

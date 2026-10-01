@@ -117,6 +117,7 @@
   function render() {
     state.page = location.hash.slice(1) || 'jobs';
     if (!pages.some(([id]) => id === state.page)) state.page = 'jobs';
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', document.documentElement.dataset.theme === 'dark' ? '#06070A' : '#F5F7FF');
     const view = { jobs: jobsPage, candidate: candidatePage, task: taskPage, depth: depthPage, shortlist: shortlistPage, graph: graphPage }[state.page]();
     app.innerHTML = `<div class="frame ${state.collapsed ? 'sidebar-collapsed' : ''}">${header()}<div class="workspace">${topbar()}<main>${view}</main><footer class="footer"><span>PROOFHIRE <b>0.1.0</b></span><span>UNDERSTANDING OVER POLISH</span><span><i class="live"></i> LOCAL DEMO MODE</span></footer></div></div>`;
     if (state.page === 'shortlist') {
@@ -168,6 +169,7 @@
   function toggleTheme() {
     const nextTheme = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
     document.documentElement.dataset.theme = nextTheme;
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', nextTheme === 'dark' ? '#06070A' : '#F5F7FF');
     localStorage.setItem('proofhire-theme', nextTheme);
     const button = document.querySelector('#theme-toggle');
     button.textContent = nextTheme === 'dark' ? '☀' : '☾';
