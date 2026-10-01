@@ -1,0 +1,17 @@
+{
+  "job_id": "job_1",
+  "generated_at": "2026-10-01T10:00:00Z",
+  "candidates": [{
+    "rank": 1,
+    "candidate_id": "cand_1",
+    "name": "Asha Rao",
+    "overall_score": 82,
+    "confidence": 0.78,
+    "recommendation": "strong_yes",
+    "skill_profile": { "understanding": 4.2, "reasoning": 3.8, "debugging": 4.0, "modification": 4.5, "ownership": 4.0, "communication": 3.9 },
+    "strengths": ["Explained why a sliding window beats a fixed counter"],
+    "concerns": ["Did not mention thread safety"],
+    "evidence": [{ "claim": "Understands their own algorithm", "quote": "I remove timestamps older than the window before checking the limit.", "turn_number": 1, "score": 4 }],
+    "summary": "Asha explains her implementation choices with specific references to the submitted limiter. She describes trade-offs and edge cases clearly. Evidence suggests strong ownership of the work. Thread safety remains worth exploring."
+  }]
+}

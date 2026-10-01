@@ -1,0 +1,5 @@
+{
+  "candidate_id": "cand_1",
+  "graph_status": "ready",
+  "graph_summary": { "nodes": 42, "edges": 61, "skills": ["python", "fastapi", "sql"] }
+}

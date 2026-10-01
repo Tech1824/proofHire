@@ -1,0 +1,34 @@
+{
+  "evaluation": {
+    "turn_number": 1,
+    "score": 3,
+    "confidence": 0.7,
+    "dimensions": { "understanding": 3, "reasoning": 2, "communication": 4 },
+    "evidence_quote": "exact words from the candidate's answer",
+    "reasoning": "one or two sentences",
+    "flags": ["vague"]
+  },
+  "running": {
+    "score_100": 58,
+    "confidence": 0.45,
+    "turns_done": 1,
+    "dimensions": { "understanding": 3.0, "reasoning": 2.0, "communication": 4.0 }
+  },
+  "meta": {
+    "llm_alias": "fast",
+    "cached": false,
+    "latency_ms": 1300,
+    "context_tokens": 412,
+    "full_context_tokens": 6800
+  },
+  "status": "in_progress",
+  "next": {
+    "turn_number": 2,
+    "type": "question",
+    "level": 2,
+    "node_ref": "func:limiter.py::allow_request",
+    "text": "Why did you store timestamps in a list instead of a counter?",
+    "code_snippet": { "path": "limiter.py", "start_line": 12, "code": "def allow_request(...): ..." },
+    "expects": "text"
+  }
+}

@@ -1,0 +1,162 @@
+:root {
+  --line: #355940;
+  --bright: #4c8056;
+  --muted: #aec9b2;
+  --faint: #91aa95;
+  --soft: #a6ffae;
+  --green: #57ff43;
+  --amber: #ffc247;
+  --red: #ff817c;
+  --cyan: #84e7d5;
+}
+
+body { color: #e7f3e8; font-size: 13px; }
+.frame { background: linear-gradient(180deg, rgba(11, 19, 13, .96), rgba(11, 15, 12, .91)); }
+.topbar { border-bottom-color: #3a6042; }
+.nav { min-height: 44px; font-size: 10px; }
+.nav small { color: #b0c8b3; font-size: 10px; }
+.local-label { color: #b0dbb7; font-size: 10px; }
+main { padding-top: 39px; }
+.page-heading { min-height: 106px; }
+.page-heading h1 { font-size: 32px; }
+.page-heading p { color: #bad0bd; font-size: 12px; }
+.eyebrow { color: #83d58b; font-size: 10px; }
+.rail, .panel-head { color: #bdd3c0; font-size: 10px; }
+.rail > :last-child { color: #a7e8ae; }
+.job-row p, .task-title p, .requirements, .side-note p, .candidate > p { color: #b5cbb8; font-size: 11px; }
+.company { color: #a7ffb0; font-size: 10px; }
+.job-side small, .tags span, .side-note > small, .side-note small { color: #adc5b0; font-size: 10px; }
+.job-side b { font-size: 12px; }
+.brand strong { font-size: 13px; }
+.button { min-height: 42px; font-size: 11px; }
+.outline { border-color: #54845c; color: #b3ffb8; }
+.panel { border-color: #355940; background: rgba(16, 27, 19, .97); }
+.panel-head { min-height: 44px; }
+.panel-head small, .form label small, .form-actions, .task-title small, .padded label, .inline-label { font-size: 10px; }
+.form label, .padded label, .answer-form label { color: #b4ffbb; font-size: 10px; }
+.form input, .form textarea, .padded textarea, .answer-form textarea { border-color: #46694d; background: #09110b; color: #eef8ef; font-size: 12px; }
+.form input::placeholder, textarea::placeholder { color: #91a996; opacity: 1; }
+.divider { color: #96e39d; font-size: 10px; }
+.divider span { color: #abc1ae; font-size: 9px; }
+.form-actions { color: #b2c8b5; font-size: 10px; }
+.side-note h3, .task-title h2 { font-size: 16px; }
+.stat, .stat b { color: #aec9b2; font-size: 9px; }
+.message small, .message.candidate>b { font-size: 9px; }
+.message p { color: #ecf6ed; font-size: 12px; }
+.message pre { border-color: #355940; color: #d6ebd8; font-size: 10px; }
+.chat-empty code { font-size: 12px; }
+.chat-empty h2 { font-size: 17px; }
+.chat-empty p { color: #b5cbb8; font-size: 11px; }
+.text-button { font-size: 10px; }
+.evidence .panel-head small, .evidence-empty p { color: #b0c7b3; font-size: 10px; }
+.evidence-empty h3 { font-size: 13px; }
+.score-row small, .meter-head, .token-row, .flag { font-size: 9px; }
+.evidence blockquote { border-color: #54845c; background: rgba(57, 255, 20, .05); color: #bcffc2; font-size: 11px; }
+.reasoning { color: #b0c7b3; font-size: 10px; }
+.candidate-title h2 { font-size: 16px; }
+.badge, .review { font-size: 9px; }
+.candidate-meta, .candidate-meta small { font-size: 9px; }
+.signals small { color: #b0c7b3; font-size: 9px; }
+.signals p { color: #e0eee1; font-size: 10px; }
+.candidate details summary { font-size: 10px; }
+.candidate details summary span { color: #bdd3c0; font-size: 9px; }
+.candidate details blockquote { color: #c0ffc5; font-size: 10px; }
+.candidate details footer { color: #bdd3c0; font-size: 9px; }
+.rank small, .profile > small { color: #bdd3c0; font-size: 9px; }
+.profile > div { color: #b5cbb8; font-size: 9px; }
+.profile b { color: #d9ffe0; }
+.footnote, .bottom-note p { color: #b5cbb8; font-size: 10px; }
+.bottom-note b, .bottom-note > a { font-size: 10px; }
+.legend { color: #c2d6c5; font-size: 9px; }
+.graph-note small, .graph-note > span { color: #aec9b2; font-size: 9px; }
+.graph-note p { color: #b5cbb8; font-size: 10px; }
+.big-stat span { color: #b5cbb8; font-size: 9px; }
+.footer { color: #aec9b2; font-size: 9px; }
+.footer b { color: #9feaa6; }
+.local-label i, .live { box-shadow: 0 0 10px rgba(87, 255, 67, .85); }
+.primary { box-shadow: 0 0 14px rgba(87, 255, 67, .12); }
+.primary:hover:not(:disabled) { box-shadow: 0 0 18px rgba(87, 255, 67, .3); }
+
+.list-controls {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) minmax(200px, 270px) auto;
+  align-items: end;
+  gap: 14px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--line);
+}
+.list-controls label { display: grid; gap: 6px; color: #a8e9af; font-size: 9px; }
+.list-controls input, .list-controls select {
+  width: 100%;
+  min-height: 40px;
+  padding: 0 11px;
+  border: 1px solid #46694d;
+  border-radius: 0;
+  background: #0c150e;
+  color: #edf7ee;
+  font-size: 11px;
+}
+.list-controls input::placeholder { color: #91a996; opacity: 1; }
+.list-controls input:focus, .list-controls select:focus { outline: 1px solid var(--amber); outline-offset: 2px; }
+.list-controls > b { padding-bottom: 12px; color: #c8dec9; font-size: 9px; font-weight: 500; white-space: nowrap; }
+.short-row[hidden], .empty-filter[hidden] { display: none; }
+.empty-filter { padding: 28px 12px; border-bottom: 1px solid var(--line); color: #d5e5d7; font-size: 11px; }
+
+@media (max-width: 800px) {
+  .list-controls { grid-template-columns: 1fr 1fr; }
+  .list-controls > b { grid-column: 1 / -1; padding: 0; }
+}
+@media (max-width: 560px) {
+  .page-heading h1 { font-size: 27px; }
+  .nav { font-size: 10px; }
+  .nav small { display: none; }
+  .job-row p, .candidate > p, .task-title p, .requirements { font-size: 10px; }
+  .list-controls { grid-template-columns: 1fr; gap: 10px; }
+  .list-controls > b { grid-column: auto; }
+  .footer { font-size: 8px; }
+}
+
+.brand { gap: 10px; }
+.brand-mark {
+  position: relative;
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #64a46d;
+  background: linear-gradient(145deg, rgba(57, 255, 20, .12), rgba(255, 176, 0, .06));
+  box-shadow: inset 0 0 12px rgba(57, 255, 20, .08), 0 0 12px rgba(57, 255, 20, .06);
+  clip-path: polygon(50% 0, 96% 17%, 91% 72%, 50% 100%, 9% 72%, 4% 17%);
+}
+.brand-mark em {
+  color: #c0ff9d;
+  font-size: 20px;
+  font-style: normal;
+  font-weight: 600;
+  line-height: 1;
+  text-shadow: 0 0 9px rgba(87, 255, 67, .35);
+}
+.brand strong { display: block; color: #f0f7f0; font-size: 15px; letter-spacing: 0; font-weight: 600; }
+.brand strong .brand-hire { color: #a6ffae; font-weight: 500; }
+@media (max-width: 560px) {
+  .brand-mark { width: 33px; height: 33px; }
+  .brand strong { font-size: 13px; }
+}
+@media (max-width: 1100px) {
+  .topbar { min-height: 0; flex-wrap: wrap; gap: 0; padding-top: 8px; }
+  .brand { min-height: 48px; }
+  .local-label { min-height: 48px; margin-left: auto; }
+  .topbar nav {
+    order: 3;
+    flex: 0 0 100%;
+    width: 100%;
+    height: 42px;
+    justify-content: space-between;
+    overflow: visible;
+    border-top: 1px solid var(--line);
+  }
+  .nav { padding: 0 7px; }
+}
+@media (max-width: 800px) {
+  .topbar nav { justify-content: flex-start; overflow-x: auto; overflow-y: hidden; }
+}

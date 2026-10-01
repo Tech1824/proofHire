@@ -1,0 +1,6 @@
+{
+  "status": "ok",
+  "version": "0.1.0",
+  "demo_mode": false,
+  "llm": { "fast": "ok", "smart": "ok", "local": "down" }
+}

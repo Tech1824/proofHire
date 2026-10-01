@@ -1,0 +1,11 @@
+{
+  "task_id": "task_1",
+  "job_id": "job_1",
+  "title": "Build a rate limiter",
+  "brief": "Markdown text...",
+  "requirements": ["...", "..."],
+  "language": "python",
+  "starter_code": "def limit(...): ...",
+  "time_limit_min": 45,
+  "rubric": [{ "skill": "python", "what_good_looks_like": "..." }]
+}
