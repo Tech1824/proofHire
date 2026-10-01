@@ -1,5 +1,7 @@
 (() => {
   const app = document.querySelector('#app');
+  const savedTheme = localStorage.getItem('proofhire-theme');
+  document.documentElement.dataset.theme = savedTheme ?? (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
   const pages = [
     ['jobs', '01', 'Jobs'], ['candidate', '02', 'Candidate'], ['task', '03', 'Task'],
     ['depth', '04', 'Depth check'], ['shortlist', '05', 'Shortlist'], ['graph', '06', 'Graph']
@@ -14,11 +16,22 @@
       { id: 'cand_2', name: 'Ravi Kumar', score: 39, confidence: 62, recommendation: 'no', strength: 'Communicates confidently.', concern: 'Could not explain the concurrency claim.', quote: 'I used this because it is the best practice.', profile: [2.1, 1.8, 1.7, 2.0, 1.6, 3.2] }
     ]
   };
-  const state = { page: 'jobs', jobId: 'job_1', candidateId: 'cand_1', session: false, turn: 1, score: 0, quote: '', answer: '', task: false };
+  const state = { page: 'jobs', jobId: 'job_1', candidateId: 'cand_1', session: false, turn: 1, score: 0, quote: '', answer: '', task: false, collapsed: localStorage.getItem('proofhire-sidebar-collapsed') === 'true' };
   const escape = (text) => String(text ?? '').replace(/[&<>"']/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character]);
 
   function header() {
-    return `<header class="topbar"><a class="brand" href="#jobs" aria-label="ProofHire home"><span class="brand-mark" aria-hidden="true"><em>✓</em></span><strong>Proof<span class="brand-hire">Hire</span></strong></a><nav>${pages.map(([id, num, label]) => `<a href="#${id}" class="nav ${state.page === id ? 'selected' : ''}"><small>${num}</small>${label}</a>`).join('')}</nav><span class="local-label"><i></i> LOCAL DEMO</span></header>`;
+    const navItem = ([id, number, label]) => `<a href="#${id}" class="nav sidebar-nav-item ${state.page === id ? 'selected' : ''}" title="${label}" data-tooltip="${label}"><span class="nav-icon" aria-hidden="true">${({ jobs: '▦', candidate: '＋', task: '≡', depth: '◉', shortlist: '☷', graph: '⌘' })[id]}</span><span class="nav-label">${label}</span></a>`;
+    const workspacePages = pages.filter(([id]) => ['jobs', 'candidate', 'shortlist'].includes(id));
+    const assessmentPages = pages.filter(([id]) => ['task', 'depth', 'graph'].includes(id));
+    return `<aside class="sidebar" aria-label="Workspace navigation"><div class="sidebar-brand-row"><a class="brand" href="#jobs" aria-label="ProofHire home"><span class="brand-mark" aria-hidden="true">PH</span><strong>ProofHire</strong></a><button class="sidebar-toggle" id="sidebar-toggle" type="button" aria-label="Collapse navigation" title="Collapse navigation">‹</button></div><nav class="sidebar-nav" aria-label="Main navigation"><div class="nav-group"><span class="nav-group-label">Workspace</span>${workspacePages.map(navItem).join('')}</div><div class="nav-group"><span class="nav-group-label">Assessment</span>${assessmentPages.map(navItem).join('')}</div></nav><div class="sidebar-bottom"><span class="sidebar-system-label">SYSTEM MODE</span><span class="sidebar-mode"><i></i><span>Demo mode</span></span></div></aside>`;
+  }
+
+  function topbar() {
+    const activePage = pages.find(([id]) => id === state.page)?.[2] ?? 'Jobs';
+    const activeJob = data.jobs.find((job) => job.id === state.jobId) ?? data.jobs[0];
+    const action = ({ jobs: ['#candidate', 'Add candidate'], candidate: ['#jobs', 'View roles'], task: ['#depth', 'Depth check'], depth: ['#shortlist', 'Review shortlist'], shortlist: ['#candidate', 'Add candidate'], graph: ['#depth', 'Depth check'] })[state.page];
+    const isDark = document.documentElement.dataset.theme === 'dark';
+    return `<header class="topbar"><div class="breadcrumb"><a href="#jobs">ProofHire</a><span aria-hidden="true">›</span><strong>${activePage}</strong><span aria-hidden="true">›</span><span class="breadcrumb-role">${activeJob.title}</span></div><label class="role-switcher"><span>Role</span><select id="global-job-choice" aria-label="Selected role">${data.jobs.map((job) => `<option value="${job.id}" ${job.id === state.jobId ? 'selected' : ''}>${job.title}</option>`).join('')}</select></label><div class="topbar-status"><span class="mode-badge"><i></i>Demo</span><button class="theme-toggle" id="theme-toggle" type="button" aria-label="Switch to ${isDark ? 'light' : 'dark'} theme" title="Switch to ${isDark ? 'light' : 'dark'} theme">${isDark ? '☀' : '☾'}</button></div><a class="button primary topbar-action" href="${action[0]}">${action[1]} <span aria-hidden="true">↗</span></a></header>`;
   }
 
   function heading(section, title, copy, action = '') {
@@ -56,11 +69,28 @@
     state.page = location.hash.slice(1) || 'jobs';
     if (!pages.some(([id]) => id === state.page)) state.page = 'jobs';
     const view = { jobs: jobsPage, candidate: candidatePage, task: taskPage, depth: depthPage, shortlist: shortlistPage, graph: graphPage }[state.page]();
-    app.innerHTML = `<div class="frame">${header()}<main>${view}</main><footer class="footer"><span>PROOFHIRE <b>0.1.0</b></span><span>UNDERSTANDING OVER POLISH</span><span><i class="live"></i> LOCAL DEMO MODE</span></footer></div>`;
+    app.innerHTML = `<div class="frame ${state.collapsed ? 'sidebar-collapsed' : ''}">${header()}<div class="workspace">${topbar()}<main>${view}</main><footer class="footer"><span>PROOFHIRE <b>0.1.0</b></span><span>UNDERSTANDING OVER POLISH</span><span><i class="live"></i> LOCAL DEMO MODE</span></footer></div></div>`;
+    if (state.page === 'shortlist') {
+      const activeJob = data.jobs.find((job) => job.id === state.jobId) ?? data.jobs[0];
+      const subtitle = document.querySelector('.page-heading p');
+      subtitle.textContent = `${activeJob.title} / ${activeJob.company} · Ranked by evidence, not resume polish.`;
+    }
     wire();
   }
 
   function wire() {
+    document.querySelector('#theme-toggle')?.addEventListener('click', toggleTheme);
+    document.querySelectorAll('.candidate-title .badge').forEach((badge) => {
+      const recommendation = badge.textContent.trim().toLowerCase();
+      badge.textContent = `Suggested: ${recommendation === 'no' ? 'needs stronger evidence' : recommendation}`;
+    });
+    document.querySelectorAll('.candidate-meta span:nth-child(2)').forEach((confidence) => {
+      const confidencePercent = Number(confidence.textContent.match(/\d+/)?.[0] ?? 0);
+      const confidenceLabel = confidencePercent >= 80 ? 'High' : confidencePercent >= 55 ? 'Moderate' : 'Low';
+      confidence.textContent = `${confidenceLabel} confidence · ${confidencePercent}%`;
+    });
+    document.querySelector('#sidebar-toggle')?.addEventListener('click', () => { state.collapsed = !state.collapsed; localStorage.setItem('proofhire-sidebar-collapsed', String(state.collapsed)); render(); });
+    document.querySelector('#global-job-choice')?.addEventListener('change', (event) => { state.jobId = event.target.value; state.task = false; render(); });
     document.querySelectorAll('[data-job]').forEach((link) => link.addEventListener('click', () => { state.jobId = link.dataset.job; }));
     document.querySelector('#candidate-form')?.addEventListener('submit', (event) => {
       event.preventDefault();
@@ -83,20 +113,35 @@
     document.querySelector('#recommendation-filter')?.addEventListener('change', filterCandidates);
     const jobChoice = document.querySelector('#job-choice');
     if (jobChoice) jobChoice.value = state.jobId;
+    if (state.page === 'shortlist') filterCandidates();
+  }
+
+  function toggleTheme() {
+    const nextTheme = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+    document.documentElement.dataset.theme = nextTheme;
+    localStorage.setItem('proofhire-theme', nextTheme);
+    const button = document.querySelector('#theme-toggle');
+    button.textContent = nextTheme === 'dark' ? '☀' : '☾';
+    button.setAttribute('aria-label', `Switch to ${nextTheme === 'dark' ? 'light' : 'dark'} theme`);
+    button.title = `Switch to ${nextTheme === 'dark' ? 'light' : 'dark'} theme`;
   }
 
   function filterCandidates() {
     const query = document.querySelector('#candidate-search').value.trim().toLowerCase();
     const recommendation = document.querySelector('#recommendation-filter').value;
+    const hasSeededCandidates = state.jobId === 'job_1';
     let visibleCount = 0;
     document.querySelectorAll('.short-row').forEach((row) => {
-      const matchesSearch = row.textContent.toLowerCase().includes(query);
+      const matchesSearch = hasSeededCandidates && row.textContent.toLowerCase().includes(query);
       const matchesRecommendation = recommendation === 'all' || row.dataset.recommendation === recommendation;
       row.hidden = !(matchesSearch && matchesRecommendation);
       if (!row.hidden) visibleCount += 1;
     });
     document.querySelector('#match-count').textContent = `${String(visibleCount).padStart(2, '0')} ${visibleCount === 1 ? 'CANDIDATE' : 'CANDIDATES'}`;
-    document.querySelector('#no-candidates').hidden = visibleCount > 0;
+    const emptyState = document.querySelector('#no-candidates');
+    const activeJob = data.jobs.find((job) => job.id === state.jobId) ?? data.jobs[0];
+    emptyState.textContent = hasSeededCandidates ? 'No candidates match these filters.' : `No completed depth checks for ${activeJob.title} yet.`;
+    emptyState.hidden = visibleCount > 0;
   }
 
   function startSession() {

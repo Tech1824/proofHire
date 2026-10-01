@@ -2,6 +2,8 @@ import cytoscape from 'cytoscape';
 import * as API from '../lib/api.js';
 
 const app = document.querySelector('#app');
+const savedTheme = localStorage.getItem('proofhire-theme');
+document.documentElement.dataset.theme = savedTheme ?? (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
 const state = {
   route: 'jobs', health: null, jobs: [], selectedJobId: 'job_1', candidateId: null,
   task: null, submissionId: null, sessionId: null, turn: null, answerResult: null, chatHistory: [],
@@ -22,20 +24,73 @@ function statusClass(value) {
   return value === 'ok' ? 'online' : 'offline';
 }
 
-// Builds the persistent terminal-style application frame.
+// Converts a confidence percentage into a plain-language label.
+function confidenceDescription(scorePercent) {
+  if (scorePercent >= 80) return 'High confidence';
+  if (scorePercent >= 55) return 'Moderate confidence';
+  return 'Low confidence';
+}
+
+// Builds the persistent navigation and workspace frame.
 function shell(content) {
   const active = state.route;
+  const pageLabel = routes.find(([key]) => key === active)?.[2] ?? 'Jobs';
+  const selectedJob = state.jobs.find((job) => job.job_id === state.selectedJobId);
+  const workspaceRoutes = routes.filter(([key]) => ['jobs', 'candidate', 'shortlist'].includes(key));
+  const assessmentRoutes = routes.filter(([key]) => ['task', 'depth', 'graph'].includes(key));
+  const renderNavItem = ([key, number, label]) => `<a href="#${key}" class="nav-link ${active === key ? 'active' : ''}" title="${label}" data-tooltip="${label}"><span class="nav-icon" aria-hidden="true">${({ jobs: '▦', candidate: '＋', task: '≡', depth: '◉', shortlist: '☷', graph: '⌘' })[key]}</span><span class="nav-label">${label}</span></a>`;
+  const action = ({ jobs: ['#candidate', 'Add candidate'], candidate: ['#jobs', 'View roles'], task: ['#depth', 'Depth check'], depth: ['#shortlist', 'Review shortlist'], shortlist: ['#candidate', 'Add candidate'], graph: ['#depth', 'Depth check'] })[active];
+  const collapsed = localStorage.getItem('proofhire-sidebar-collapsed') === 'true';
   app.innerHTML = `
-    <div class="app-frame">
+    <div class="app-frame ${collapsed ? 'sidebar-collapsed' : ''}">
+      <aside class="sidebar" aria-label="Workspace navigation">
+        <div class="sidebar-brand-row"><a class="brand" href="#jobs" aria-label="ProofHire home"><span class="brand-symbol">PH</span><span class="brand-name">PROOFHIRE</span></a><button class="sidebar-toggle" id="sidebar-toggle" type="button" aria-label="Collapse navigation" title="Collapse navigation">‹</button></div>
+        <nav class="sidebar-nav" aria-label="Main navigation">
+          <div class="nav-group"><span class="nav-group-label">Workspace</span>${workspaceRoutes.map(renderNavItem).join('')}</div>
+          <div class="nav-group"><span class="nav-group-label">Assessment</span>${assessmentRoutes.map(renderNavItem).join('')}</div>
+        </nav>
+        <div class="sidebar-bottom"><span class="sidebar-system-label">SYSTEM MODE</span><button class="mode-switch" id="mode-switch" type="button" title="Switch between local mock data and the API"><i class="switch-dot"></i><span>${API.usesMocks() ? 'Demo mode' : 'Live API'}</span></button></div>
+      </aside>
+      <div class="workspace">
       <header class="topbar">
-        <a class="brand" href="#jobs" aria-label="ProofHire home"><span class="brand-symbol">PH<span class="brand-cursor">_</span></span><span class="brand-name">PROOFHIRE</span></a>
-        <nav class="primary-nav" aria-label="Main navigation">${routes.map(([key, number, label]) => `<a href="#${key}" class="nav-link ${active === key ? 'active' : ''}"><span class="nav-number">${number}</span>${label}</a>`).join('')}</nav>
-        <div class="topbar-right"><span class="environment">${API.usesMocks() ? 'LOCAL MOCK' : 'LIVE API'}</span><button class="mode-switch" id="mode-switch" title="Switch between local mock data and the API">${API.usesMocks() ? 'MOCK' : 'API'} <span class="switch-dot"></span></button></div>
+        <div class="breadcrumb"><a href="#jobs">ProofHire</a><span aria-hidden="true">›</span><strong>${pageLabel}</strong>${selectedJob ? `<span aria-hidden="true">›</span><span class="breadcrumb-role">${escapeHTML(selectedJob.title)}</span>` : ''}</div>
+        <label class="role-switcher"><span>Role</span><select id="role-switcher" aria-label="Selected role">${state.jobs.map((job) => `<option value="${escapeHTML(job.job_id)}" ${job.job_id === state.selectedJobId ? 'selected' : ''}>${escapeHTML(job.title)}</option>`).join('')}</select></label>
+        <div class="topbar-right"><span class="mode-badge ${API.usesMocks() ? 'demo' : 'live'}"><i class="status-dot ${API.usesMocks() ? 'caution' : 'verified'}"></i>${API.usesMocks() ? 'Demo' : 'Live'}</span><button class="theme-toggle" id="theme-toggle" type="button" aria-label="Switch to ${document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'} theme" title="Switch to ${document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'} theme">${document.documentElement.dataset.theme === 'dark' ? '☀' : '☾'}</button><a class="button button-primary topbar-action" href="${action[0]}">${action[1]} <span aria-hidden="true">↗</span></a></div>
       </header>
       <main class="main-content">${content}</main>
       <footer class="app-footer"><span>PROOFHIRE <b>0.1.0</b></span><span class="footer-center">UNDERSTANDING OVER POLISH</span><span class="health-line"><i class="status-dot ${statusClass(state.health?.status)}"></i>API ${escapeHTML(state.health?.status ?? 'checking')}</span></footer>
+      </div>
     </div>`;
+  app.querySelectorAll('.recommendation').forEach((badge) => {
+    const recommendation = badge.textContent.trim().toLowerCase().replaceAll('_', ' ');
+    badge.textContent = `Suggested: ${recommendation === 'no' ? 'needs stronger evidence' : recommendation}`;
+  });
+  app.querySelectorAll('.candidate-meta span:nth-child(2)').forEach((confidence) => {
+    const percent = Number(confidence.textContent.match(/\d+/)?.[0] ?? 0);
+    confidence.textContent = `${confidenceDescription(percent)} · ${percent}%`;
+  });
   document.querySelector('#mode-switch')?.addEventListener('click', toggleMode);
+  document.querySelector('#theme-toggle')?.addEventListener('click', toggleTheme);
+  document.querySelector('#sidebar-toggle')?.addEventListener('click', () => {
+    const isCollapsed = app.querySelector('.app-frame').classList.toggle('sidebar-collapsed');
+    localStorage.setItem('proofhire-sidebar-collapsed', String(isCollapsed));
+  });
+  document.querySelector('#role-switcher')?.addEventListener('change', (event) => {
+    state.selectedJobId = event.target.value;
+    state.task = null;
+    renderRoute();
+  });
+}
+
+// Switches themes and saves the user's preference.
+function toggleTheme() {
+  const nextTheme = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+  document.documentElement.dataset.theme = nextTheme;
+  localStorage.setItem('proofhire-theme', nextTheme);
+  const button = document.querySelector('#theme-toggle');
+  button.textContent = nextTheme === 'dark' ? '☀' : '☾';
+  button.setAttribute('aria-label', `Switch to ${nextTheme === 'dark' ? 'light' : 'dark'} theme`);
+  button.title = `Switch to ${nextTheme === 'dark' ? 'light' : 'dark'} theme`;
 }
 
 // Renders a consistent loading state while a page request is in flight.
@@ -176,6 +231,8 @@ function renderDepth() {
   document.querySelector('#demo-session')?.addEventListener('click', () => beginDepth('sub_1'));
   document.querySelector('#end-session')?.addEventListener('click', async () => { await API.finishDepth(state.sessionId); state.answerResult = { ...(state.answerResult ?? {}), status: 'done', next: null }; state.turn = null; renderDepth(); });
   document.querySelector('#answer-form')?.addEventListener('submit', sendAnswer);
+  const confidenceLabel = document.querySelector('.confidence-block .metric-label');
+  if (confidenceLabel && result) confidenceLabel.textContent = `${result.running.confidence >= 0.8 ? 'High' : result.running.confidence >= 0.55 ? 'Moderate' : 'Low'} confidence`;
   typewriterVisible();
 }
 
@@ -237,7 +294,7 @@ async function renderGraph() {
   const candidateId = state.candidateId ?? 'cand_1';
   const [candidate, graph] = await Promise.all([API.getCandidate(candidateId), API.getCandidateGraph(candidateId)]);
   state.candidate = candidate;
-  const colorMap = { candidate: '#ffb000', project: '#39ff14', file: '#8ff5a0', function: '#8ce0d0', class: '#7cc7db', skill: '#ffb000', claim: '#ff765f' };
+  const colorMap = { candidate: '#4338ca', project: '#0f766e', file: '#64748b', function: '#0f766e', class: '#0891b2', skill: '#b45309', claim: '#b91c1c' };
   shell(`${heading('06 / KNOWLEDGE MAP', 'Work graph<span class="heading-dot">.</span>', 'A compact map of code, skills, and profile claims used to find relevant questions.', '<a href="#depth" class="button button-outline">Open depth check <span>↗</span></a>')}
     <div class="graph-layout"><section class="graph-panel panel"><div class="panel-topline"><span>NODE-LINK VIEW / ${escapeHTML(candidate.name)}</span><span>${graph.nodes.length} NODES · ${graph.edges.length} EDGES</span></div><div id="graph-canvas" class="graph-canvas" role="img" aria-label="Candidate project knowledge graph"></div><div class="graph-legend">${Object.entries(colorMap).map(([type, color]) => `<span><i style="--legend-color:${color}"></i>${escapeHTML(type)}</span>`).join('')}</div></section><aside class="graph-aside panel"><div class="panel-topline"><span>GRAPH SUMMARY</span><span class="live-tag"><i class="status-dot online"></i> ${escapeHTML(candidate.graph_status ?? 'ready')}</span></div><div class="graph-summary-number"><strong>${candidate.graph_summary?.nodes ?? graph.nodes.length}</strong><span>nodes indexed</span></div><div class="graph-summary-number"><strong>${candidate.graph_summary?.edges ?? graph.edges.length}</strong><span>relationships found</span></div><div class="graph-skills"><span class="metric-label">MATCHED SKILLS</span><div class="skill-list">${(candidate.graph_summary?.skills ?? ['python']).map((skill) => `<span class="skill-tag">${escapeHTML(skill)}</span>`).join('')}</div></div><div class="token-note"><span>WHY GRAPH CONTEXT</span><p>Focused retrieval helps each question use the smallest relevant part of the candidate’s work.</p><div class="token-note-metric"><b>−${Math.round((1 - 412 / 6800) * 100)}%</b><span>sample context vs full project</span></div></div></aside></div>`);
   const elements = [
@@ -245,9 +302,9 @@ async function renderGraph() {
     ...graph.edges.map((edge, index) => ({ data: { id: `edge-${index}`, source: edge.source, target: edge.target, label: edge.type } }))
   ];
   cytoscape({ container: document.querySelector('#graph-canvas'), elements, layout: { name: 'cose', animate: true, animationDuration: 500, padding: 42, nodeRepulsion: 5200, idealEdgeLength: 100 }, style: [
-    { selector: 'node', style: { 'background-color': 'data(color)', label: 'data(label)', color: '#d5ead8', 'font-family': 'JetBrains Mono', 'font-size': 10, 'text-wrap': 'wrap', 'text-max-width': 90, width: 'mapData(weight, 0.4, 1, 27, 48)', height: 'mapData(weight, 0.4, 1, 27, 48)', 'border-width': 1, 'border-color': '#0b0f0c', 'text-valign': 'bottom', 'text-margin-y': 7, 'text-outline-color': '#0b0f0c', 'text-outline-width': 2 } },
-    { selector: 'edge', style: { width: 1, 'line-color': '#31543a', 'target-arrow-color': '#63886b', 'target-arrow-shape': 'triangle', 'curve-style': 'bezier', opacity: 0.8 } },
-    { selector: 'node:selected', style: { 'border-color': '#ffb000', 'border-width': 3, 'overlay-opacity': 0.08, 'overlay-color': '#ffb000' } }
+    { selector: 'node', style: { 'background-color': 'data(color)', label: 'data(label)', color: '#0f172a', 'font-family': 'JetBrains Mono', 'font-size': 10, 'text-wrap': 'wrap', 'text-max-width': 90, width: 'mapData(weight, 0.4, 1, 27, 48)', height: 'mapData(weight, 0.4, 1, 27, 48)', 'border-width': 1, 'border-color': '#ffffff', 'text-valign': 'bottom', 'text-margin-y': 7, 'text-outline-color': '#ffffff', 'text-outline-width': 2 } },
+    { selector: 'edge', style: { width: 1, 'line-color': '#cbd5e1', 'target-arrow-color': '#64748b', 'target-arrow-shape': 'triangle', 'curve-style': 'bezier', opacity: 0.8 } },
+    { selector: 'node:selected', style: { 'border-color': '#4338ca', 'border-width': 3, 'overlay-opacity': 0.08, 'overlay-color': '#4338ca' } }
   ] });
 }
 

@@ -1,9 +1,13 @@
 <!doctype html>
 <html lang="en">
 <head>
+  <script>
+    const themePreference = localStorage.getItem('proofhire-theme');
+    document.documentElement.dataset.theme = themePreference ?? (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  </script>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#0b0f0c">
+  <meta name="theme-color" content="#0f172a">
   <meta name="description" content="ProofHire tests understanding with work-linked questions and verifiable evidence.">
   <title>ProofHire // Evidence-based hiring</title>
   <link rel="stylesheet" href="static.css">

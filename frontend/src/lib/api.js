@@ -177,6 +177,7 @@ export function finishDepth(sessionId) {
 // Returns the evidence-ranked shortlist for one job.
 export function getShortlist(jobId) {
   if (!usesMocks()) return request(`/shortlist/${jobId}`);
+  if (jobId !== 'job_1') return mock({ ...shortlistExample, job_id: jobId, candidates: [] });
   const weak = {
     ...shortlistExample.candidates[0], rank: 2, candidate_id: 'cand_2', name: 'Ravi Kumar', overall_score: 39, confidence: 0.62,
     recommendation: 'no', skill_profile: { understanding: 2.1, reasoning: 1.8, debugging: 1.7, modification: 2.0, ownership: 1.6, communication: 3.2 },
