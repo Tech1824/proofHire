@@ -91,6 +91,7 @@ function toggleTheme() {
   button.textContent = nextTheme === 'dark' ? '☀' : '☾';
   button.setAttribute('aria-label', `Switch to ${nextTheme === 'dark' ? 'light' : 'dark'} theme`);
   button.title = `Switch to ${nextTheme === 'dark' ? 'light' : 'dark'} theme`;
+  if (state.route === 'graph') renderRoute();
 }
 
 // Renders a consistent loading state while a page request is in flight.
@@ -294,17 +295,20 @@ async function renderGraph() {
   const candidateId = state.candidateId ?? 'cand_1';
   const [candidate, graph] = await Promise.all([API.getCandidate(candidateId), API.getCandidateGraph(candidateId)]);
   state.candidate = candidate;
-  const colorMap = { candidate: '#4338ca', project: '#0f766e', file: '#64748b', function: '#0f766e', class: '#0891b2', skill: '#b45309', claim: '#b91c1c' };
+  const darkTheme = document.documentElement.dataset.theme === 'dark';
+  const colorMap = darkTheme
+    ? { candidate: '#a5b4fc', project: '#2dd4bf', file: '#94a3b8', function: '#2dd4bf', class: '#67e8f9', skill: '#fbbf24', claim: '#f87171' }
+    : { candidate: '#4338ca', project: '#0f766e', file: '#64748b', function: '#0f766e', class: '#0891b2', skill: '#b45309', claim: '#b91c1c' };
   shell(`${heading('06 / KNOWLEDGE MAP', 'Work graph<span class="heading-dot">.</span>', 'A compact map of code, skills, and profile claims used to find relevant questions.', '<a href="#depth" class="button button-outline">Open depth check <span>↗</span></a>')}
     <div class="graph-layout"><section class="graph-panel panel"><div class="panel-topline"><span>NODE-LINK VIEW / ${escapeHTML(candidate.name)}</span><span>${graph.nodes.length} NODES · ${graph.edges.length} EDGES</span></div><div id="graph-canvas" class="graph-canvas" role="img" aria-label="Candidate project knowledge graph"></div><div class="graph-legend">${Object.entries(colorMap).map(([type, color]) => `<span><i style="--legend-color:${color}"></i>${escapeHTML(type)}</span>`).join('')}</div></section><aside class="graph-aside panel"><div class="panel-topline"><span>GRAPH SUMMARY</span><span class="live-tag"><i class="status-dot online"></i> ${escapeHTML(candidate.graph_status ?? 'ready')}</span></div><div class="graph-summary-number"><strong>${candidate.graph_summary?.nodes ?? graph.nodes.length}</strong><span>nodes indexed</span></div><div class="graph-summary-number"><strong>${candidate.graph_summary?.edges ?? graph.edges.length}</strong><span>relationships found</span></div><div class="graph-skills"><span class="metric-label">MATCHED SKILLS</span><div class="skill-list">${(candidate.graph_summary?.skills ?? ['python']).map((skill) => `<span class="skill-tag">${escapeHTML(skill)}</span>`).join('')}</div></div><div class="token-note"><span>WHY GRAPH CONTEXT</span><p>Focused retrieval helps each question use the smallest relevant part of the candidate’s work.</p><div class="token-note-metric"><b>−${Math.round((1 - 412 / 6800) * 100)}%</b><span>sample context vs full project</span></div></div></aside></div>`);
   const elements = [
-    ...graph.nodes.map((node) => ({ data: { id: node.id, label: node.label, type: node.type, weight: node.weight, color: colorMap[node.type] ?? '#8ff5a0' } })),
+    ...graph.nodes.map((node) => ({ data: { id: node.id, label: node.label, type: node.type, weight: node.weight, color: colorMap[node.type] ?? (darkTheme ? '#94a3b8' : '#64748b') } })),
     ...graph.edges.map((edge, index) => ({ data: { id: `edge-${index}`, source: edge.source, target: edge.target, label: edge.type } }))
   ];
-  cytoscape({ container: document.querySelector('#graph-canvas'), elements, layout: { name: 'cose', animate: true, animationDuration: 500, padding: 42, nodeRepulsion: 5200, idealEdgeLength: 100 }, style: [
-    { selector: 'node', style: { 'background-color': 'data(color)', label: 'data(label)', color: '#0f172a', 'font-family': 'JetBrains Mono', 'font-size': 10, 'text-wrap': 'wrap', 'text-max-width': 90, width: 'mapData(weight, 0.4, 1, 27, 48)', height: 'mapData(weight, 0.4, 1, 27, 48)', 'border-width': 1, 'border-color': '#ffffff', 'text-valign': 'bottom', 'text-margin-y': 7, 'text-outline-color': '#ffffff', 'text-outline-width': 2 } },
-    { selector: 'edge', style: { width: 1, 'line-color': '#cbd5e1', 'target-arrow-color': '#64748b', 'target-arrow-shape': 'triangle', 'curve-style': 'bezier', opacity: 0.8 } },
-    { selector: 'node:selected', style: { 'border-color': '#4338ca', 'border-width': 3, 'overlay-opacity': 0.08, 'overlay-color': '#4338ca' } }
+  cytoscape({ container: document.querySelector('#graph-canvas'), elements, layout: { name: 'cose', animate: true, animationDuration: 600, padding: 64, nodeRepulsion: 15000, idealEdgeLength: 175 }, style: [
+    { selector: 'node', style: { 'background-color': 'data(color)', label: 'data(label)', color: darkTheme ? '#e6eaf2' : '#0f172a', 'font-family': 'Manrope, Inter, sans-serif', 'font-size': 14, 'font-weight': 600, 'text-wrap': 'wrap', 'text-max-width': 145, width: 'mapData(weight, 0.4, 1, 112, 160)', height: 'mapData(weight, 0.4, 1, 62, 82)', shape: 'round-rectangle', padding: 12, 'border-width': 3, 'border-color': darkTheme ? '#111a2e' : '#ffffff', 'text-valign': 'center', 'text-halign': 'center', 'text-outline-width': 0 } },
+    { selector: 'edge', style: { label: 'data(label)', color: darkTheme ? '#cbd5e1' : '#334155', 'font-family': 'Inter, sans-serif', 'font-size': 12, 'font-weight': 500, 'text-background-color': darkTheme ? '#111a2e' : '#ffffff', 'text-background-opacity': 0.96, 'text-background-padding': 4, 'text-border-width': 1, 'text-border-color': darkTheme ? '#243049' : '#e2e8f0', 'text-border-opacity': 1, width: 2.5, 'line-color': darkTheme ? '#64748b' : '#94a3b8', 'target-arrow-color': darkTheme ? '#94a3b8' : '#64748b', 'target-arrow-shape': 'triangle', 'arrow-scale': 1.4, 'curve-style': 'bezier', opacity: 0.95 } },
+    { selector: 'node:selected', style: { 'border-color': darkTheme ? '#818cf8' : '#4338ca', 'border-width': 4, 'overlay-opacity': 0.1, 'overlay-color': darkTheme ? '#818cf8' : '#4338ca' } }
   ] });
 }
 

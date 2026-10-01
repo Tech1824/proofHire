@@ -770,11 +770,21 @@ html, body { background: var(--bg); color: var(--text); }
 .flag-tag { border-color: var(--concern); background: var(--concern-bg); color: var(--concern); }
 .review-stamp { border-color: var(--verified); background: var(--verified-bg); color: var(--verified); }
 .graph-canvas { background-color: var(--card); }
+.graph-canvas { height: 620px; min-height: 560px; background-image: radial-gradient(rgba(100, 116, 139, .16) 1px, transparent 1px); background-size: 24px 24px; }
+.graph-legend { gap: 16px; padding-top: 14px; }
+.graph-legend span { gap: 8px; font-size: 12px; }
+.graph-legend i { width: 10px; height: 10px; }
 .error-panel { border-color: var(--risk); background: var(--risk-bg); }
 .error-panel h2, .error-panel p, .inline-error { color: var(--risk); }
 .app-footer { color: var(--muted); }
 .app-footer b { color: var(--accent); }
 :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+:root[data-theme="dark"] .graph-canvas { background-image: radial-gradient(rgba(148, 163, 184, .16) 1px, transparent 1px); }
+@media (max-width: 560px) {
+  .graph-canvas { height: 480px; min-height: 480px; }
+  .graph-legend { gap: 10px; }
+  .graph-legend span { font-size: 10px; }
+}
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme]) {
