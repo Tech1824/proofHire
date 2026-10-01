@@ -785,6 +785,11 @@ html, body { background: var(--bg); color: var(--text); }
   .graph-legend { gap: 10px; }
   .graph-legend span { font-size: 10px; }
 }
+.brand-symbol, .sidebar .brand-symbol, .boot-mark { width: 36px; height: 36px; flex: 0 0 36px; display: block; padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; clip-path: none; object-fit: contain; }
+.boot-mark { width: 40px; height: 40px; flex-basis: 40px; }
+@media (max-width: 560px) {
+  .sidebar .brand-symbol { width: 32px; height: 32px; flex-basis: 32px; }
+}
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme]) {

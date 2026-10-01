@@ -5,6 +5,7 @@ import '../styles.css';
 <!doctype html>
 <html lang="en">
   <head>
+    <link rel="icon" type="image/svg+xml" href="/proofhire-logo.svg" />
     <script is:inline>
       const themePreference = localStorage.getItem('proofhire-theme');
       document.documentElement.dataset.theme = themePreference ?? (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
@@ -18,7 +19,7 @@ import '../styles.css';
   <body>
     <div class="scanlines" aria-hidden="true"></div>
     <div id="app" aria-live="polite">
-      <div class="boot-screen"><span class="boot-mark">PH</span><span>INITIALIZING PROOFHIRE<span class="cursor">_</span></span></div>
+      <div class="boot-screen"><img class="boot-mark" src="/proofhire-logo.svg" alt="" aria-hidden="true" /><span>INITIALIZING PROOFHIRE<span class="cursor">_</span></span></div>
     </div>
     <script>
       import '../scripts/app.js';

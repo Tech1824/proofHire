@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="ProofHire">
+  <defs>
+    <linearGradient id="proofhire-mark" gradientUnits="userSpaceOnUse" x1="14" y1="48" x2="50" y2="16">
+      <stop offset="0" stop-color="#3D5AFE" />
+      <stop offset="0.7" stop-color="#FF2FA3" />
+      <stop offset="1" stop-color="#FF8A1E" />
+    </linearGradient>
+  </defs>
+  <rect x="2" y="2" width="60" height="60" rx="16" fill="#06070A" stroke="url(#proofhire-mark)" stroke-width="1.5" />
+  <polyline points="17,33 28,44 47,21" fill="none" stroke="url(#proofhire-mark)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" />
+  <circle cx="17" cy="33" r="4.5" fill="#06070A" stroke="#3D5AFE" stroke-width="2.5" />
+  <circle cx="28" cy="44" r="4.5" fill="#06070A" stroke="#B13BE0" stroke-width="2.5" />
+  <circle cx="47" cy="21" r="9" fill="none" stroke="#FF8A1E" stroke-opacity="0.35" stroke-width="1.5" />
+  <circle cx="47" cy="21" r="5.5" fill="#FF8A1E" />
+</svg>

@@ -44,7 +44,7 @@ function shell(content) {
   app.innerHTML = `
     <div class="app-frame ${collapsed ? 'sidebar-collapsed' : ''}">
       <aside class="sidebar" aria-label="Workspace navigation">
-        <div class="sidebar-brand-row"><a class="brand" href="#jobs" aria-label="ProofHire home"><span class="brand-symbol">PH</span><span class="brand-name">PROOFHIRE</span></a><button class="sidebar-toggle" id="sidebar-toggle" type="button" aria-label="Collapse navigation" title="Collapse navigation">‹</button></div>
+        <div class="sidebar-brand-row"><a class="brand" href="#jobs" aria-label="ProofHire home"><img class="brand-symbol" src="/proofhire-logo.svg" alt="" aria-hidden="true"><span class="brand-name">PROOFHIRE</span></a><button class="sidebar-toggle" id="sidebar-toggle" type="button" aria-label="Collapse navigation" title="Collapse navigation">‹</button></div>
         <nav class="sidebar-nav" aria-label="Main navigation">
           <div class="nav-group"><span class="nav-group-label">Workspace</span>${workspaceRoutes.map(renderNavItem).join('')}</div>
           <div class="nav-group"><span class="nav-group-label">Assessment</span>${assessmentRoutes.map(renderNavItem).join('')}</div>
