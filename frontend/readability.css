@@ -414,20 +414,39 @@ html, body, .frame, .workspace, .workspace main { background: var(--bg); color: 
   .topbar-status .mode-badge { margin: 0; }
 }
 
-.node-map { min-height: 640px; background-color: var(--card); background-image: radial-gradient(rgba(100, 116, 139, .16) 1px, transparent 1px); background-size: 24px 24px; }
+.node-map { min-height: 540px; background-color: var(--card); background-image: radial-gradient(rgba(100, 116, 139, .16) 1px, transparent 1px); background-size: 24px 24px; }
 .node { min-width: 166px; padding: 15px 14px; border-width: 2px; border-radius: 10px; background: var(--card); color: var(--text); font-size: 14px; font-weight: 600; line-height: 1.45; box-shadow: 0 2px 8px rgba(15, 23, 42, .12); }
 .node:not(.claim-node)::after { height: 52px; border-left: 2px solid var(--verified); }
 .candidate-node { border-color: var(--primary); color: var(--primary); }
 .project-node, .file-node { border-color: var(--verified); color: var(--verified); }
 .function-node { min-width: 180px; border-color: var(--accent); color: var(--accent); }
-.skill-one, .skill-two { border-color: var(--concern); color: var(--concern); }
+.skill-one, .skill-two, .skill-api { border-color: var(--concern); color: var(--concern); }
 .claim-node { border-color: var(--risk); color: var(--risk); }
 .edge-label { z-index: 3; padding: 4px 8px; border: 1px solid var(--border); border-radius: 5px; background: var(--card); color: var(--muted); font-size: 12px; font-weight: 600; }
+.skill-one { top: 84%; left: 4%; }
+.skill-api { top: 84%; left: 37%; }
+.skill-two { top: 84%; left: 70%; }
+.node:not(.claim-node)::after { display: none; }
+.skill-one::after, .skill-api::after, .skill-two::after { display: none; }
+.edge-d { top: 77%; left: 42%; }
+.edge-e { top: 43%; left: 62%; }
+.edge-f { top: 77%; left: 10%; }
+.edge-g { top: 61%; left: 76%; }
+.edge-h { top: 29%; left: 67%; }
+.edge-i { top: 62%; left: 57%; }
+.graph-links { position: absolute; z-index: 1; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+.graph-links path { fill: none; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; opacity: .85; vector-effect: non-scaling-stroke; }
+.graph-links .contains { stroke: var(--muted); }
+.graph-links .uses { stroke: var(--verified); }
+.graph-links .claims { stroke: var(--risk); }
+.graph-links #graph-arrow-contains path { fill: var(--muted); }
+.graph-links #graph-arrow-uses path { fill: var(--verified); }
+.graph-links #graph-arrow-claims path { fill: var(--risk); }
 .legend { gap: 16px; padding-top: 14px; font-size: 12px; }
 :root[data-theme="dark"] .node-map { background-image: radial-gradient(rgba(148, 163, 184, .16) 1px, transparent 1px); }
 :root[data-theme="dark"] .node { border-color: var(--verified); background: var(--card); color: var(--text); box-shadow: none; }
 :root[data-theme="dark"] .candidate-node { border-color: var(--accent); color: var(--accent); }
-:root[data-theme="dark"] .skill-one, :root[data-theme="dark"] .skill-two { border-color: var(--concern); color: var(--concern); }
+:root[data-theme="dark"] .skill-one, :root[data-theme="dark"] .skill-two, :root[data-theme="dark"] .skill-api { border-color: var(--concern); color: var(--concern); }
 :root[data-theme="dark"] .claim-node { border-color: var(--risk); color: var(--risk); }
 
 @media (max-width: 800px) {
@@ -439,8 +458,9 @@ html, body, .frame, .workspace, .workspace main { background: var(--bg); color: 
   .candidate-node, .project-node, .file-node { left: 28%; }
   .function-node { left: 26%; min-width: 140px; }
   .claim-node { left: 61%; }
-  .skill-one { left: 4%; }
-  .skill-two { left: 58%; }
+  .skill-one { left: 2%; }
+  .skill-two { left: 60%; }
+  .skill-api { left: 34%; }
   .edge-label { padding: 3px 5px; font-size: 10px; }
   .node:not(.claim-node)::after { height: 28px; }
 }

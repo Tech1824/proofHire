@@ -96,6 +96,7 @@ export function getCandidateGraph(candidateId) {
       { id: 'func:allow_request', type: 'function', label: 'allow_request', weight: 0.95 },
       { id: 'skill:python', type: 'skill', label: 'Python', weight: 0.85 },
       { id: 'skill:sql', type: 'skill', label: 'SQL', weight: 0.52 },
+      { id: 'skill:rest-api', type: 'skill', label: 'REST API', weight: 0.76 },
       { id: 'claim:api', type: 'claim', label: 'API design', weight: 0.65 }
     ],
     edges: [
@@ -104,8 +105,10 @@ export function getCandidateGraph(candidateId) {
       { source: 'file:limiter.py', target: 'func:allow_request', type: 'contains' },
       { source: 'func:allow_request', target: 'skill:python', type: 'uses' },
       { source: 'project:limiter', target: 'skill:sql', type: 'uses' },
+      { source: 'func:allow_request', target: 'skill:rest-api', type: 'uses' },
       { source: candidateId, target: 'claim:api', type: 'claims' },
-      { source: 'claim:api', target: 'skill:python', type: 'claims' }
+      { source: 'claim:api', target: 'skill:python', type: 'claims' },
+      { source: 'claim:api', target: 'skill:rest-api', type: 'claims' }
     ]
   });
 }

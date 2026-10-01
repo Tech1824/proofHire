@@ -62,7 +62,56 @@
   }
 
   function graphPage() {
-    return `${heading('06 / KNOWLEDGE MAP', 'Work graph', 'A compact map of code, skills, and profile claims used to find relevant questions.', '<a class="button outline" href="#depth">Open depth check ↗</a>')}<div class="graph-grid"><section class="panel graph-panel"><div class="panel-head"><span>NODE-LINK VIEW / ASHA RAO</span><span>7 NODES · 7 EDGES</span></div><div class="node-map"><div class="node candidate-node">Asha Rao</div><div class="node project-node">Rate limiter</div><div class="node file-node">limiter.py</div><div class="node function-node">allow_request()</div><div class="node skill-one">Python</div><div class="node skill-two">SQL</div><div class="node claim-node">API design</div><div class="edge-label edge-a">contains</div><div class="edge-label edge-b">contains</div><div class="edge-label edge-c">contains</div><div class="edge-label edge-d">uses</div><div class="edge-label edge-e">claims</div></div><div class="legend"><span>● CANDIDATE</span><span>● PROJECT</span><span>● FILE / FUNCTION</span><span>● SKILL</span><span>● CLAIM</span></div></section><aside class="panel graph-aside"><div class="panel-head"><span>GRAPH SUMMARY</span><span class="company">READY</span></div><div class="big-stat"><b>42</b><span>nodes indexed</span></div><div class="big-stat"><b>61</b><span>relationships found</span></div><div class="divider">MATCHED SKILLS</div><div class="tags"><span>python</span><span>fastapi</span><span>sql</span></div><div class="graph-note"><small>WHY GRAPH CONTEXT</small><p>Focused retrieval helps each question use the smallest relevant part of a candidate’s work.</p><b>−94%</b><span>sample context vs full project</span></div></aside></div>`;
+    return `${heading('06 / KNOWLEDGE MAP', 'Work graph', 'A compact map of code, skills, and profile claims used to find relevant questions.', '<a class="button outline" href="#depth">Open depth check ↗</a>')}
+      <div class="graph-grid">
+        <section class="panel graph-panel">
+          <div class="panel-head"><span>NODE-LINK VIEW / ASHA RAO</span><span>8 NODES · 9 EDGES</span></div>
+          <div class="node-map">
+            <svg class="graph-links" viewBox="0 0 1000 1000" preserveAspectRatio="none" aria-hidden="true">
+              <defs>
+                <marker id="graph-arrow-contains" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z"></path></marker>
+                <marker id="graph-arrow-uses" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z"></path></marker>
+                <marker id="graph-arrow-claims" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z"></path></marker>
+              </defs>
+              <path class="contains" marker-end="url(#graph-arrow-contains)" d="M 500 190 L 500 270"></path>
+              <path class="contains" marker-end="url(#graph-arrow-contains)" d="M 500 370 L 500 460"></path>
+              <path class="contains" marker-end="url(#graph-arrow-contains)" d="M 500 560 L 500 650"></path>
+              <path class="uses" marker-end="url(#graph-arrow-uses)" d="M 455 740 C 390 780 300 820 220 840"></path>
+              <path class="uses" marker-end="url(#graph-arrow-uses)" d="M 515 370 C 600 490 720 680 790 840"></path>
+              <path class="uses" marker-end="url(#graph-arrow-uses)" d="M 500 750 L 500 840"></path>
+              <path class="claims" marker-end="url(#graph-arrow-claims)" d="M 555 180 C 650 250 760 370 820 460"></path>
+              <path class="claims" marker-end="url(#graph-arrow-claims)" d="M 750 530 C 620 630 390 760 220 840"></path>
+              <path class="claims" marker-end="url(#graph-arrow-claims)" d="M 820 560 C 740 680 620 780 545 840"></path>
+            </svg>
+            <div class="node candidate-node">Asha Rao</div>
+            <div class="node project-node">Rate limiter</div>
+            <div class="node file-node">limiter.py</div>
+            <div class="node function-node">allow_request()</div>
+            <div class="node skill-one">Python</div>
+            <div class="node skill-two">SQL</div>
+            <div class="node skill-api">REST API</div>
+            <div class="node claim-node">API design</div>
+            <div class="edge-label edge-a">contains</div>
+            <div class="edge-label edge-b">contains</div>
+            <div class="edge-label edge-c">contains</div>
+            <div class="edge-label edge-d">uses</div>
+            <div class="edge-label edge-e">claims</div>
+            <div class="edge-label edge-f">uses</div>
+            <div class="edge-label edge-g">uses</div>
+            <div class="edge-label edge-h">claims</div>
+            <div class="edge-label edge-i">claims</div>
+          </div>
+          <div class="legend"><span>● CANDIDATE</span><span>● PROJECT</span><span>● FILE / FUNCTION</span><span>● SKILL</span><span>● CLAIM</span></div>
+        </section>
+        <aside class="panel graph-aside">
+          <div class="panel-head"><span>GRAPH SUMMARY</span><span class="company">READY</span></div>
+          <div class="big-stat"><b>42</b><span>nodes indexed</span></div>
+          <div class="big-stat"><b>61</b><span>relationships found</span></div>
+          <div class="divider">MATCHED SKILLS</div>
+          <div class="tags"><span>Python</span><span>REST API</span><span>SQL</span></div>
+          <div class="graph-note"><small>WHY GRAPH CONTEXT</small><p>Focused retrieval helps each question use the smallest relevant part of a candidate’s work.</p><b>−94%</b><span>sample context vs full project</span></div>
+        </aside>
+      </div>`;
   }
 
   function render() {
