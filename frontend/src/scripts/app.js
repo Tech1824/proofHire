@@ -5,9 +5,15 @@ const app = document.querySelector('#app');
 const savedTheme = localStorage.getItem('proofhire-theme');
 document.documentElement.dataset.theme = savedTheme ?? (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
 const state = {
-  route: 'jobs', health: null, jobs: [], selectedJobId: 'job_1', candidateId: null,
-  task: null, submissionId: null, sessionId: null, turn: null, answerResult: null, chatHistory: [],
-  candidate: null, error: ''
+  route: 'jobs', health: null, jobs: [], 
+  selectedJobId: localStorage.getItem('proofhire-job') || 'job_1', 
+  candidateId: localStorage.getItem('proofhire-cand') || null,
+  task: null, 
+  submissionId: localStorage.getItem('proofhire-sub') || null, 
+  sessionId: localStorage.getItem('proofhire-session') || null, 
+  turn: null, answerResult: null, chatHistory: [],
+  candidate: JSON.parse(localStorage.getItem('proofhire-cand-data')) || null, 
+  error: ''
 };
 const routes = [
   ['jobs', '01', 'Jobs'], ['candidate', '02', 'Candidate'], ['task', '03', 'Task'],
@@ -78,6 +84,7 @@ function shell(content) {
   });
   document.querySelector('#role-switcher')?.addEventListener('change', (event) => {
     state.selectedJobId = event.target.value;
+    localStorage.setItem('proofhire-job', state.selectedJobId);
     state.task = null;
     renderRoute();
   });
@@ -140,7 +147,7 @@ async function renderJobs() {
     const detail = await API.getJob(job.job_id);
     const metaHtml = [detail.company, detail.seniority + ' track', detail.salary, detail.location, detail.work_mode, detail.employment_type, detail.years_experience ? `${detail.years_experience}+ Yrs Exp` : null].filter(Boolean).map(item => escapeHTML(item)).join(' <span class="separator">/</span> ');
     const respHtml = (detail.responsibilities && detail.responsibilities.length) ? `<div style="margin-top: 12px; font-size: 13px; color: #94a3b8;"><strong>RESPONSIBILITIES:</strong><ul style="margin: 4px 0 0 16px; padding: 0;">${detail.responsibilities.map(r => `<li>${escapeHTML(r)}</li>`).join('')}</ul></div>` : '';
-    return `<article class="job-row"><div class="job-index">0${index + 1}</div><div class="job-main"><div class="job-company">${metaHtml}</div><h2>${escapeHTML(detail.title)}</h2><p>${escapeHTML(detail.description)}</p>${respHtml}<div class="skill-list" style="margin-top: 12px;">${detail.required_skills.map((skill) => `<span class="skill-tag">${escapeHTML(skill)}</span>`).join('')}</div></div><div class="job-metrics"><span class="metric-label">ASSESSMENT</span><strong>${detail.job_id === 'job_1' ? 'Rate limiter' : 'Technical Challenge'}</strong><span class="metric-meta">DYNAMIC TASK · CODE + DEPTH</span><button class="button button-outline open-job" data-job="${escapeHTML(detail.job_id)}">Open role <span>↗</span></button></div></article>`;
+    return `<article class="job-row"><div class="job-index">0${index + 1}</div><div class="job-main"><div class="job-company">${metaHtml}</div><h2>${escapeHTML(detail.title)}</h2><p>${escapeHTML(detail.description)}</p>${respHtml}<div class="skill-list" style="margin-top: 12px;">${detail.required_skills.map((skill) => `<span class="skill-tag">${escapeHTML(skill)}</span>`).join('')}</div></div><div class="job-metrics"><span class="metric-label">ASSESSMENT</span><strong>Technical Challenge</strong><span class="metric-meta">DYNAMIC TASK · CODE + DEPTH</span><button class="button button-outline open-job" data-job="${escapeHTML(detail.job_id)}">Open role <span>↗</span></button></div></article>`;
   }));
   shell(`${heading('01 / RECRUITER DESK', 'Open roles<span class="heading-dot">.</span>', 'Choose a role to review its practical assessment and evidence-backed shortlist.', '<a class="button button-primary" href="#candidate">＋ Candidate intake</a>')}
     <div class="section-rail"><span>ACTIVE REQUISITIONS</span><span>${String(jobs.length).padStart(2, '0')} OPEN <i class="status-dot online"></i></span></div>
@@ -148,6 +155,7 @@ async function renderJobs() {
     <section class="bottom-strip"><div class="strip-sign">↳</div><div><strong>THE SIGNAL IS IN THE EXPLANATION</strong><p>Every recommendation stays connected to what a candidate actually said.</p></div><a href="#shortlist" class="text-link">View shortlist <span>→</span></a></section>`);
   document.querySelectorAll('.open-job').forEach((button) => button.addEventListener('click', () => {
     state.selectedJobId = button.dataset.job;
+    localStorage.setItem('proofhire-job', state.selectedJobId);
     location.hash = '#task';
   }));
 }
@@ -177,7 +185,9 @@ function renderCandidate() {
         projects: []
       });
       state.candidateId = result.candidate_id;
+      localStorage.setItem('proofhire-cand', state.candidateId);
       state.candidate = await API.getCandidate(result.candidate_id);
+      localStorage.setItem('proofhire-cand-data', JSON.stringify(state.candidate));
       document.querySelector('#candidate-result').innerHTML = `<div class="result-callout"><i class="status-dot online"></i><strong>GRAPH READY</strong><span>${result.graph_summary.nodes} nodes · ${result.graph_summary.edges} edges</span><a href="#graph">Inspect graph →</a></div>`;
     } catch (error) {
       document.querySelector('#candidate-result').innerHTML = `<p class="inline-error">${escapeHTML(error.message)}</p>`;
@@ -196,8 +206,8 @@ function renderTask() {
     <div class="task-layout"><section class="task-brief panel"><div class="panel-topline"><span>ASSESSMENT BRIEF</span><span class="live-tag"><i class="status-dot online"></i> ${escapeHTML(job.company)}</span></div><div class="job-select-line"><label for="job-select">ROLE</label><select id="job-select">${state.jobs.map((item) => `<option value="${escapeHTML(item.job_id)}" ${item.job_id === job.job_id ? 'selected' : ''}>${escapeHTML(item.title)} — ${escapeHTML(item.company)}</option>`).join('')}</select></div>
       ${task ? `<div class="task-heading"><div class="eyebrow">${escapeHTML(task.language)} / ${task.time_limit_min} MIN</div><h2>${escapeHTML(task.title)}</h2><p>${escapeHTML(task.brief)}</p></div><div class="requirements-title">REQUIREMENTS</div><ul class="requirement-list">${task.requirements.map((item, index) => `<li><span>0${index + 1}</span>${escapeHTML(item)}</li>`).join('')}</ul>` : '<div class="empty-state compact">Generate the role-specific task to load its brief.</div>'}
       <div class="rubric-strip"><span>RUBRIC</span><b>${task ? task.rubric.map((row) => escapeHTML(row.skill)).join(' · ') : 'Awaiting task'}</b></div></section>
-      <section class="submission-panel panel"><div class="panel-topline"><span>SUBMISSION CONSOLE</span><span class="metric-meta">NO CODE EXECUTION</span></div><label class="code-label">SOLUTION SOURCE</label><textarea id="submission-code" class="code-input submission-code" spellcheck="false" placeholder="Paste the candidate's solution here...">${escapeHTML(task?.starter_code ?? '')}</textarea><label class="notes-label">CANDIDATE NOTES <span>OPTIONAL</span></label><textarea id="submission-notes" rows="3" placeholder="Approach, trade-offs, assumptions..." class="notes-input"></textarea><div class="submit-row"><span class="form-hint">${state.candidateId ? `PROFILE ${escapeHTML(state.candidateId)}` : 'Using demo candidate · cand_1'}</span><button class="button button-primary" id="submit-solution" ${task ? '' : 'disabled'}>Save submission <span>↗</span></button></div><div id="submission-result"></div></section></div>`);
-  document.querySelector('#job-select').addEventListener('change', (event) => { state.selectedJobId = event.target.value; state.task = null; renderTask(); });
+      <section class="submission-panel panel"><div class="panel-topline"><span>SUBMISSION CONSOLE</span><span class="metric-meta">NO CODE EXECUTION</span></div><label class="code-label">SOLUTION SOURCE</label><textarea id="submission-code" class="code-input submission-code" spellcheck="false" placeholder="Paste the candidate's solution here...">${escapeHTML(task?.starter_code ?? '')}</textarea><label class="notes-label">CANDIDATE NOTES <span>OPTIONAL</span></label><textarea id="submission-notes" rows="3" placeholder="Approach, trade-offs, assumptions..." class="notes-input"></textarea><div class="submit-row"><span class="form-hint">${state.candidateId ? `PROFILE ${escapeHTML(state.candidateId)}` : 'No candidate profile found.'}</span><button class="button button-primary" id="submit-solution" ${task && state.candidateId ? '' : 'disabled'}>Save submission <span>↗</span></button></div><div id="submission-result"></div></section></div>`);
+  document.querySelector('#job-select').addEventListener('change', (event) => { state.selectedJobId = event.target.value; localStorage.setItem('proofhire-job', state.selectedJobId); state.task = null; renderTask(); });
   document.querySelector('#generate-task').addEventListener('click', async () => {
     const button = document.querySelector('#generate-task');
     button.disabled = true;
@@ -211,8 +221,9 @@ function renderTask() {
     button.disabled = true;
     button.textContent = 'Saving...';
     try {
-      const result = await API.createSubmission({ candidate_id: state.candidateId ?? 'cand_1', task_id: state.task.task_id, files: [{ path: state.task.language === 'python' ? 'limiter.py' : 'menu.js', content: document.querySelector('#submission-code').value }], notes: document.querySelector('#submission-notes').value });
+      const result = await API.createSubmission({ candidate_id: state.candidateId, task_id: state.task.task_id, files: [{ path: state.task.language === 'python' ? 'limiter.py' : 'menu.js', content: document.querySelector('#submission-code').value }], notes: document.querySelector('#submission-notes').value });
       state.submissionId = result.submission_id;
+      localStorage.setItem('proofhire-sub', state.submissionId);
       document.querySelector('#submission-result').innerHTML = `<div class="result-callout"><i class="status-dot online"></i><strong>SUBMISSION SAVED</strong><span>${result.stats.files} file · ${result.stats.functions} functions indexed</span><a href="#depth">Start depth check →</a></div>`;
     } catch (error) { document.querySelector('#submission-result').innerHTML = `<p class="inline-error">${escapeHTML(error.message)}</p>`; }
     finally { button.disabled = false; button.innerHTML = 'Save submission <span>↗</span>'; }
@@ -226,12 +237,11 @@ function renderDepth() {
   const result = state.answerResult;
   shell(`${heading('04 / TECHNICAL CONVERSATION', 'Depth check<span class="heading-dot">.</span>', 'Questions follow the candidate’s own work. Scores stay attached to exact answer evidence.', session ? `<button class="button button-quiet" id="end-session">Finish session</button>` : '')}
     <div class="depth-layout"><section class="chat-panel panel"><div class="panel-topline"><span><i class="status-dot ${session ? 'online' : 'offline'}"></i> ${session ? `SESSION ${escapeHTML(session.slice(-8))}` : 'SESSION NOT STARTED'}</span><span>${turn ? `TURN ${turn.turn_number} / 6` : 'WAITING'}</span></div>
-      <div class="chat-scroll" id="chat-scroll">${session ? `<div class="chat-message system-message"><span class="message-stamp">PROOFHIRE / INTERVIEWER</span><p class="typewriter">${escapeHTML(turn?.text ?? (result?.status === 'done' ? 'Depth check complete. Your answers are ready for recruiter review.' : 'Session complete.'))}</p>${turn?.code_snippet ? `<pre class="snippet"><span>${escapeHTML(turn.code_snippet.path)}:${turn.code_snippet.start_line}</span><code>${escapeHTML(turn.code_snippet.code)}</code></pre>` : ''}</div>${result ? `<div class="chat-message answer-message"><span class="message-stamp">CANDIDATE / TURN ${result.evaluation.turn_number}</span><p>${escapeHTML(result.evaluation.evidence_quote || 'No answer provided.')}</p><span class="answer-score">SCORE ${result.evaluation.score}/5 · ${escapeHTML(result.evaluation.flags.join(', ') || 'NO FLAGS')}</span></div><div class="chat-message system-message follow-up"><span class="message-stamp">PROOFHIRE / NEXT</span><p class="typewriter">${escapeHTML(result.next?.text ?? 'Depth check complete. The evidence is ready for recruiter review.')}</p></div>` : ''}` : '<div class="chat-empty"><div class="terminal-prompt">$ depth-check --start</div><h2>Ready to test understanding.</h2><p>Start with the submitted solution, then follow the evidence one answer at a time.</p><button class="button button-primary" id="start-session">Start depth check <span>↗</span></button><button class="text-button" id="demo-session">Use demo submission</button></div>'}</div>
+      <div class="chat-scroll" id="chat-scroll">${session ? `<div class="chat-message system-message"><span class="message-stamp">PROOFHIRE / INTERVIEWER</span><p class="typewriter">${escapeHTML(turn?.text ?? (result?.status === 'done' ? 'Depth check complete. Your answers are ready for recruiter review.' : 'Session complete.'))}</p>${turn?.code_snippet ? `<pre class="snippet"><span>${escapeHTML(turn.code_snippet.path)}:${turn.code_snippet.start_line}</span><code>${escapeHTML(turn.code_snippet.code)}</code></pre>` : ''}</div>${result ? `<div class="chat-message answer-message"><span class="message-stamp">CANDIDATE / TURN ${result.evaluation.turn_number}</span><p>${escapeHTML(result.evaluation.evidence_quote || 'No answer provided.')}</p><span class="answer-score">SCORE ${result.evaluation.score}/5 · ${escapeHTML(result.evaluation.flags.join(', ') || 'NO FLAGS')}</span></div><div class="chat-message system-message follow-up"><span class="message-stamp">PROOFHIRE / NEXT</span><p class="typewriter">${escapeHTML(result.next?.text ?? 'Depth check complete. The evidence is ready for recruiter review.')}</p></div>` : ''}` : '<div class="chat-empty"><div class="terminal-prompt">$ depth-check --start</div><h2>Ready to test understanding.</h2><p>Start with the submitted solution, then follow the evidence one answer at a time.</p><button class="button button-primary" id="start-session">Start depth check <span>↗</span></button></div>'}</div>
       ${session && result?.status !== 'done' ? `<form id="answer-form" class="answer-form"><label for="candidate-answer">${turn?.expects === 'code' ? 'CODE RESPONSE' : 'YOUR RESPONSE'}</label>${turn?.expects === 'code' ? '<textarea id="candidate-answer" name="answer" class="code-input" rows="4" placeholder="Write or paste a small code change..."></textarea>' : '<textarea id="candidate-answer" name="answer" rows="3" placeholder="Explain your reasoning, referring to the submitted code..."></textarea>'}<div class="answer-controls"><span class="form-hint">ENTER TO SEND · SHIFT+ENTER FOR NEW LINE</span><button class="button button-primary" type="submit">Send answer <span>↗</span></button></div></form>` : session ? '<div class="session-complete"><i class="status-dot online"></i> SESSION COMPLETE · EVIDENCE SAVED</div>' : ''}</section>
     <aside class="evidence-panel panel"><div class="panel-topline"><span>LIVE EVIDENCE</span><span class="evidence-lock">● VERIFIED QUOTE</span></div>${result ? `<div class="score-overview"><div><span class="metric-label">RUNNING SCORE</span><div class="score-number">${result.running.score_100}<small>/100</small></div></div><div class="confidence-block"><span class="metric-label">CONFIDENCE</span><strong>${Math.round(result.running.confidence * 100)}<small>%</small></strong></div></div><div class="ascii-bar" aria-label="Score ${result.running.score_100} out of 100">[${'█'.repeat(Math.round(result.running.score_100 / 10))}${'░'.repeat(10 - Math.round(result.running.score_100 / 10))}] ${result.running.score_100}</div><div class="evidence-quote"><div class="quote-head"><span>ANSWER ${String(result.evaluation.turn_number).padStart(2, '0')} / EVIDENCE</span><span>SCORE ${result.evaluation.score}/5</span></div><blockquote>“${escapeHTML(result.evaluation.evidence_quote || 'No evidence quote available.') }”</blockquote><p>${escapeHTML(result.evaluation.reasoning)}</p></div><div class="dimension-list">${Object.entries(result.running.dimensions).map(([name, score]) => `<div class="dimension-row"><span>${escapeHTML(name)}</span><div class="dimension-track"><i style="width:${Math.min(100, Number(score) * 20)}%"></i></div><b>${Number(score).toFixed(1)}</b></div>`).join('')}</div><div class="token-meter"><div class="token-head"><span>TOKEN SAVINGS</span><b>${Math.max(0, Math.round((1 - result.meta.context_tokens / result.meta.full_context_tokens) * 100))}% less context</b></div><div class="token-comparison"><div><span>GRAPH CONTEXT</span><b>${result.meta.context_tokens.toLocaleString()} <small>tokens</small></b></div><div><span>FULL PROJECT</span><b>${result.meta.full_context_tokens.toLocaleString()} <small>tokens</small></b></div></div><div class="token-track"><i style="width:${Math.max(4, result.meta.context_tokens / result.meta.full_context_tokens * 100)}%"></i></div></div>${result.evaluation.flags.length ? `<div class="flag-row">${result.evaluation.flags.map((flag) => `<span class="flag-tag">${escapeHTML(flag)}</span>`).join('')}</div>` : '<div class="clean-eval">NO RISK FLAGS</div>'}` : '<div class="evidence-empty"><div class="evidence-mark">[ ]</div><h3>Evidence will appear here.</h3><p>Each answer is evaluated on its own. Scores are calculated separately from the model response.</p><div class="empty-meter"><span></span></div></div>'}<div class="evidence-footer"><span>LLM IS NOT THE HIRING DECISION</span><span>HUMAN REVIEW REQUIRED</span></div></aside></div>`);
   if (session) document.querySelector('#chat-scroll').innerHTML = chatTranscript();
-  document.querySelector('#start-session')?.addEventListener('click', () => beginDepth(state.submissionId ?? 'sub_1'));
-  document.querySelector('#demo-session')?.addEventListener('click', () => beginDepth('sub_1'));
+  document.querySelector('#start-session')?.addEventListener('click', () => beginDepth(state.submissionId));
   document.querySelector('#end-session')?.addEventListener('click', async () => { await API.finishDepth(state.sessionId); state.answerResult = { ...(state.answerResult ?? {}), status: 'done', next: null }; state.turn = null; renderDepth(); });
   document.querySelector('#answer-form')?.addEventListener('submit', sendAnswer);
   const confidenceLabel = document.querySelector('.confidence-block .metric-label');
@@ -253,9 +263,11 @@ function chatTranscript() {
 
 // Starts a new session and displays its first question.
 async function beginDepth(submissionId) {
+  if (!submissionId) { showError("No submission found. Please complete the task first."); return; }
   try {
     const started = await API.startDepth(submissionId);
     state.sessionId = started.session_id;
+    localStorage.setItem('proofhire-session', state.sessionId);
     state.turn = started.turn;
     state.answerResult = null;
     state.chatHistory = [{ kind: 'question', turn: started.turn }];
@@ -294,7 +306,12 @@ async function renderShortlist() {
 
 // Loads a candidate's node-link data and renders it with Cytoscape.
 async function renderGraph() {
-  const candidateId = state.candidateId ?? 'cand_1';
+  const candidateId = state.candidateId;
+  if (!candidateId) {
+    shell(`${heading('06 / KNOWLEDGE GRAPH', 'Evidence Graph<span class="heading-dot">.</span>', 'Visualizing the candidate’s project architecture and profile claims.')}
+      <div class="empty-state">No candidate profile loaded. Go to <a href="#candidate">Candidate Intake</a> first.</div>`);
+    return;
+  }
   const [candidate, graph] = await Promise.all([API.getCandidate(candidateId), API.getCandidateGraph(candidateId)]);
   state.candidate = candidate;
   const darkTheme = document.documentElement.dataset.theme === 'dark';
