@@ -15,7 +15,7 @@ def parse_github_username(url: str) -> str | None:
     url = url.strip().rstrip('/')
     # handle simple cases like https://github.com/pro-npc
     # handle /tab/ paths
-    match = re.search(r"github\.com/([^/]+)", url, re.IGNORECASE)
+    match = re.search(r"github\.com/([^/?#]+)", url, re.IGNORECASE)
     if match:
         return match.group(1)
     return None

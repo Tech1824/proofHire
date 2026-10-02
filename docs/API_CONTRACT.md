@@ -76,7 +76,7 @@ A **turn object** is used in several responses:
 ```json
 { "turn_number": 1, "type": "question", "level": 2,
   "node_ref": "func:limiter.py::allow_request",
-  "text": "Why did you store timestamps in a list instead of a counter?",
+  "question_text": "Why did you store timestamps in a list instead of a counter?",
   "code_snippet": { "path": "limiter.py", "start_line": 12, "code": "def allow_request(...): ..." },
   "expects": "text" }
 ```
@@ -86,7 +86,7 @@ A **turn object** is used in several responses:
 ```json
 { "session_id": "sess_1", "max_turns": 6, "turn": { turn object } }
 ```
-**POST /api/depth/answer** body `{ "session_id": "sess_1", "answer": "text", "code": null }` -> 200
+**POST /api/depth/answer** body `{ "session_id": "sess_1", "answer_text": "text", "answer_code": null }` -> 200
 ```json
 { "evaluation": {
     "turn_number": 1, "score": 3, "confidence": 0.7,

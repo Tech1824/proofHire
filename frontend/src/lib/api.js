@@ -16,7 +16,7 @@ const candidates = [
   { candidate_id: 'cand_1', name: 'Asha Rao', email: 'asha@example.com', github_url: 'https://github.com/asha-demo', linkedin_text: 'Backend engineer focused on Python APIs and thoughtful data structures.', projects: [], graph_summary: candidateExample.graph_summary },
   { candidate_id: 'cand_2', name: 'Ravi Kumar', email: 'ravi@example.com', github_url: 'https://github.com/ravi-demo', linkedin_text: 'Expert in concurrency and scalable distributed systems.', projects: [], graph_summary: { nodes: 28, edges: 34, skills: ['python', 'concurrency', 'sql'] } }
 ];
-const taskExample = { ...taskExample, brief: 'Build a sliding-window rate limiter for an API. Requests should be accepted only while they remain within the configured limit.', requirements: ['Support per-user request limits', 'Expire timestamps outside the active window', 'Keep the implementation easy to test'], starter_code: 'from collections import defaultdict\n\ndef allow_request(user_id, now, limit, window_seconds):\n    """Return whether this request is within the sliding window."""\n    pass' };
+const customTaskExample = { ...taskExample, brief: 'Build a sliding-window rate limiter for an API. Requests should be accepted only while they remain within the configured limit.', requirements: ['Support per-user request limits', 'Expire timestamps outside the active window', 'Keep the implementation easy to test'], starter_code: 'from collections import defaultdict\n\ndef allow_request(user_id, now, limit, window_seconds):\n    """Return whether this request is within the sliding window."""\n    pass' };
 const sessionState = new Map();
 let candidateSequence = 3;
 let taskSequence = 2;
@@ -24,7 +24,7 @@ let submissionSequence = 1;
 
 // Selects mock mode by default, with an optional persisted switch to the API.
 export function usesMocks() {
-  return (localStorage.getItem('proofhire-mode') ?? import.meta.env.PUBLIC_USE_MOCKS ?? 'true') !== 'false';
+  return (localStorage.getItem('proofhire-mode') ?? import.meta.env.PUBLIC_USE_MOCKS ?? 'false') !== 'false';
 }
 
 // Calls the backend and returns JSON, preserving the documented error shape.
@@ -116,12 +116,12 @@ export function getCandidateGraph(candidateId) {
 // Generates a task tailored to the selected job.
 export function generateTask(jobId) {
   if (!usesMocks()) return request('/tasks/generate', { method: 'POST', body: JSON.stringify({ job_id: jobId }) });
-  return mock({ ...taskExample, job_id: jobId, task_id: `task_${taskSequence++}` });
+  return mock({ ...customTaskExample, job_id: jobId, task_id: `task_${taskSequence++}` });
 }
 
 // Retrieves a generated task.
 export function getTask(taskId) {
-  return usesMocks() ? mock({ ...taskExample, task_id: taskId }) : request(`/tasks/${taskId}`);
+  return usesMocks() ? mock({ ...customTaskExample, task_id: taskId }) : request(`/tasks/${taskId}`);
 }
 
 // Saves a candidate's task submission.

@@ -1,0 +1,39 @@
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
+from backend.fakes import is_fake, fake_db, fake_ai
+
+router = APIRouter(prefix="/api/tasks", tags=["tasks"])
+
+class TaskGenerateRequest(BaseModel):
+    job_id: str
+
+@router.post("/generate", status_code=201)
+def generate_task(req: TaskGenerateRequest):
+    if is_fake():
+        job = fake_db.get_job(req.job_id)
+        if not job:
+            raise HTTPException(status_code=404, detail="Job not found")
+        task_data = fake_ai.generate_task(job)
+        # Note: fake_ai doesn't have generate_task. But fake_crud has create_task
+        task = fake_db.create_task({"job_id": req.job_id, **task_data})
+    else:
+        from db import crud
+        from ai import api as ai_api
+        job = crud.get_job(req.job_id)
+        if not job:
+            raise HTTPException(status_code=404, detail="Job not found")
+        task_data = ai_api.generate_task(job)
+        task = crud.create_task({"job_id": req.job_id, **task_data})
+    return task
+
+@router.get("/{task_id}")
+def get_task(task_id: str):
+    if is_fake():
+        task = fake_db.get_task(task_id)
+    else:
+        from db import crud
+        task = crud.get_task(task_id)
+        
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+    return task

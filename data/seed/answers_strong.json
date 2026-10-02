@@ -1,0 +1,26 @@
+[
+  {
+    "answer_text": "I used a sliding window instead of a fixed counter to prevent burst traffic exactly at the minute boundary.",
+    "answer_code": null
+  },
+  {
+    "answer_text": "To handle thread safety, I could have used a Redis lock, but since this was for a single process I used threading.Lock.",
+    "answer_code": null
+  },
+  {
+    "answer_text": "I set the expiration to 60 seconds. For memory efficiency with lots of users, a sorted set in Redis would be better than an in-memory list.",
+    "answer_code": null
+  },
+  {
+    "answer_text": "Here is the modified version to allow a burst limit, by just checking if the length of the window is less than the max limit plus the burst allowance.",
+    "answer_code": "def limit(user_id, max_req=10, burst=5):\n    pass"
+  },
+  {
+    "answer_text": "The bug in the seed code was that it didn't clean up old timestamps if a user stopped making requests, which causes a memory leak.",
+    "answer_code": null
+  },
+  {
+    "answer_text": "Yes, I can refactor it to be O(1) by using a leaky bucket algorithm instead.",
+    "answer_code": null
+  }
+]

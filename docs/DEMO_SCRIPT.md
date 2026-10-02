@@ -23,6 +23,8 @@ Write both answer sets into `data/seed/answers_strong.json` and `answers_weak.js
 ## Pre-demo checklist
 - [ ] `git checkout demo-ready`, fresh `python -m db.seed`
 - [ ] `.env` present, `DEMO_MODE=true` ready as the fallback
+- [ ] Run `pytest -q` to verify contract, flow, and edge cases pass
+- [ ] Run `python tests/demo_run.py` to verify seed answers trigger correct targets
 - [ ] Cache warmed: run both answer sets once with real LLM
 - [ ] Browser zoomed to 110%, notifications off, charger plugged in
 - [ ] Ollama running (`ollama list` shows model)

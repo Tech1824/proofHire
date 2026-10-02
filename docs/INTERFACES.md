@@ -12,9 +12,9 @@ def list_jobs() -> list[dict]
 def get_job(job_id: str) -> dict | None
 
 # Candidates, projects, files
-def create_candidate(data: dict) -> dict                # saves candidate + projects + files
+def create_candidate(data: dict) -> dict                # saves candidate + projects + files. Note: Extract and pop nested lists ('projects') from the dict before instantiating the SQLModel!
 def get_candidate(candidate_id: str) -> dict | None     # includes projects and files
-def save_graph(candidate_id: str, graph_json: dict) -> None
+def save_graph(candidate_id: str, graph_json: dict, graph_summary: dict, status: str = "ready") -> None
 def load_graph(candidate_id: str) -> dict | None        # NetworkX node_link_data format
 
 # Tasks and submissions
@@ -27,17 +27,18 @@ def get_submission(submission_id: str) -> dict | None   # includes files
 def create_session(submission_id: str, max_turns: int) -> dict
 def get_session(session_id: str) -> dict | None         # includes turns list
 def add_turn(session_id: str, turn: dict) -> dict       # question side
-def add_answer(session_id: str, turn_number: int, answer: str, code: str | None, evaluation: dict, meta: dict) -> dict
+def update_turn_with_answer(session_id: str, turn_number: int, answer_text: str, answer_code: str | None, evaluation: dict, meta: dict) -> dict # Reminder: this is a SQL UPDATE
+def update_session_state(session_id: str, state_json: dict) -> None
 def set_session_status(session_id: str, status: str) -> None
-def save_profile(session_id: str, profile: dict) -> None
+def save_profile(session_id: str, candidate_id: str, job_id: str, profile: dict) -> None # Note: You must explicitly unpack/map the dict keys to the matching DB columns!
 def get_profile(session_id: str) -> dict | None
-def list_finished_profiles_for_job(job_id: str) -> list[dict]
+def list_finished_profiles_for_job(job_id: str) -> list[dict] # Note: must JOIN candidates table to get "name"
 
 # Cache and config
 def cache_get(key: str) -> dict | None                  # increments hit counter
 def cache_set(key: str, alias: str, response: dict) -> None
-def get_setting(key: str, default: str | None = None) -> str | None
-def set_setting(key: str, value: str) -> None           # used for demo_mode
+def get_setting(key: str, default: str | None = None) -> str | None # Reminder: parse "true"/"false" back to booleans explicitly!
+def set_setting(key: str, value: str) -> None           # used for demo_mode (cast bools to "true"/"false" strings!)
 ```
 `db/seed.py` exposes `def reset_and_seed() -> None`.
 
@@ -47,7 +48,7 @@ def build_graph(candidate_id: str) -> dict
     # reads candidate via crud, builds + saves graph. Returns {"nodes": int, "edges": int, "skills": [str]}
 
 def get_graph_view(candidate_id: str) -> dict
-    # returns {"nodes": [...], "edges": [...]} exactly as in API_CONTRACT
+    # returns {"nodes": [...], "edges": [...]} exactly as in API_CONTRACT. Warning: networkx uses "links" by default, keep them as links in DB, and rename to "edges" ONLY here in the presentation layer.
 
 def generate_task(job: dict) -> dict
     # returns task dict as in API_CONTRACT (without task_id; db assigns it)
@@ -58,8 +59,8 @@ def add_submission_to_graph(submission_id: str) -> dict
 def start_depth(submission_id: str) -> dict
     # creates session (via crud), returns {"session_id", "max_turns", "turn"}
 
-def submit_answer(session_id: str, answer: str, code: str | None) -> dict
-    # returns the full /api/depth/answer response body
+def submit_answer(session_id: str, answer_text: str, answer_code: str | None) -> dict
+    # returns the full /api/depth/answer response body. Route must get turn_number from state_json first!
 
 def finish_depth(session_id: str) -> dict
     # builds profile, sets status done, returns {"status": "done"}
@@ -69,6 +70,9 @@ def get_shortlist(job_id: str) -> dict
 
 def llm_health() -> dict
     # returns {"fast": "ok"|"down", "smart": ..., "local": ...}
+
+## Important Rules for FastAPI Routes
+**Use `def` instead of `async def`** for all route handlers. Our AI and DB functions are synchronous and block the thread. If you use `async def`, it will freeze the event loop and crash the server.
 ```
 
 ## Internal AI modules (AI/ML person only)
@@ -83,11 +87,11 @@ def subgraph_for_node(g, node_id: str, depth: int = 1) -> dict   # small context
 def estimate_tokens(text: str) -> int                            # len(text) // 4 is fine
 
 # controller.py
-def pick_next(state: dict, g, job: dict) -> dict     # {"node_id", "level", "type", "reason"}
+def pick_next(state: dict, g, job: dict) -> dict     # {"node_ref", "level", "type", "reason"} (Note: AI route generates actual question_text based on this)
 def should_stop(state: dict) -> bool
 
 # judge.py
-def judge_answer(turn: dict, answer: str, code: str | None, context: dict) -> dict  # evaluation dict
+def judge_answer(turn: dict, answer_text: str, answer_code: str | None, context: dict) -> dict  # evaluation dict
 
 # profile.py
 def compute_profile(session: dict) -> dict            # pure math, no LLM
