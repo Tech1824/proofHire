@@ -5,6 +5,19 @@ import concurrent.futures
 
 router = APIRouter(prefix="/api/candidates", tags=["candidates"])
 
+@router.get("")
+@router.get("/", include_in_schema=False)
+def list_all_candidates():
+    from db import crud
+    return crud.list_candidates()
+
+@router.post("/{candidate_id}/status")
+def update_cand_status(candidate_id: str, payload: dict):
+    from db import crud
+    status = payload.get("status", "Reviewed")
+    crud.update_candidate_status(candidate_id, status)
+    return {"status": "ok", "candidate_id": candidate_id, "new_status": status}
+
 def process_candidate_bg(candidate_id: str, cand_dict: dict):
     from db import crud
     from ai import api as ai_api

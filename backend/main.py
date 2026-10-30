@@ -4,13 +4,14 @@ from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from backend.routes import health, auth, jobs, candidates, tasks, submissions, depth, shortlist, voice
+from backend.routes import health, auth, jobs, candidates, tasks, submissions, depth, shortlist, voice, company
+from fastapi.staticfiles import StaticFiles
 
 app = FastAPI(title="ProofHire API")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:4321"],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -58,3 +59,9 @@ app.include_router(submissions.router)
 app.include_router(depth.router)
 app.include_router(shortlist.router)
 app.include_router(voice.router)
+app.include_router(company.router)
+
+portal_dir = os.path.join(os.path.dirname(__file__), "..", "proofhire-company-portal")
+if os.path.exists(portal_dir):
+    app.mount("/portal", StaticFiles(directory=portal_dir, html=True), name="portal")
+

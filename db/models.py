@@ -9,9 +9,34 @@ def new_id(prefix: str) -> str:
 def now_iso() -> str:
     return datetime.datetime.utcnow().isoformat() + "Z"
 
+class Company(SQLModel, table=True):
+    __tablename__ = "companies"
+    company_id: str = Field(default_factory=lambda: new_id("co"), primary_key=True)
+    name: str = "FinLeaf"
+    email: Optional[str] = "hiring@finleaf.com"
+    website: Optional[str] = "https://finleaf.com"
+    industry: Optional[str] = "Fintech"
+    size: Optional[str] = "51–200"
+    location: Optional[str] = "New York, NY"
+    about: Optional[str] = "We build reliable infrastructure for modern financial products."
+    created_at: str = Field(default_factory=now_iso)
+
+class User(SQLModel, table=True):
+    __tablename__ = "users"
+    user_id: str = Field(default_factory=lambda: new_id("usr"), primary_key=True)
+    email: str = Field(unique=True, index=True)
+    name: str
+    password_hash: Optional[str] = "demo_password"
+    role: str = "recruiter"  # "recruiter" or "candidate"
+    company_id: Optional[str] = Field(default=None, foreign_key="companies.company_id")
+    candidate_id: Optional[str] = Field(default=None, foreign_key="candidates.candidate_id")
+    created_at: str = Field(default_factory=now_iso)
+
 class Job(SQLModel, table=True):
     __tablename__ = "jobs"
     job_id: str = Field(default_factory=lambda: new_id("job"), primary_key=True)
+    company_id: Optional[str] = Field(default=None, foreign_key="companies.company_id")
+    recruiter_id: Optional[str] = Field(default=None, foreign_key="users.user_id")
     title: str
     company: str
     description: str
@@ -23,15 +48,18 @@ class Job(SQLModel, table=True):
     responsibilities: List[str] = Field(default_factory=list, sa_column=Column(JSON))
     required_skills: List[str] = Field(sa_column=Column(JSON))
     seniority: str
+    status: str = "Open"
     created_at: str = Field(default_factory=now_iso)
 
 class Candidate(SQLModel, table=True):
     __tablename__ = "candidates"
     candidate_id: str = Field(default_factory=lambda: new_id("cand"), primary_key=True)
+    company_id: Optional[str] = Field(default=None, foreign_key="companies.company_id")
     name: str
     email: str
     github_url: Optional[str] = None
     linkedin_text: Optional[str] = None
+    status: str = "New"  # New, Reviewed, Interview, Shortlisted, Rejected
     graph_status: str = "pending"
     graph_json: Optional[dict] = Field(default=None, sa_column=Column(JSON))
     graph_summary: Optional[dict] = Field(default=None, sa_column=Column(JSON))

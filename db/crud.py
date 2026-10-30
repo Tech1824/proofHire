@@ -7,7 +7,7 @@ from sqlalchemy.engine import Engine
 
 from db.models import (
     Job, Candidate, Project, CodeFile, Task, Submission,
-    DepthSession, QaTurn, Profile, LlmCache, Setting
+    DepthSession, QaTurn, Profile, LlmCache, Setting, Company, User
 )
 
 sqlite_file_name = "proofhire.db"
@@ -31,15 +31,112 @@ def create_job(data: dict) -> dict:
         session.refresh(job)
         return job.model_dump()
 
-def list_jobs() -> list[dict]:
+def list_jobs(company_id: Optional[str] = None) -> list[dict]:
     with Session(engine) as session:
-        jobs = session.exec(select(Job)).all()
+        query = select(Job)
+        if company_id:
+            query = query.where(Job.company_id == company_id)
+        jobs = session.exec(query).all()
         return [j.model_dump() for j in jobs]
 
 def get_job(job_id: str) -> dict | None:
     with Session(engine) as session:
         job = session.get(Job, job_id)
         return job.model_dump() if job else None
+
+# Companies & Multi-Tenancy
+def get_or_create_default_company() -> dict:
+    with Session(engine) as session:
+        co = session.exec(select(Company)).first()
+        if not co:
+            co = Company(
+                company_id="co_finleaf",
+                name="FinLeaf",
+                email="hiring@finleaf.com",
+                website="https://finleaf.com",
+                industry="Fintech",
+                size="51–200",
+                location="New York, NY",
+                about="We build reliable infrastructure for modern financial products."
+            )
+            session.add(co)
+            session.commit()
+            session.refresh(co)
+        return co.model_dump()
+
+def get_company(company_id: str) -> dict | None:
+    with Session(engine) as session:
+        co = session.get(Company, company_id)
+        return co.model_dump() if co else None
+
+def update_company(company_id: str, data: dict) -> dict | None:
+    with Session(engine) as session:
+        co = session.get(Company, company_id)
+        if co:
+            for k, v in data.items():
+                if hasattr(co, k):
+                    setattr(co, k, v)
+            session.add(co)
+            session.commit()
+            session.refresh(co)
+            return co.model_dump()
+        return None
+
+# Users & Roles
+def get_user_by_email(email: str) -> dict | None:
+    with Session(engine) as session:
+        u = session.exec(select(User).where(User.email == email)).first()
+        return u.model_dump() if u else None
+
+def create_user(data: dict) -> dict:
+    with Session(engine) as session:
+        u = User(**data)
+        session.add(u)
+        session.commit()
+        session.refresh(u)
+        return u.model_dump()
+
+# Candidate List & Status
+def list_candidates(company_id: Optional[str] = None) -> list[dict]:
+    with Session(engine) as session:
+        query = select(Candidate)
+        if company_id:
+            query = query.where(Candidate.company_id == company_id)
+        cands = session.exec(query).all()
+        result = []
+        for c in cands:
+            cd = c.model_dump()
+            prof = session.exec(select(Profile).where(Profile.candidate_id == c.candidate_id)).first()
+            if prof:
+                cd["overall_score"] = prof.overall_score
+                cd["score"] = prof.overall_score
+                cd["confidence"] = prof.confidence
+                cd["recommendation"] = prof.recommendation
+                cd["skill_profile"] = prof.skill_profile
+                cd["dims"] = prof.skill_profile
+                cd["summary"] = prof.summary
+                cd["evidence"] = prof.evidence
+            else:
+                cd["overall_score"] = 0
+                cd["score"] = 0
+                cd["confidence"] = 0.0
+                cd["recommendation"] = "Not assessed"
+                cd["skill_profile"] = {}
+                cd["dims"] = {}
+                cd["summary"] = "Assessment not started."
+                cd["evidence"] = []
+            result.append(cd)
+        return result
+
+def update_candidate_status(candidate_id: str, status: str) -> bool:
+    with Session(engine) as session:
+        c = session.get(Candidate, candidate_id)
+        if c:
+            c.status = status
+            session.add(c)
+            session.commit()
+            return True
+        return False
 
 # Candidates, projects, files
 def create_candidate(data: dict) -> dict:

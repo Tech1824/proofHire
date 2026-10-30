@@ -51,3 +51,49 @@ def github_callback(code: str = None):
             return RedirectResponse(url=f"{FRONTEND_URL}/?github_token={token}#candidate")
             
     return RedirectResponse(url=f"{FRONTEND_URL}/?error=oauth_failed#candidate")
+
+
+from pydantic import BaseModel
+from typing import Optional
+
+class LoginRequest(BaseModel):
+    email: str
+    password: Optional[str] = "demo"
+    role: Optional[str] = "recruiter"
+
+@router.post("/login")
+def login(req: LoginRequest):
+    from db import crud
+    user = crud.get_user_by_email(req.email)
+    if not user:
+        # Auto-provision user for seamless demo / test access
+        company = crud.get_or_create_default_company()
+        user = crud.create_user({
+            "email": req.email,
+            "name": req.email.split("@")[0].capitalize(),
+            "role": req.role or "recruiter",
+            "company_id": company["company_id"] if (req.role or "recruiter") == "recruiter" else None
+        })
+    else:
+        company = crud.get_company(user.get("company_id") or "co_finleaf") or crud.get_or_create_default_company()
+        
+    return {
+        "status": "ok",
+        "user": user,
+        "company": company,
+        "token": f"token_{user['user_id']}"
+    }
+
+@router.get("/me")
+def get_current_user():
+    from db import crud
+    company = crud.get_or_create_default_company()
+    return {
+        "user": {
+            "user_id": "usr_demo",
+            "name": "Alex Mercer",
+            "email": "hiring@finleaf.com",
+            "role": "recruiter"
+        },
+        "company": company
+    }

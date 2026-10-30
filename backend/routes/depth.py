@@ -114,3 +114,45 @@ class FinishDepthRequest(BaseModel):
 @router.post("/finish")
 def finish_depth_body(req: FinishDepthRequest):
     return finish_depth(req.session_id)
+
+
+class SaveDraftRequest(BaseModel):
+    draft_text: Optional[str] = None
+    draft_code: Optional[str] = None
+
+@router.post("/{session_id}/draft")
+def save_session_draft(session_id: str, req: SaveDraftRequest):
+    from db import crud
+    sess = crud.get_session(session_id)
+    if not sess:
+        raise HTTPException(status_code=404, detail="Session not found")
+    state = sess.get("state_json") or {}
+    state["draft_text"] = req.draft_text
+    state["draft_code"] = req.draft_code
+    crud.update_session_state(session_id, state)
+    return {"status": "ok", "saved_at": crud.now_iso()}
+
+@router.get("/{session_id}/resume")
+def resume_session(session_id: str):
+    from db import crud
+    sess = crud.get_session(session_id)
+    if not sess:
+        raise HTTPException(status_code=404, detail="Session not found")
+    
+    turns = sess.get("turns", [])
+    completed_turns = [t for t in turns if t.get("answer_text") is not None]
+    active_turn = next((t for t in turns if t.get("answer_text") is None), None)
+    state = sess.get("state_json") or {}
+    
+    return {
+        "session_id": session_id,
+        "status": sess.get("status", "in_progress"),
+        "max_turns": sess.get("max_turns", 6),
+        "current_turn_number": len(completed_turns) + 1,
+        "active_turn": active_turn,
+        "completed_turns": completed_turns,
+        "draft": {
+            "draft_text": state.get("draft_text"),
+            "draft_code": state.get("draft_code")
+        }
+    }
