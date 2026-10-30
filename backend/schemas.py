@@ -44,6 +44,7 @@ class ProjectCreate(BaseModel):
 class CandidateCreate(BaseModel):
     name: str
     email: str
+    job_id: Optional[str] = "job_1"
     github_url: Optional[str] = None
     github_token: Optional[str] = None
     linkedin_text: str = ""
@@ -61,6 +62,7 @@ class CandidateCreateResponse(BaseModel):
 
 class CandidateResponse(CandidateCreate):
     candidate_id: str
+    status: str = "New"
     graph_status: str = "ready"
     graph_summary: Optional[GraphSummary] = None
 

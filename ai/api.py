@@ -44,6 +44,28 @@ def build_graph(candidate_id: str) -> dict:
     if not cand:
         return {"nodes": 0, "edges": 0, "skills": []}
     
+    # Load candidate's submissions and attach to cand["projects"] so graph always incorporates verified task code
+    try:
+        from db.crud import engine, Session, select, Submission, CodeFile, Task
+        with Session(engine) as session:
+            subs = session.exec(select(Submission).where(Submission.candidate_id == candidate_id)).all()
+            for s in subs:
+                task = session.get(Task, s.task_id)
+                task_title = task.title if task else "Submitted Solution"
+                c_files = session.exec(select(CodeFile).where(CodeFile.submission_id == s.submission_id)).all()
+                if c_files:
+                    existing_proj_names = [p.get("name") for p in cand.get("projects", [])]
+                    proj_name = f"Assessment: {task_title}"
+                    if proj_name not in existing_proj_names:
+                        cand.setdefault("projects", []).append({
+                            "name": proj_name,
+                            "description": s.notes or "Practical coding assessment submission",
+                            "repo_url": None,
+                            "files": [f.model_dump() for f in c_files]
+                        })
+    except Exception as e:
+        print(f"Error loading submissions into graph: {e}")
+    
     g = build_from_candidate(cand)
     skills = [d.get("label") for n, d in g.nodes(data=True) if d.get("type") == "skill"]
     summary = {"nodes": g.number_of_nodes(), "edges": g.number_of_edges(), "skills": skills}

@@ -55,6 +55,7 @@ class Candidate(SQLModel, table=True):
     __tablename__ = "candidates"
     candidate_id: str = Field(default_factory=lambda: new_id("cand"), primary_key=True)
     company_id: Optional[str] = Field(default=None, foreign_key="companies.company_id")
+    job_id: Optional[str] = Field(default="job_1", foreign_key="jobs.job_id")
     name: str
     email: str
     github_url: Optional[str] = None

@@ -1,9 +1,56 @@
-from fastapi import APIRouter, HTTPException, BackgroundTasks
+from fastapi import APIRouter, HTTPException, BackgroundTasks, UploadFile, File
+import io
+import re
+import pypdf
 from backend.schemas import CandidateCreate, CandidateCreateResponse, CandidateResponse, GraphViewResponse
 from backend.fakes import is_fake, fake_db, fake_ai
 import concurrent.futures
 
 router = APIRouter(prefix="/api/candidates", tags=["candidates"])
+
+@router.post("/parse-resume")
+async def parse_resume_file(file: UploadFile = File(...)):
+    filename = file.filename or "resume.txt"
+    content_bytes = await file.read()
+    text = ""
+    
+    if filename.lower().endswith(".pdf"):
+        try:
+            reader = pypdf.PdfReader(io.BytesIO(content_bytes))
+            text = "\n".join(page.extract_text() or "" for page in reader.pages)
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Failed to parse PDF resume: {str(e)}")
+    else:
+        try:
+            text = content_bytes.decode("utf-8")
+        except UnicodeDecodeError:
+            text = content_bytes.decode("latin-1", errors="ignore")
+            
+    if not text.strip():
+        raise HTTPException(status_code=400, detail="Uploaded file contains no readable text.")
+        
+    KNOWN_SKILLS = [
+        "python", "fastapi", "django", "flask", "sql", "sqlite", "postgresql", "mysql", "redis",
+        "docker", "kubernetes", "rest api", "graphql", "grpc", "distributed systems", "concurrency",
+        "asyncio", "javascript", "typescript", "react", "next.js", "vue", "node.js", "aws", "gcp",
+        "azure", "git", "ci/cd", "microservices", "kafka", "rabbitmq", "linux", "c++", "go", "rust",
+        "java", "spring boot", "system design", "html/css", "tailwind", "unit testing", "pytest"
+    ]
+    text_lower = text.lower()
+    detected_skills = []
+    for s in KNOWN_SKILLS:
+        pattern = rf"\b{re.escape(s)}\b" if len(s) <= 4 else re.escape(s)
+        if re.search(pattern, text_lower):
+            detected_skills.append(s)
+            
+    return {
+        "status": "ok",
+        "filename": filename,
+        "text": text.strip(),
+        "skills": detected_skills,
+        "char_count": len(text)
+    }
+
 
 @router.get("")
 @router.get("/", include_in_schema=False)

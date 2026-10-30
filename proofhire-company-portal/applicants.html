@@ -12,7 +12,7 @@
 <script src="js/portal.js"></script>
 <script>
 function flt(s){D.stf=D.stf===s?"":s;save();render()}
-boot("applicants",()=>{const all=D.apps.filter(a=>a.job==D.jobId),f=D.stf||"",l=all.filter(a=>!f||a.status===f);
+boot("applicants",()=>{const all=D.apps.filter(a=>!D.jobId||D.jobId==="all"||String(a.job)===String(D.jobId)),f=D.stf||"",l=all.filter(a=>!f||a.status===f);
 const S=[["New","#ff9a3d"],["Reviewed","#f5c542"],["Interview","#2f5bff"],["Shortlisted","#19c37d"],["Rejected","#ff5c7a"]];
 return `<div class="page">`+head("04","Applicants","Review everyone who applied to "+esc(jt(D.jobId))+". Click a status to filter the list.")+sec("Pipeline",f?`Filter: ${f}`:`${pad(all.length)} total ●`)+
 `<div class="cards">${S.map(([s,c])=>`<button class="sc ${f===s?"on":""}" style="--c:${c}" onclick="flt('${s}')"><i>↗</i><span>${s}</span><b>${all.filter(a=>a.status===s).length}</b><small>${f===s?"Click to clear":"Click to filter"}</small></button>`).join("")}</div>`+

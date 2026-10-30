@@ -113,9 +113,28 @@ def build_from_candidate(candidate: dict, job_skills: list[str] = None) -> nx.Di
                     g.add_node(skill_id, type="skill", label=skill, size=10)
                 g.add_edge(claim_id, skill_id, type="uses")
     elif candidate.get("linkedin_text"):
-        claim_id = f"claim:{cand_id}:linkedin"
-        g.add_node(claim_id, type="claim", label="LinkedIn summary", code=candidate["linkedin_text"], size=len(candidate["linkedin_text"]))
+        raw_text = candidate["linkedin_text"]
+        claim_id = f"claim:{cand_id}:summary"
+        g.add_node(claim_id, type="claim", label="Profile & Resume Claims", code=raw_text, size=len(raw_text))
         g.add_edge(cand_id, claim_id, type="claims")
+        
+        # Extract technical skills directly from profile/resume text
+        KNOWN_SKILLS = [
+            "python", "fastapi", "django", "flask", "sql", "sqlite", "postgresql", "mysql", "redis",
+            "docker", "kubernetes", "rest api", "graphql", "grpc", "distributed systems", "concurrency",
+            "asyncio", "javascript", "typescript", "react", "next.js", "vue", "node.js", "aws", "gcp",
+            "azure", "git", "ci/cd", "microservices", "kafka", "rabbitmq", "linux", "c++", "go", "rust",
+            "java", "spring boot", "system design", "html/css", "tailwind", "unit testing", "pytest"
+        ]
+        text_lower = raw_text.lower()
+        for s in KNOWN_SKILLS:
+            # Word-boundary check for short tokens
+            pattern = rf"\b{re.escape(s)}\b" if len(s) <= 4 else re.escape(s)
+            if re.search(pattern, text_lower):
+                skill_id = f"skill:{s}"
+                if skill_id not in g:
+                    g.add_node(skill_id, type="skill", label=s, size=10)
+                g.add_edge(claim_id, skill_id, type="uses")
     
     projects = candidate.get("projects", [])
     for proj in projects:

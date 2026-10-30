@@ -60,7 +60,7 @@ boot("jobs",()=>`<div class="page">`+head("03","Open roles","Choose a role to re
 `<div class="pn hide" id="jf"><div class="f2"><div><label for="j_t">Title</label><input id="j_t"></div><div><label for="j_c">Track</label><input id="j_c" value="Junior"></div></div><label for="j_d">Description</label><input id="j_d"><label for="j_s">Skills (comma separated)</label><input id="j_s"><p style="margin-top:18px"><button class="btn" onclick="addJob()">Publish job</button></p></div>`+
 sec("Active requisitions",`${pad(D.jobs.filter(j=>j.status==="Open").length)} open ●`)+
 D.jobs.map((j,i)=>`<section class="r click" data-open="role:${j.id}" tabindex="0"><div class="no">${pad(i+1)}</div><div><div class="mt">${esc(j.co)} / ${esc(j.track)} track · <span style="color:${j.status==="Open"?"var(--ok)":"var(--warn)"}">${j.status}</span></div><h3>${esc(j.title)}</h3><p>${esc(j.desc)}</p>${chips(j.skills)}</div>
-<div class="as"><small>Assessment</small><b>${esc(j.task)}</b><div class="m">${j.min} min · Code + Depth</div><button class="btn g" onclick="openRole(${j.id})">Open role ↗</button><button class="btn g s" onclick="flip(${i})">${j.status==="Open"?"Close":"Reopen"}</button><button class="btn d s" onclick="delJob(${j.id})">Delete</button></div></section>`).join("")+foot()+`</div>`);
+<div class="as"><small>Assessment</small><b>${esc(j.task)}</b><div class="m">${j.min} min · Code + Depth</div><button class="btn g" onclick="openRole('${j.id}')">Open role ↗</button><button class="btn g s" onclick="flip(${i})">${j.status==="Open"?"Close":"Reopen"}</button><button class="btn d s" onclick="delJob('${j.id}')">Delete</button></div></section>`).join("")+foot()+`</div>`);
 </script>
 </body>
 </html>

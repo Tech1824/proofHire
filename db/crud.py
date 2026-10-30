@@ -17,10 +17,13 @@ sqlite_url = f"sqlite:///{sqlite_file_name}"
 def _set_sqlite_pragma(dbapi_connection, connection_record):
     if isinstance(dbapi_connection, SQLite3Connection):
         cursor = dbapi_connection.cursor()
+        cursor.execute("PRAGMA journal_mode=WAL;")
+        cursor.execute("PRAGMA synchronous=NORMAL;")
+        cursor.execute("PRAGMA busy_timeout=15000;")
         cursor.execute("PRAGMA foreign_keys=ON;")
         cursor.close()
 
-engine = create_engine(sqlite_url)
+engine = create_engine(sqlite_url, connect_args={"timeout": 15, "check_same_thread": False})
 
 # Jobs
 def create_job(data: dict) -> dict:
@@ -108,6 +111,7 @@ def list_candidates(company_id: Optional[str] = None) -> list[dict]:
             cd = c.model_dump()
             prof = session.exec(select(Profile).where(Profile.candidate_id == c.candidate_id)).first()
             if prof:
+                cd["job_id"] = prof.job_id or cd.get("job_id") or "job_1"
                 cd["overall_score"] = prof.overall_score
                 cd["score"] = prof.overall_score
                 cd["confidence"] = prof.confidence
@@ -117,6 +121,14 @@ def list_candidates(company_id: Optional[str] = None) -> list[dict]:
                 cd["summary"] = prof.summary
                 cd["evidence"] = prof.evidence
             else:
+                if not cd.get("job_id"):
+                    sub = session.exec(select(Submission).where(Submission.candidate_id == c.candidate_id)).first()
+                    if sub:
+                        task = session.get(Task, sub.task_id)
+                        if task and task.job_id:
+                            cd["job_id"] = task.job_id
+                if not cd.get("job_id"):
+                    cd["job_id"] = "job_1"
                 cd["overall_score"] = 0
                 cd["score"] = 0
                 cd["confidence"] = 0.0

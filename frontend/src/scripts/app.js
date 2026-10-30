@@ -428,12 +428,36 @@ function renderCandidate() {
       }
     });
 
-    document.querySelector('#resume-upload')?.addEventListener('change', (event) => {
+    document.querySelector('#resume-upload')?.addEventListener('change', async (event) => {
       const file = event.target.files[0];
       if (!file) return;
-      const reader = new FileReader();
-      reader.onload = (e) => { document.querySelector('#resume-text').value = e.target.result; };
-      reader.readAsText(file);
+      const noteEl = document.querySelector('#resume-upload-status') || (() => {
+        const span = document.createElement('div');
+        span.id = 'resume-upload-status';
+        span.style.cssText = 'font-size: 11px; margin-top: 6px; font-weight: 500;';
+        event.target.parentNode.appendChild(span);
+        return span;
+      })();
+      noteEl.innerHTML = '<span style="color: var(--link);">⏳ Parsing resume and extracting skills...</span>';
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+        const res = await fetch('http://localhost:8000/api/candidates/parse-resume', {
+          method: 'POST',
+          body: formData
+        });
+        if (!res.ok) throw new Error('Failed to parse file');
+        const data = await res.json();
+        document.querySelector('#resume-text').value = data.text;
+        noteEl.innerHTML = `<span style="color: var(--verified);">✔ Parsed ${escapeHTML(data.filename)} (${data.skills.length} skills detected: ${data.skills.slice(0, 5).join(', ')}${data.skills.length > 5 ? '...' : ''})</span>`;
+      } catch (err) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          document.querySelector('#resume-text').value = e.target.result;
+          noteEl.innerHTML = '<span style="color: var(--muted);">Loaded text file locally</span>';
+        };
+        reader.readAsText(file);
+      }
     });
 
     document.querySelector('#candidate-form')?.addEventListener('submit', async (event) => {
@@ -646,7 +670,18 @@ async function renderTask() {
   document.querySelector('#reset-code-btn')?.addEventListener('click', () => {
     const editor = document.querySelector('#submission-code');
     if (editor && task?.starter_code) {
-      editor.value = task.starter_code;
+      if (confirm('Reset template to original starter code? Any unsaved edits will be lost.')) {
+        editor.value = task.starter_code;
+      }
+    }
+  });
+  document.querySelector('#submission-code')?.addEventListener('keydown', (e) => {
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      const start = e.target.selectionStart;
+      const end = e.target.selectionEnd;
+      e.target.value = e.target.value.substring(0, start) + '    ' + e.target.value.substring(end);
+      e.target.selectionStart = e.target.selectionEnd = start + 4;
     }
   });
 
@@ -850,6 +885,12 @@ async function renderDepth() {
     renderDepth();
   });
   document.querySelector('#answer-form')?.addEventListener('submit', sendAnswer);
+  document.querySelector('#candidate-answer')?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      document.querySelector('#answer-form')?.requestSubmit();
+    }
+  });
   document.querySelector('#start-voice-call')?.addEventListener('click', startVoiceCall);
   const confidenceLabel = document.querySelector('.confidence-block .metric-label');
   if (confidenceLabel && result) confidenceLabel.textContent = `${result.running.confidence >= 0.8 ? 'High' : result.running.confidence >= 0.55 ? 'Moderate' : 'Low'} confidence`;
@@ -901,7 +942,7 @@ async function startVoiceCall() {
       audioProcessor = audioContext.createScriptProcessor(4096, 1, 1);
       
       source.connect(audioProcessor);
-      audioProcessor.connect(audioContext.destination);
+      // audioProcessor.connect(audioContext.destination); // Removed to prevent microphone-to-speaker acoustic feedback loop
       
       audioProcessor.onaudioprocess = (e) => {
         if (!voiceSocket || voiceSocket.readyState !== WebSocket.OPEN) return;

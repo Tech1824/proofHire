@@ -215,6 +215,7 @@ function shell() {
       <span>${esc(jt(D.jobId))}</span>
       <span style="margin-left:14px;font-size:12px;color:var(--dim,#888);">Role Filter</span>
       <select id="role" aria-label="Role" onchange="D.jobId=this.value;save();render()">
+        <option value="all" ${D.jobId === "all" ? "selected" : ""}>All Roles (Global Pipeline)</option>
         ${D.jobs.map(j => `<option value="${j.id}" ${String(j.id) === String(D.jobId) ? "selected" : ""}>${esc(j.title)}</option>`).join("")}
       </select>
     </div>
@@ -327,6 +328,9 @@ function boot(page, fn) {
   }
   render();
   syncWithBackend();
+  if (!window._syncTimer) {
+    window._syncTimer = setInterval(syncWithBackend, 4000);
+  }
 }
 
 /* Clickable elements helper */
