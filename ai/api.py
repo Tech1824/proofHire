@@ -64,13 +64,12 @@ def get_graph_view(candidate_id: str) -> dict:
         
     return data
 
-def generate_task(job: dict) -> dict:
+def generate_task(job: dict, refresh: bool = False) -> dict:
     import ast
-    # A single "smart" call to generate a task
-    system = f"You are generating a software engineering task for a hackathon. Return a valid JSON object matching exactly this schema: {TaskSchema.schema_json()}"
+    system = f"You are generating a software engineering task for an engineering candidate. Return a valid JSON object matching exactly this schema: {TaskSchema.schema_json()}"
     user = f"Job title: {job.get('title')}\nRequired skills: {', '.join(job.get('required_skills', []))}\nDescription: {job.get('description')}"
-    # Force a unique cache key so it always generates a fresh task instead of returning the cached one
-    res = complete_json("smart", system, user, TaskSchema, cache_key_extra=str(time.time()))
+    cache_extra = f"task_{job.get('job_id', 'job_1')}_{time.time() if refresh else 'v1'}"
+    res = complete_json("fast", system, user, TaskSchema, cache_key_extra=cache_extra)
     
     # Ground truth validation: ensure Python starter code contains valid syntax
     if res.get("language", "").lower() == "python" and res.get("starter_code"):

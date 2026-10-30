@@ -26,6 +26,29 @@ def generate_task(req: TaskGenerateRequest):
         task = crud.create_task({"job_id": req.job_id, **task_data})
     return task
 
+@router.get("/for-job/{job_id}")
+def get_task_for_job(job_id: str):
+    if is_fake():
+        job = fake_db.get_job(job_id)
+        if not job:
+            raise HTTPException(status_code=404, detail="Job not found")
+        return {"job_id": job_id, "task_id": "task_1", "title": "Practical Assessment", "brief": "Challenge task", "requirements": ["Requirement 1"], "starter_code": "def solve():\n    pass", "rubric": []}
+    else:
+        from db import crud
+        from sqlmodel import select
+        from db.models import Task
+        with crud.Session(crud.engine) as session:
+            task = session.exec(select(Task).where(Task.job_id == job_id)).first()
+            if task:
+                return task.model_dump()
+                
+        job = crud.get_job(job_id)
+        if not job:
+            raise HTTPException(status_code=404, detail="Job not found")
+        from ai import api as ai_api
+        task_data = ai_api.generate_task(job)
+        return crud.create_task({"job_id": job_id, **task_data})
+
 @router.get("/{task_id}")
 def get_task(task_id: str):
     if is_fake():

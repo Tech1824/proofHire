@@ -1,3 +1,6 @@
+import os
+os.environ["LITELLM_LOCAL_MODEL_COST_MAP"] = "True"
+
 import hashlib
 import json
 import logging
@@ -8,12 +11,18 @@ try:
 except ImportError:
     from ai import fake_crud as crud
 
+import litellm
+litellm.telemetry = False
+litellm.suppress_debug_info = True
+litellm.drop_params = True
+litellm.set_verbose = False
+litellm.modify_params = False
+
 from litellm import Router
 from pydantic import BaseModel, ValidationError
 
 logger = logging.getLogger(__name__)
 
-import os
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -27,46 +36,21 @@ _omni_key = os.environ.get("OMNIROUTE_API_KEY")
 _omni_base = os.environ.get("OMNIROUTE_API_BASE", "https://api.omniroute.ai/v1")
 
 model_list = [
-    {"model_name": "fast",  "litellm_params": {"model": "gemini/gemini-3.5-flash", "api_key": _gemini_key}},
-    {"model_name": "smart", "litellm_params": {"model": "gemini/gemini-3.5-flash", "api_key": _gemini_key}},
-    {"model_name": "lite",  "litellm_params": {"model": "gemini/gemini-3.5-flash-lite", "api_key": _gemini_key}},
+    {"model_name": "fast",  "litellm_params": {"model": "gemini/gemini-3.5-flash-lite", "api_key": _gemini_key}},
+    {"model_name": "smart", "litellm_params": {"model": "gemini/gemini-flash-lite-latest", "api_key": _gemini_key}},
+    {"model_name": "heavy", "litellm_params": {"model": "gemini/gemini-3.5-flash-lite", "api_key": _gemini_key}},
+    {"model_name": "lite",  "litellm_params": {"model": "gemini/gemini-3.1-flash-lite", "api_key": _gemini_key}},
 ]
-
-# Configure heavy/evaluator frontier tier
-if _omni_key:
-    model_list.insert(0, {
-        "model_name": "heavy",
-        "litellm_params": {
-            "model": "openai/gpt-5.6-terra-medium",
-            "api_key": _omni_key,
-            "api_base": _omni_base
-        }
-    })
-elif _openai_key:
-    model_list.insert(0, {
-        "model_name": "heavy",
-        "litellm_params": {
-            "model": "openai/gpt-4o",
-            "api_key": _openai_key
-        }
-    })
-else:
-    model_list.insert(0, {
-        "model_name": "heavy",
-        "litellm_params": {
-            "model": "gemini/gemini-3.5-pro",
-            "api_key": _gemini_key
-        }
-    })
 
 router = Router(
     model_list=model_list,
     fallbacks=[
         {"heavy": ["smart", "fast", "lite"]},
         {"smart": ["fast", "lite"]},
-        {"fast": ["lite"]}
+        {"fast": ["smart", "lite"]}
     ],
-    num_retries=1, timeout=45,
+    num_retries=1,
+    timeout=10,
 )
 
 def _get_canned_reply(schema: Type[BaseModel]) -> dict:

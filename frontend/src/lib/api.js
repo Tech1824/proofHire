@@ -138,6 +138,11 @@ export function generateTask(jobId) {
 }
 
 // Retrieves a generated task.
+export function getTaskForJob(jobId) {
+  if (!usesMocks()) return request('/tasks/for-job/' + jobId);
+  return mock({ ...customTaskExample, job_id: jobId, task_id: 'task_1' });
+}
+
 export function getTask(taskId) {
   return usesMocks() ? mock({ ...customTaskExample, task_id: taskId }) : request(`/tasks/${taskId}`);
 }
