@@ -21,7 +21,7 @@ return `<div class="page">`+head("01","Dashboard","Hiring activity across your o
 ["shortlist.html",a.filter(x=>x.status==="Shortlisted").length,"Shortlisted","See the ranked shortlist","#ff3d9a"],
 ["graph.html",gdata().c.total,"Graph nodes","Explore the knowledge map","#06b6d4"]
 ].map(c=>`<a class="sc" href="${c[0]}" style="--c:${c[4]}"><i>↗</i><span>${c[2]}</span><b>${c[1]}</b><small>${c[3]}</small></a>`).join("")+`</div>`+
-sec("Latest applicants")+a.slice(-3).reverse().map((x,i)=>`<section class="r click" data-open="c:${x.id}" tabindex="0"><div class="no">${pad(i+1)}</div><div><div class="mt">${esc(jt(x.job))} / ${x.status}</div><h3>${esc(x.name)}</h3><p>${esc(x.summary)}</p>${chips(x.skills)}</div><div class="as"><small>Score</small><b>${x.score||"—"}</b><button class="btn g" onclick="openC(${x.id})">Open profile ↗</button></div></section>`).join("")+foot()+`</div>`});
+sec("Latest applicants")+a.slice(-3).reverse().map((x,i)=>`<section class="r click" data-open="c:${x.id}" tabindex="0"><div class="no">${pad(i+1)}</div><div><div class="mt">${esc(jt(x.job))} / ${x.status}</div><h3>${esc(x.name)}</h3><p>${esc(x.summary)}</p>${chips(x.skills)}</div><div class="as"><small>Score</small><b>${x.score||"—"}</b><button class="btn g" onclick="openC('${x.id}')">Open profile ↗</button></div></section>`).join("")+foot()+`</div>`});
 </script>
 </body>
 </html>

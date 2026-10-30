@@ -13,12 +13,56 @@ const state = {
   sessionId: localStorage.getItem('proofhire-session') || null, 
   turn: null, answerResult: null, chatHistory: [],
   candidate: JSON.parse(localStorage.getItem('proofhire-cand-data')) || null, 
+  user: JSON.parse(localStorage.getItem('proofhire-user')) || (localStorage.getItem('proofhire-cand') ? { id: localStorage.getItem('proofhire-cand'), name: 'Arjun Mehta', role: 'candidate' } : null),
   error: ''
 };
-const routes = [
-  ['jobs', '01', 'Jobs'], ['candidate', '02', state.candidateId ? 'Profile' : 'Intake'], ['task', '03', 'Task'],
-  ['depth', '04', 'Depth check'], ['shortlist', '05', 'Shortlist'], ['graph', '06', 'Graph']
-];
+
+function getRoutes() {
+  return [
+    ['jobs', '01', 'Jobs'], 
+    ['candidate', '02', state.candidateId ? 'Profile' : 'Sign In'], 
+    ['task', '03', 'Task'],
+    ['depth', '04', 'Depth check'], 
+    ['shortlist', '05', state.candidateId ? 'My Results' : 'Shortlist'], 
+    ['graph', '06', 'Graph']
+  ];
+}
+
+const routes = getRoutes();
+
+function setCandidateAuth(cand, user = null, subId = null, sessId = null) {
+  if (cand) {
+    state.candidateId = cand.candidate_id;
+    state.candidate = cand;
+    state.user = user || { id: cand.candidate_id, name: cand.name, email: cand.email, role: 'candidate' };
+    localStorage.setItem('proofhire-cand', cand.candidate_id);
+    localStorage.setItem('proofhire-cand-data', JSON.stringify(cand));
+    localStorage.setItem('proofhire-user', JSON.stringify(state.user));
+    if (subId) {
+      state.submissionId = subId;
+      localStorage.setItem('proofhire-sub', subId);
+    }
+    if (sessId) {
+      state.sessionId = sessId;
+      localStorage.setItem('proofhire-session', sessId);
+    }
+  } else {
+    state.candidateId = null;
+    state.candidate = null;
+    state.user = null;
+    state.submissionId = null;
+    state.sessionId = null;
+    state.turn = null;
+    state.answerResult = null;
+    state.chatHistory = [];
+    localStorage.removeItem('proofhire-cand');
+    localStorage.removeItem('proofhire-cand-data');
+    localStorage.removeItem('proofhire-user');
+    localStorage.removeItem('proofhire-sub');
+    localStorage.removeItem('proofhire-session');
+  }
+  renderRoute();
+}
 
 function showGlobalLoader(message = 'Processing...') {
   let overlay = document.querySelector('.global-loader-overlay');
@@ -58,28 +102,58 @@ function confidenceDescription(scorePercent) {
 function shell(content) {
   document.querySelector('meta[name="theme-color"]')?.setAttribute('content', document.documentElement.dataset.theme === 'dark' ? '#06070A' : '#F5F7FF');
   const active = state.route;
-  const pageLabel = routes.find(([key]) => key === active)?.[2] ?? 'Jobs';
+  const currentRoutes = getRoutes();
+  const pageLabel = currentRoutes.find(([key]) => key === active)?.[2] ?? 'Jobs';
   const selectedJob = state.jobs.find((job) => job.job_id === state.selectedJobId);
-  const workspaceRoutes = routes.filter(([key]) => ['jobs', 'candidate', 'shortlist'].includes(key));
-  const assessmentRoutes = routes.filter(([key]) => ['task', 'depth', 'graph'].includes(key));
-  const renderNavItem = ([key, number, label]) => `<a href="#${key}" class="nav-link ${active === key ? 'active' : ''}" title="${label}" data-tooltip="${label}"><span class="nav-icon" aria-hidden="true">${({ jobs: '▦', candidate: '＋', task: '≡', depth: '◉', shortlist: '☷', graph: '⌘' })[key]}</span><span class="nav-label">${label}</span></a>`;
-  const action = ({ jobs: ['#candidate', state.candidateId ? 'My Profile' : '+ Add candidate'], candidate: ['#jobs', 'View roles'], task: ['#depth', 'Depth check'], depth: ['#shortlist', 'Review shortlist'], shortlist: ['#candidate', 'Add candidate'], graph: ['#depth', 'Depth check'] })[active];
+  const workspaceRoutes = currentRoutes.filter(([key]) => ['jobs', 'candidate', 'shortlist'].includes(key));
+  const assessmentRoutes = currentRoutes.filter(([key]) => ['task', 'depth', 'graph'].includes(key));
+  const renderNavItem = ([key, number, label]) => `<a href="#${key}" class="nav-link ${active === key ? 'active' : ''}" title="${label}" data-tooltip="${label}"><span class="nav-icon" aria-hidden="true">${({ jobs: '▦', candidate: '👤', task: '≡', depth: '◉', shortlist: '★', graph: '⌘' })[key] || '●'}</span><span class="nav-label">${label}</span></a>`;
+  
+  const action = ({ 
+    jobs: ['#candidate', state.candidateId ? 'My Profile' : 'Sign In / Apply'], 
+    candidate: ['#task', 'Coding Task'], 
+    task: ['#depth', 'Depth Check'], 
+    depth: ['#shortlist', 'My Results'], 
+    shortlist: ['#graph', 'Explore Graph'], 
+    graph: ['#shortlist', 'My Results'] 
+  })[active] || ['#jobs', 'View Roles'];
+
+  const authWidget = state.candidateId && state.candidate ? `
+    <div class="user-pill">
+      <span style="color: var(--verified); font-size: 8px;">●</span>
+      <span style="color: var(--muted); font-size: 10px;">CANDIDATE:</span>
+      <strong style="color: var(--text);">${escapeHTML(state.candidate.name)}</strong>
+      <button id="switch-account-btn" style="background: var(--card); border: 1px solid var(--border); border-radius: 4px; color: var(--link); cursor: pointer; font-size: 10px; padding: 2px 6px; margin-left: 4px;">Sign Out</button>
+    </div>` : `
+    <a href="#candidate" class="button button-quiet" style="border: 1px solid var(--border); font-size: 11px; padding: 4px 10px;">🔑 Sign In / Register</a>`;
+
+  const recruiterWidget = `
+    <a href="http://localhost:8000/portal/dashboard.html" target="_blank" class="button button-quiet" style="border: 1px solid var(--border); font-size: 11px; padding: 4px 10px; display: inline-flex; align-items: center; gap: 5px; color: var(--text);" title="Access hiring manager pipeline, jobs, and evaluations">
+      🏢 Recruiter Portal ↗
+    </a>`;
+
   const collapsed = localStorage.getItem('proofhire-sidebar-collapsed') === 'true';
   app.innerHTML = `
     <div class="app-frame ${collapsed ? 'sidebar-collapsed' : ''}">
       <aside class="sidebar" aria-label="Workspace navigation">
         <div class="sidebar-brand-row"><a class="brand" href="#jobs" aria-label="ProofHire home"><img class="brand-symbol" src="/proofhire-logo.svg" alt="" aria-hidden="true"><span class="brand-name">PROOFHIRE</span></a><button class="sidebar-toggle" id="sidebar-toggle" type="button" aria-label="Collapse navigation" title="Collapse navigation">‹</button></div>
         <nav class="sidebar-nav" aria-label="Main navigation">
-          <div class="nav-group"><span class="nav-group-label">Workspace</span>${workspaceRoutes.map(renderNavItem).join('')}</div>
+          <div class="nav-group"><span class="nav-group-label">Candidate Desk</span>${workspaceRoutes.map(renderNavItem).join('')}</div>
           <div class="nav-group"><span class="nav-group-label">Assessment</span>${assessmentRoutes.map(renderNavItem).join('')}</div>
         </nav>
         <div class="sidebar-bottom"><span class="sidebar-system-label">SYSTEM MODE</span><button class="mode-switch" id="mode-switch" type="button" title="Switch between local mock data and the API"><i class="switch-dot"></i><span>${API.usesMocks() ? 'Demo mode' : 'Live API'}</span></button></div>
       </aside>
       <div class="workspace">
       <header class="topbar">
-        <div class="breadcrumb"><a href="#jobs">ProofHire</a><span aria-hidden="true">›</span><strong>${pageLabel}</strong>${selectedJob ? `<span aria-hidden="true">›</span><span class="breadcrumb-role">${escapeHTML(selectedJob.title)}</span>` : ''}</div>
+        <div class="breadcrumb"><a href="#jobs">ProofHire</a><span aria-hidden="true">›</span><span style="color: var(--muted); font-size: 11px;">Candidate Desk</span><span aria-hidden="true">›</span><strong>${pageLabel}</strong>${selectedJob ? `<span aria-hidden="true">›</span><span class="breadcrumb-role">${escapeHTML(selectedJob.title)}</span>` : ''}</div>
         <label class="role-switcher"><span>Role</span><select id="role-switcher" aria-label="Selected role">${state.jobs.map((job) => `<option value="${escapeHTML(job.job_id)}" ${job.job_id === state.selectedJobId ? 'selected' : ''}>${escapeHTML(job.title)}</option>`).join('')}</select></label>
-        <div class="topbar-right"><span class="mode-badge ${API.usesMocks() ? 'demo' : 'live'}"><i class="status-dot ${API.usesMocks() ? 'caution' : 'verified'}"></i>${API.usesMocks() ? 'Demo' : 'Live'}</span><button class="theme-toggle" id="theme-toggle" type="button" aria-label="Switch to ${document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'} theme" title="Switch to ${document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'} theme">${document.documentElement.dataset.theme === 'dark' ? '☀' : '☾'}</button><a class="button button-primary topbar-action" href="${action[0]}">${action[1]} <span aria-hidden="true">↗</span></a></div>
+        <div class="topbar-right">
+          ${authWidget}
+          ${recruiterWidget}
+          <span class="mode-badge ${API.usesMocks() ? 'demo' : 'live'}"><i class="status-dot ${API.usesMocks() ? 'caution' : 'verified'}"></i>${API.usesMocks() ? 'Demo' : 'Live'}</span>
+          <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Switch to ${document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'} theme" title="Switch to ${document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'} theme">${document.documentElement.dataset.theme === 'dark' ? '☀' : '☾'}</button>
+          <a class="button button-primary topbar-action" href="${action[0]}">${action[1]} <span aria-hidden="true">↗</span></a>
+        </div>
       </header>
       <main class="main-content">${content}</main>
       <footer class="app-footer"><span>PROOFHIRE <b id="app-version">${escapeHTML(state.health?.version ?? '0.1.0')}</b></span><span class="footer-center">UNDERSTANDING OVER POLISH</span><span class="health-line"><i class="status-dot ${statusClass(state.health?.status)}"></i>API ${escapeHTML(state.health?.status ?? 'checking')}</span></footer>
@@ -95,6 +169,11 @@ function shell(content) {
   });
   document.querySelector('#mode-switch')?.addEventListener('click', toggleMode);
   document.querySelector('#theme-toggle')?.addEventListener('click', toggleTheme);
+  document.querySelector('#switch-account-btn')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    setCandidateAuth(null);
+    location.hash = '#candidate';
+  });
   document.querySelector('#sidebar-toggle')?.addEventListener('click', () => {
     const isCollapsed = app.querySelector('.app-frame').classList.toggle('sidebar-collapsed');
     localStorage.setItem('proofhire-sidebar-collapsed', String(isCollapsed));
@@ -173,12 +252,12 @@ async function renderJobs() {
     const detail = await API.getJob(job.job_id);
     const metaHtml = [detail.company, detail.seniority + ' track', detail.salary, detail.location, detail.work_mode, detail.employment_type, detail.years_experience ? `${detail.years_experience}+ Yrs Exp` : null].filter(Boolean).map(item => escapeHTML(item)).join(' <span class="separator">/</span> ');
     const respHtml = (detail.responsibilities && detail.responsibilities.length) ? `<div style="margin-top: 12px; font-size: 13px; color: #94a3b8;"><strong>RESPONSIBILITIES:</strong><ul style="margin: 4px 0 0 16px; padding: 0;">${detail.responsibilities.map(r => `<li>${escapeHTML(r)}</li>`).join('')}</ul></div>` : '';
-    return `<article class="job-row"><div class="job-index">0${index + 1}</div><div class="job-main"><div class="job-company">${metaHtml}</div><h2>${escapeHTML(detail.title)}</h2><p>${escapeHTML(detail.description)}</p>${respHtml}<div class="skill-list" style="margin-top: 12px;">${detail.required_skills.map((skill) => `<span class="skill-tag">${escapeHTML(skill)}</span>`).join('')}</div></div><div class="job-metrics"><span class="metric-label">ASSESSMENT</span><strong>Technical Challenge</strong><span class="metric-meta">DYNAMIC TASK · CODE + DEPTH</span><button class="button button-outline open-job" data-job="${escapeHTML(detail.job_id)}">Open role <span>↗</span></button></div></article>`;
+    return `<article class="job-row"><div class="job-index">0${index + 1}</div><div class="job-main"><div class="job-company">${metaHtml}</div><h2>${escapeHTML(detail.title)}</h2><p>${escapeHTML(detail.description)}</p>${respHtml}<div class="skill-list" style="margin-top: 12px;">${detail.required_skills.map((skill) => `<span class="skill-tag">${escapeHTML(skill)}</span>`).join('')}</div></div><div class="job-metrics"><span class="metric-label">ASSESSMENT</span><strong>Technical Challenge</strong><span class="metric-meta">DYNAMIC TASK · CODE + DEPTH</span><button class="button button-primary open-job" data-job="${escapeHTML(detail.job_id)}">Apply / Start Challenge <span>↗</span></button></div></article>`;
   }));
-  shell(`${heading('01 / RECRUITER DESK', 'Open roles<span class="heading-dot">.</span>', 'Choose a role to review its practical assessment and evidence-backed shortlist.', '<a class="button button-primary" href="#candidate">＋ Candidate intake</a>')}
-    <div class="section-rail"><span>ACTIVE REQUISITIONS</span><span>${String(jobs.length).padStart(2, '0')} OPEN <i class="status-dot online"></i></span></div>
-    <section class="jobs-list">${cards.length ? cards.join('') : '<div class="empty-state">No roles yet. Add a role through the API to begin.</div>'}</section>
-    <section class="bottom-strip"><div class="strip-sign">↳</div><div><strong>THE SIGNAL IS IN THE EXPLANATION</strong><p>Every recommendation stays connected to what a candidate actually said.</p></div><a href="#shortlist" class="text-link">View shortlist <span>→</span></a></section>`);
+  shell(`${heading('01 / CANDIDATE DESK', 'Open Positions<span class="heading-dot">.</span>', 'Browse active requisitions, review verified technical requirements, and start your evidence-backed assessment.', '<a class="button button-primary" href="#candidate">' + (state.candidateId ? 'My Profile 👤' : 'Sign In / Apply ↗') + '</a>')}
+    <div class="section-rail"><span>ACTIVE POSITIONS</span><span>${String(jobs.length).padStart(2, '0')} OPEN REQUISITIONS <i class="status-dot online"></i></span></div>
+    <section class="jobs-list">${cards.length ? cards.join('') : '<div class="empty-state">No roles active right now.</div>'}</section>
+    <section class="bottom-strip"><div class="strip-sign">↳</div><div><strong>PROOF OF UNDERSTANDING OVER RÉSUMÉS</strong><p>Your actual code implementation and depth conversations become your verified hiring record.</p></div><a href="#shortlist" class="text-link">View My Results <span>→</span></a></section>`);
   document.querySelectorAll('.open-job').forEach((button) => button.addEventListener('click', () => {
     state.selectedJobId = button.dataset.job;
     localStorage.setItem('proofhire-job', state.selectedJobId);
@@ -186,24 +265,218 @@ async function renderJobs() {
   }));
 }
 
-// Draws a candidate profile form and stores submitted project files.
+// Draws candidate profile, 1-click demo switcher, and registration forms.
 function renderCandidate() {
   const isRegistered = Boolean(state.candidateId);
   const prior = state.candidate;
   const urlParams = new URLSearchParams(window.location.search);
   const githubToken = urlParams.get('github_token') || prior?.github_token || '';
-  
-  const headingTitle = isRegistered ? '02 / CANDIDATE PROFILE' : '02 / CANDIDATE REGISTRATION';
-  const headingSubtitle = isRegistered ? 'Your verified profile<span class="heading-dot">.</span>' : 'Show us the work<span class="heading-dot">.</span>';
-  const headingLead = isRegistered 
-    ? 'Update your details, adjust claimed experience, or fetch newly uploaded GitHub projects into your Knowledge Graph.'
-    : 'Create your candidate profile and project context. LinkedIn is pasted as text; nothing is scraped.';
 
-  shell(`${heading(headingTitle, headingSubtitle, headingLead)}
+  if (!isRegistered) {
+    // Candidate Desk Onboarding & Demo Sign In
+    shell(`${heading('02 / CANDIDATE DESK', 'Candidate Sign In & Registration<span class="heading-dot">.</span>', 'ProofHire verifies candidate capability through real project code and work-linked depth checks. Choose a demo profile or register to begin.')}
+      <div class="auth-tabs-nav">
+        <button class="auth-tab-btn active" id="tab-demo-btn" type="button">⚡ 1-Click Demo Profiles</button>
+        <button class="auth-tab-btn" id="tab-reg-btn" type="button">＋ Create Candidate Profile</button>
+      </div>
+
+      <div id="pane-demo">
+        <div style="margin-bottom: 14px; font-size: 13px; color: var(--muted);">Select a realistic pre-seeded candidate profile to inspect live evaluations, resume in-progress interviews, or review scoring evidence:</div>
+        <div class="demo-candidates-grid">
+          <div class="demo-cand-card">
+            <div>
+              <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+                <strong style="font-size: 15px; color: var(--text);">Arjun Mehta</strong>
+                <span style="font-size: 11px; padding: 2px 8px; border-radius: 4px; background: rgba(52, 216, 160, 0.15); color: var(--verified); font-weight: 600;">Rank #1 · 88/100</span>
+              </div>
+              <p style="font-size: 12px; color: var(--muted); margin: 0 0 12px 0;">Senior Fullstack & Distributed Systems. Completed challenge with 6 recruiter-verified evidence claims.</p>
+            </div>
+            <button class="button button-primary demo-login-btn" type="button" data-cand="cand_arjun" data-sub="sub_arjun_1" data-sess="sess_arjun_1" style="width: 100%;">Sign in as Arjun (Shortlisted) ↗</button>
+          </div>
+
+          <div class="demo-cand-card">
+            <div>
+              <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+                <strong style="font-size: 15px; color: var(--text);">Asha Rao</strong>
+                <span style="font-size: 11px; padding: 2px 8px; border-radius: 4px; background: rgba(61, 90, 254, 0.15); color: var(--primary); font-weight: 600;">Rank #2 · 72/100</span>
+              </div>
+              <p style="font-size: 12px; color: var(--muted); margin: 0 0 12px 0;">Backend Python Developer. Clean data structures, solid sliding window implementation with depth answers.</p>
+            </div>
+            <button class="button button-outline demo-login-btn" type="button" data-cand="cand_asha" data-sub="sub_asha_1" data-sess="sess_asha_1" style="width: 100%;">Sign in as Asha (Interview) ↗</button>
+          </div>
+
+          <div class="demo-cand-card">
+            <div>
+              <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+                <strong style="font-size: 15px; color: var(--text);">Rohan Verma</strong>
+                <span style="font-size: 11px; padding: 2px 8px; border-radius: 4px; background: rgba(255, 138, 30, 0.15); color: var(--amber); font-weight: 600;">In Progress (Turn 3/5)</span>
+              </div>
+              <p style="font-size: 12px; color: var(--muted); margin: 0 0 12px 0;">Junior Backend applicant. Has saved submission draft and 3 completed depth turns ready to resume.</p>
+            </div>
+            <button class="button button-outline demo-login-btn" type="button" data-cand="cand_rohan" data-sub="sub_rohan_1" data-sess="sess_rohan_1" style="width: 100%;">Resume as Rohan (In-Progress) ↗</button>
+          </div>
+
+          <div class="demo-cand-card">
+            <div>
+              <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+                <strong style="font-size: 15px; color: var(--text);">Ravi Kumar</strong>
+                <span style="font-size: 11px; padding: 2px 8px; border-radius: 4px; background: rgba(239, 68, 68, 0.15); color: #ef4444; font-weight: 600;">Score: 39/100 · Rejected</span>
+              </div>
+              <p style="font-size: 12px; color: var(--muted); margin: 0 0 12px 0;">Junior Applicant. Demonstrates how shallow buzzwords and misconceptions are flagged by rubric.</p>
+            </div>
+            <button class="button button-quiet demo-login-btn" type="button" data-cand="cand_ravi" data-sub="sub_ravi_1" data-sess="sess_ravi_1" style="width: 100%;">Sign in as Ravi (Flagged) ↗</button>
+          </div>
+        </div>
+
+        <div style="margin-top: 24px; padding: 18px; border: 1px solid var(--border); border-radius: 10px; background: var(--card);">
+          <form id="manual-login-form" style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+            <label style="font-size: 12px; color: var(--muted); font-weight: 600;">OR ENTER REGISTERED CANDIDATE EMAIL / ID:</label>
+            <input id="manual-login-input" placeholder="e.g. arjun.mehta@devmail.io or cand_arjun" style="flex: 1; min-width: 240px; padding: 8px 12px; border-radius: 6px; background: var(--raised); border: 1px solid var(--border); color: var(--text);" required>
+            <button class="button button-primary" type="submit">Sign In ↗</button>
+          </form>
+          <div id="manual-login-msg" style="margin-top: 8px; font-size: 12px;"></div>
+        </div>
+      </div>
+
+      <div id="pane-reg" style="display: none;">
+        <div class="form-layout"><form class="terminal-form" id="candidate-form">
+          <div class="form-topline"><span>NEW CANDIDATE REGISTRATION</span><span>01 — 02</span></div>
+          <label>FULL NAME<input name="name" required placeholder="Asha Rao"></label>
+          <div class="form-pair">
+            <label>EMAIL<input name="email" type="email" required placeholder="asha@example.com"></label>
+            <label>GITHUB URL <a href="http://localhost:8000/api/auth/github/login" style="font-size: 10px; margin-left: 8px; color: #3b82f6;">[Connect for Higher Limits]</a><input name="github_url" type="url" placeholder="https://github.com/username"><input type="hidden" name="github_token" value="${escapeHTML(githubToken)}"></label>
+          </div>
+          ${githubToken ? '<div style="color: #10b981; font-size: 11px; margin-bottom: 12px;">✓ GitHub Account Connected</div>' : ''}
+          <label>LINKEDIN OR RESUME PROFILE <span class="label-note">PASTE TEXT OR UPLOAD FILE</span>
+            <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+              <input type="file" id="resume-upload" accept=".txt,.md,.pdf" style="font-size: 11px;">
+            </div>
+            <textarea name="linkedin_text" id="resume-text" rows="4" placeholder="Paste profile summary or upload a text-based resume file..."></textarea>
+          </label>
+          <div class="field-divider"><span>PROJECT CONTEXT</span><span>02 — 02</span></div>
+          <div style="color: #64748b; font-size: 11px; padding: 12px 0;">Repositories and commits are parsed automatically into an interactive Knowledge Graph.</div>
+          <div class="form-actions">
+            <button class="button button-primary" type="submit">Register & Build Candidate Graph <span>↗</span></button>
+          </div>
+        </form>
+        <aside class="side-note">
+          <div class="side-note-index">CANDIDATE / NOTE 01</div>
+          <div class="note-glyph">⌁</div>
+          <h3>Work before words.</h3>
+          <p>Project code and profile claims become connected evidence for a focused, fair depth check.</p>
+          <div class="note-separator"></div>
+          <div class="mini-stat"><span>DATA HANDLING</span><b>LOCAL FIRST</b></div>
+        </aside>
+        </div>
+      </div>`);
+
+    const tabDemo = document.querySelector('#tab-demo-btn');
+    const tabReg = document.querySelector('#tab-reg-btn');
+    const paneDemo = document.querySelector('#pane-demo');
+    const paneReg = document.querySelector('#pane-reg');
+    tabDemo?.addEventListener('click', () => {
+      tabDemo.classList.add('active'); tabReg.classList.remove('active');
+      paneDemo.style.display = 'block'; paneReg.style.display = 'none';
+    });
+    tabReg?.addEventListener('click', () => {
+      tabReg.classList.add('active'); tabDemo.classList.remove('active');
+      paneReg.style.display = 'block'; paneDemo.style.display = 'none';
+    });
+
+    document.querySelectorAll('.demo-login-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const candId = btn.dataset.cand;
+        const subId = btn.dataset.sub;
+        const sessId = btn.dataset.sess;
+        btn.disabled = true;
+        btn.textContent = 'Logging in...';
+        try {
+          const res = await API.loginUser({ email: candId, role: 'candidate' });
+          if (res.candidate) {
+            setCandidateAuth(res.candidate, res.user, res.submission_id || subId, res.session_id || sessId);
+            location.hash = '#candidate';
+          }
+        } catch (err) {
+          btn.textContent = 'Sign in failed';
+          console.error(err);
+        }
+      });
+    });
+
+    document.querySelector('#manual-login-form')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const val = document.querySelector('#manual-login-input').value.trim();
+      const msg = document.querySelector('#manual-login-msg');
+      msg.textContent = 'Signing in...';
+      try {
+        const res = await API.loginUser({ email: val, role: 'candidate' });
+        if (res.candidate) {
+          setCandidateAuth(res.candidate, res.user, res.submission_id, res.session_id);
+          location.hash = '#candidate';
+        } else {
+          msg.textContent = 'Candidate not found. Please register or select a demo profile.';
+          msg.style.color = '#ef4444';
+        }
+      } catch (err) {
+        msg.textContent = err.message || 'Login failed';
+        msg.style.color = '#ef4444';
+      }
+    });
+
+    document.querySelector('#resume-upload')?.addEventListener('change', (event) => {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => { document.querySelector('#resume-text').value = e.target.result; };
+      reader.readAsText(file);
+    });
+
+    document.querySelector('#candidate-form')?.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const form = new FormData(event.currentTarget);
+      const button = event.currentTarget.querySelector('[type="submit"]');
+      button.disabled = true;
+      button.textContent = 'Building candidate graph...';
+      showGlobalLoader('Building Candidate Knowledge Graph...');
+      try {
+        const result = await API.createCandidate({
+          name: form.get('name'), email: form.get('email'), github_url: form.get('github_url'), github_token: form.get('github_token') || undefined, linkedin_text: form.get('linkedin_text'),
+          projects: []
+        });
+        const cand = await API.getCandidate(result.candidate_id);
+        setCandidateAuth(cand, { id: cand.candidate_id, name: cand.name, email: cand.email, role: 'candidate' });
+        location.hash = '#candidate';
+      } catch (err) {
+        showError(err);
+        button.disabled = false;
+        button.textContent = 'Retry Registration';
+      } finally {
+        hideGlobalLoader();
+      }
+    });
+
+    return;
+  }
+
+  // Registered / Logged In Candidate Profile
+  shell(`${heading('02 / CANDIDATE PROFILE', 'Your verified profile<span class="heading-dot">.</span>', 'Update your details, adjust claimed experience, or fetch newly uploaded GitHub projects into your Knowledge Graph.')}
+    <div style="margin-bottom: 20px; padding: 12px 18px; border: 1px solid var(--border); border-radius: 8px; background: var(--raised); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+      <div>
+        <span style="font-size: 11px; color: var(--muted); font-weight: 600;">ACTIVE CANDIDATE:</span> 
+        <strong style="font-size: 15px; color: var(--text);">${escapeHTML(prior?.name ?? '')}</strong> 
+        <code style="font-size: 11px; margin-left: 8px; padding: 2px 6px; border-radius: 4px; background: var(--card); border: 1px solid var(--border); color: var(--primary);">${escapeHTML(state.candidateId)}</code> 
+        <span style="font-size: 12px; color: var(--muted); margin-left: 10px;">${escapeHTML(prior?.email ?? '')}</span>
+      </div>
+      <button id="profile-logout-btn" class="button button-quiet" style="font-size: 11px; padding: 4px 10px;" type="button">Switch Account / Sign Out</button>
+    </div>
+
     <div class="form-layout"><form class="terminal-form" id="candidate-form">
-      <div class="form-topline"><span>${isRegistered ? 'REGISTERED PROFILE' : 'NEW CANDIDATE REGISTRATION'}</span><span>${isRegistered ? escapeHTML(state.candidateId) : '01 — 02'}</span></div>
+      <div class="form-topline"><span>REGISTERED CANDIDATE PROFILE</span><span>${escapeHTML(state.candidateId)}</span></div>
       <label>FULL NAME<input name="name" required placeholder="Asha Rao" value="${escapeHTML(prior?.name ?? '')}"></label>
-      <div class="form-pair"><label>EMAIL<input name="email" type="email" required placeholder="asha@example.com" value="${escapeHTML(prior?.email ?? '')}"></label><label>GITHUB URL <a href="http://localhost:8000/api/auth/github/login" style="font-size: 10px; margin-left: 8px; color: #3b82f6;">[Connect for Higher Limits]</a><input name="github_url" type="url" placeholder="https://github.com/username" value="${escapeHTML(prior?.github_url ?? '')}"><input type="hidden" name="github_token" value="${escapeHTML(githubToken)}"></label></div>
+      <div class="form-pair">
+        <label>EMAIL<input name="email" type="email" required placeholder="asha@example.com" value="${escapeHTML(prior?.email ?? '')}"></label>
+        <label>GITHUB URL <a href="http://localhost:8000/api/auth/github/login" style="font-size: 10px; margin-left: 8px; color: #3b82f6;">[Connect for Higher Limits]</a><input name="github_url" type="url" placeholder="https://github.com/username" value="${escapeHTML(prior?.github_url ?? '')}"><input type="hidden" name="github_token" value="${escapeHTML(githubToken)}"></label>
+      </div>
       ${githubToken ? '<div style="color: #10b981; font-size: 11px; margin-bottom: 12px;">✓ GitHub Account Connected</div>' : ''}
       <label>LINKEDIN OR RESUME PROFILE <span class="label-note">PASTE TEXT OR UPLOAD FILE</span>
         <div style="display: flex; gap: 8px; margin-bottom: 8px;">
@@ -212,24 +485,45 @@ function renderCandidate() {
         <textarea name="linkedin_text" id="resume-text" rows="4" placeholder="Paste profile summary or upload a text-based resume file...">${escapeHTML(prior?.linkedin_text ?? '')}</textarea>
       </label>
       <div class="field-divider"><span>PROJECT CONTEXT</span><span>02 — 02</span></div>
-      <div style="color: #64748b; font-size: 11px; padding: 12px 0;">GitHub handles the rest. Repositories and commits are parsed into a live Knowledge Graph.</div>
+      <div style="color: #64748b; font-size: 11px; padding: 12px 0;">Repositories and commits are parsed automatically into an interactive Knowledge Graph.</div>
       <div class="form-actions" style="display: flex; gap: 12px; flex-wrap: wrap;">
-        <button class="button button-primary" type="submit">${isRegistered ? 'Update Details <span>✔</span>' : 'Build candidate graph <span>↗</span>'}</button>
-        ${isRegistered ? '<button class="button button-outline" id="resync-github-btn" type="button">🔄 Fetch & Re-sync GitHub Projects</button>' : ''}
+        <button class="button button-primary" type="submit">Update Details <span>✔</span></button>
+        <button class="button button-outline" id="resync-github-btn" type="button">🔄 Fetch & Re-sync GitHub Projects</button>
       </div>
-    </form><aside class="side-note"><div class="side-note-index">PROFILE / NOTE 01</div><div class="note-glyph">⌁</div><h3>Work before words.</h3><p>Project code and profile claims become connected evidence for a focused, fair depth check.</p><div class="note-separator"></div><div class="mini-stat"><span>DATA HANDLING</span><b>LOCAL FIRST</b></div><div class="mini-stat"><span>GRAPH STATUS</span><b>${escapeHTML(prior?.graph_status ?? 'NOT BUILT')}</b></div><div id="candidate-result">${isRegistered && prior?.graph_summary ? `<div class="result-callout"><i class="status-dot online"></i><strong>GRAPH ACTIVE</strong><span>${prior.graph_summary.nodes ?? 0} nodes · ${prior.graph_summary.edges ?? 0} edges</span><a href="#graph" style="margin-left: 8px;">View graph →</a></div>` : ''}</div></aside></div>`);
+    </form>
+    <aside class="side-note">
+      <div class="side-note-index">PROFILE / NOTE 01</div>
+      <div class="note-glyph">⌁</div>
+      <h3>Work before words.</h3>
+      <p>Project code and profile claims become connected evidence for a focused, fair depth check.</p>
+      <div class="note-separator"></div>
+      <div class="mini-stat"><span>DATA HANDLING</span><b>LOCAL FIRST</b></div>
+      <div class="mini-stat"><span>GRAPH STATUS</span><b>${escapeHTML(prior?.graph_status ?? 'NOT BUILT')}</b></div>
+      <div id="candidate-result">${prior?.graph_summary ? `<div class="result-callout"><i class="status-dot online"></i><strong>GRAPH ACTIVE</strong><span>${prior.graph_summary.nodes ?? 0} nodes · ${prior.graph_summary.edges ?? 0} edges</span><a href="#graph" style="margin-left: 8px;">View graph →</a></div>` : ''}</div>
+      <div style="margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--border);">
+        <span style="font-size: 10px; color: var(--muted); font-weight: 600; letter-spacing: 0.05em; display: block; margin-bottom: 8px;">QUICK ASSESSMENT LINKS</span>
+        <div style="display: flex; flex-direction: column; gap: 6px;">
+          <a href="#task" class="text-link" style="font-size: 12px;">→ 03 / Practical Coding Task</a>
+          <a href="#depth" class="text-link" style="font-size: 12px;">→ 04 / AI Depth Check Interview</a>
+          <a href="#shortlist" class="text-link" style="font-size: 12px;">→ 05 / My Evaluation & Results</a>
+        </div>
+      </div>
+    </aside>
+    </div>`);
+
+  document.querySelector('#profile-logout-btn')?.addEventListener('click', () => {
+    setCandidateAuth(null);
+    location.hash = '#candidate';
+  });
 
   document.querySelector('#resume-upload')?.addEventListener('change', (event) => {
     const file = event.target.files[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = (e) => {
-      document.querySelector('#resume-text').value = e.target.result;
-    };
+    reader.onload = (e) => { document.querySelector('#resume-text').value = e.target.result; };
     reader.readAsText(file);
   });
 
-  // Re-sync GitHub Projects Handler
   document.querySelector('#resync-github-btn')?.addEventListener('click', async (e) => {
     e.preventDefault();
     const resyncBtn = e.currentTarget;
@@ -238,7 +532,7 @@ function renderCandidate() {
     const form = document.querySelector('#candidate-form');
     const githubUrl = form.querySelector('[name="github_url"]').value;
     const resultDiv = document.querySelector('#candidate-result');
-    resultDiv.innerHTML = `<div class="result-callout" style="border-color: #3b82f6;"><i class="status-dot online" style="background: #3b82f6;"></i><strong style="color: #3b82f6;">FETCHING NEW REPOSITORIES & REBUILDING GRAPH...</strong><span>Connecting to GitHub API to ingest newly uploaded projects...</span><div style="margin-top: 12px; height: 4px; width: 100%; background: #1e293b; border-radius: 4px; overflow: hidden;"><div style="height: 100%; width: 50%; background: #3b82f6; animation: progress-indeterminate 1.5s infinite ease-in-out;"></div></div></div>`;
+    resultDiv.innerHTML = `<div class="result-callout" style="border-color: #3b82f6;"><i class="status-dot online" style="background: #3b82f6;"></i><strong style="color: #3b82f6;">FETCHING NEW REPOSITORIES & REBUILDING GRAPH...</strong><span>Connecting to GitHub API to ingest newly uploaded projects...</span></div>`;
 
     try {
       await API.resyncCandidateGithub(state.candidateId, { github_url: githubUrl });
@@ -259,71 +553,28 @@ function renderCandidate() {
     }
   });
 
-  document.querySelector('#candidate-form').addEventListener('submit', async (event) => {
+  document.querySelector('#candidate-form')?.addEventListener('submit', async (event) => {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
     const button = event.currentTarget.querySelector('[type="submit"]');
     button.disabled = true;
-    
-    if (isRegistered) {
-      button.textContent = 'Updating...';
-      try {
-        const updated = await API.updateCandidate(state.candidateId, {
-          name: form.get('name'),
-          email: form.get('email'),
-          github_url: form.get('github_url'),
-          linkedin_text: form.get('linkedin_text')
-        });
-        state.candidate = { ...state.candidate, ...updated };
-        localStorage.setItem('proofhire-cand-data', JSON.stringify(state.candidate));
-        button.disabled = false;
-        button.textContent = 'Updated Successfully! ✔';
-        setTimeout(() => { button.textContent = 'Update Details ✔'; }, 2000);
-      } catch (err) {
-        showError(err);
-        button.disabled = false;
-        button.textContent = 'Retry Update';
-      }
-      return;
-    }
-
-    button.textContent = 'Building graph...';
-    showGlobalLoader('Building Candidate Graph...');
+    button.textContent = 'Updating...';
     try {
-      const result = await API.createCandidate({
-        name: form.get('name'), email: form.get('email'), github_url: form.get('github_url'), github_token: form.get('github_token') || undefined, linkedin_text: form.get('linkedin_text'),
-        projects: []
+      const updated = await API.updateCandidate(state.candidateId, {
+        name: form.get('name'),
+        email: form.get('email'),
+        github_url: form.get('github_url'),
+        linkedin_text: form.get('linkedin_text')
       });
-      state.candidateId = result.candidate_id;
-      localStorage.setItem('proofhire-cand', state.candidateId);
-      
-      let candidate = await API.getCandidate(result.candidate_id);
-      
-      if (candidate.graph_status === 'processing' || candidate.graph_status === 'pending') {
-        document.querySelector('#candidate-result').innerHTML = `<div class="result-callout" style="border-color: #3b82f6;"><i class="status-dot online" style="background: #3b82f6;"></i><strong style="color: #3b82f6;">FETCHING REPOSITORIES & BUILDING GRAPH...</strong><span>This usually takes 15-30 seconds depending on the codebase size. Please wait...</span><div style="margin-top: 12px; height: 4px; width: 100%; background: #1e293b; border-radius: 4px; overflow: hidden;"><div style="height: 100%; width: 50%; background: #3b82f6; animation: progress-indeterminate 1.5s infinite ease-in-out;"></div></div></div>`;
-        while (candidate.graph_status === 'processing' || candidate.graph_status === 'pending') {
-          await new Promise(resolve => setTimeout(resolve, 3000));
-          candidate = await API.getCandidate(result.candidate_id);
-        }
-      }
-      
-      state.candidate = candidate;
+      state.candidate = { ...state.candidate, ...updated };
       localStorage.setItem('proofhire-cand-data', JSON.stringify(state.candidate));
-      
-      if (candidate.graph_status === 'failed') {
-          document.querySelector('#candidate-result').innerHTML = `<div class="result-callout" style="border-color: #ef4444;"><strong style="color: #ef4444;">INGESTION FAILED</strong><span>Check backend logs.</span></div>`;
-          button.disabled = false;
-          button.textContent = 'Retry Build';
-      } else {
-          document.querySelector('#candidate-result').innerHTML = `<div class="result-callout"><i class="status-dot online"></i><strong>GRAPH READY</strong><span>${candidate.graph_summary?.nodes ?? '?'} nodes · ${candidate.graph_summary?.edges ?? '?'} edges</span><a href="#graph">Inspect graph →</a></div>`;
-          location.hash = '#graph';
-      }
-    } catch (error) {
-      showError(error);
       button.disabled = false;
-      button.textContent = 'Build candidate graph ↗';
-    } finally {
-      hideGlobalLoader();
+      button.textContent = 'Updated Successfully! ✔';
+      setTimeout(() => { button.textContent = 'Update Details ✔'; }, 2000);
+    } catch (err) {
+      showError(err);
+      button.disabled = false;
+      button.textContent = 'Retry Update';
     }
   });
 }
@@ -609,11 +860,128 @@ async function sendAnswer(event) {
   finally { hideGlobalLoader(); }
 }
 
-// Loads and draws candidates with expandable evidence on the shortlist.
+// Loads and draws candidate's personal evaluation and the recruiter comparative shortlist.
 async function renderShortlist() {
-  const [job, list] = await Promise.all([API.getJob(state.selectedJobId), API.getShortlist(state.selectedJobId)]);
+  const [job, list, myEval] = await Promise.all([
+    API.getJob(state.selectedJobId),
+    API.getShortlist(state.selectedJobId),
+    state.candidateId ? API.getCandidateEvaluation(state.candidateId, state.selectedJobId).catch(() => null) : Promise.resolve(null)
+  ]);
+
+  const candidatesList = list?.candidates || [];
   
-  const cards = list.candidates.map((candidate) => `<article class="candidate-row" data-candidate-id="${escapeHTML(candidate.candidate_id)}"><div class="rank-cell"><span>RANK</span><strong>#${candidate.rank}</strong></div><div class="candidate-overview"><div class="candidate-name-row"><h2>${escapeHTML(candidate.name)}</h2><span class="recommendation rec-${escapeHTML(candidate.recommendation)}">${escapeHTML(candidate.recommendation.replaceAll('_', ' '))}</span></div><div class="score-track"><i style="width:${candidate.overall_score}%"></i></div><div class="candidate-meta"><span>${candidate.overall_score}<small> / 100</small></span><span>${Math.round(candidate.confidence * 100)}% confidence</span><span>${escapeHTML(candidate.candidate_id)}</span></div>
+  // Render Candidate Personal Evaluation Scorecard if available
+  let myScorecardHtml = '';
+  if (myEval?.profile) {
+    const prof = myEval.profile;
+    const myEvList = prof.evidence || [];
+    const mySkillProf = prof.skill_profile || prof.dims || {};
+    const confirmedCount = myEvList.filter(e => e.recruiter_confirmed).length;
+
+    myScorecardHtml = `
+      <section class="evaluation-banner" style="border: 2px solid var(--border); background: var(--card); border-radius: 12px; padding: 22px; margin-bottom: 24px;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 14px; margin-bottom: 16px;">
+          <div>
+            <div style="font-size: 11px; color: var(--muted); font-weight: 600; letter-spacing: 0.05em;">YOUR VERIFIED EVALUATION SCORECARD</div>
+            <h2 style="margin: 4px 0; font-size: 22px; color: var(--text);">${escapeHTML(myEval.candidate?.name || state.candidate?.name)}</h2>
+            <div style="font-size: 13px; color: var(--muted);">${escapeHTML(job.title)} · ${escapeHTML(job.company)}</div>
+          </div>
+          <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+            <div style="text-align: right;">
+              <span style="font-size: 11px; color: var(--muted); display: block;">OVERALL SCORE</span>
+              <strong style="font-size: 24px; color: var(--verified);">${prof.overall_score || 0}<small style="font-size: 14px; color: var(--muted);">/100</small></strong>
+            </div>
+            <div style="text-align: right; padding-left: 12px; border-left: 1px solid var(--border);">
+              <span style="font-size: 11px; color: var(--muted); display: block;">RANK</span>
+              <strong style="font-size: 24px; color: var(--primary);">#${myEval.rank || 1}</strong>
+            </div>
+            <div style="text-align: right; padding-left: 12px; border-left: 1px solid var(--border);">
+              <span style="font-size: 11px; color: var(--muted); display: block;">STATUS</span>
+              <span class="recommendation rec-${escapeHTML(prof.recommendation || 'reviewed')}" style="font-size: 12px; margin-top: 4px; display: inline-block;">${escapeHTML((prof.recommendation || 'reviewed').replaceAll('_', ' '))}</span>
+            </div>
+          </div>
+        </div>
+
+        <div style="padding: 10px 14px; background: rgba(52, 216, 160, 0.1); border: 1px solid var(--verified); border-radius: 8px; margin-bottom: 16px; font-size: 12px; color: var(--verified); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+          <span>✔ <strong>Human Recruiter Audit:</strong> ${confirmedCount} of ${myEvList.length} evidence claims verified by hiring recruiter.</span>
+          <span style="font-size: 11px; color: var(--text);">${Math.round((prof.confidence || 0.85) * 100)}% evaluation confidence</span>
+        </div>
+
+        <p style="font-size: 13px; color: var(--text); line-height: 1.6; margin-bottom: 16px;">${escapeHTML(prof.summary || 'Assessment record complete.')}</p>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-bottom: 18px;">
+          <div style="padding: 14px; border: 1px solid var(--border); border-radius: 8px; background: var(--raised);">
+            <span class="metric-label" style="margin-bottom: 8px; display: block;">KEY STRENGTHS</span>
+            <ul style="margin: 0; padding-left: 18px; font-size: 12px; color: var(--text); line-height: 1.6;">
+              ${(prof.strengths || []).map(s => `<li>${escapeHTML(s)}</li>`).join('') || '<li>Consistent architectural clarity.</li>'}
+            </ul>
+          </div>
+          <div style="padding: 14px; border: 1px solid var(--border); border-radius: 8px; background: var(--raised);">
+            <span class="metric-label" style="margin-bottom: 8px; display: block;">SKILL PROFILE BREAKDOWN</span>
+            ${Object.entries(mySkillProf).map(([skill, val]) => `
+              <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px;">
+                <span style="color: var(--muted); text-transform: capitalize;">${escapeHTML(skill)}</span>
+                <b>${Number(val).toFixed(1)} / 5.0</b>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+
+        <details class="evidence-details" style="margin-top: 12px;" open>
+          <summary><span>Verified Depth Evidence Trail</span><span>${myEvList.length} SKILLS VERIFIED <b>＋</b></span></summary>
+          <div class="evidence-list" style="margin-top: 14px;">
+            ${myEvList.map(item => `
+              <div class="evidence-card" style="margin-bottom: 12px; padding: 12px 14px; border: 1px solid var(--border); border-radius: 8px; background: var(--raised);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                  <strong style="color: var(--primary); font-size: 13px;">${escapeHTML(item.skill_name || 'Technical Reasoning')}</strong>
+                  <span style="font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 4px; background: var(--verified-bg); color: var(--verified);">TURN ${String(item.turn_number).padStart(2, '0')} · SCORE: ${item.score}/5</span>
+                </div>
+                <div style="margin: 6px 0; font-size: 12px;"><b style="color: var(--primary);">Interviewer Question:</b> ${escapeHTML(item.question || 'Grounded question')}</div>
+                <div style="margin: 6px 0; font-size: 12px;"><b style="color: var(--link);">Your Answer Quote:</b> <blockquote style="margin: 4px 0; padding: 6px 10px; border-left: 2px solid var(--link); font-style: italic; font-size: 11px; background: rgba(59, 130, 246, 0.05);">“${escapeHTML(item.quote || item.candidate_answer)}”</blockquote></div>
+                <div style="font-size: 11px; color: var(--muted); margin-top: 6px;"><b>Rubric Analysis:</b> ${escapeHTML(item.reasoning || 'Evaluated against verified criteria.')}</div>
+                <div style="margin-top: 6px; font-size: 11px; color: var(--verified); font-weight: 600;">${item.recruiter_confirmed ? '✔ Recruiter Confirmed' : 'Pending Confirmation'}</div>
+              </div>
+            `).join('')}
+          </div>
+        </details>
+      </section>
+    `;
+  } else if (state.candidateId) {
+    myScorecardHtml = `
+      <div style="margin-bottom: 24px; padding: 18px; border: 1px solid var(--border); border-radius: 10px; background: var(--card);">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+          <div>
+            <strong style="color: var(--text); font-size: 15px;">Assessment In Progress</strong>
+            <p style="margin: 4px 0 0 0; font-size: 12px; color: var(--muted);">You have not finished the full assessment for this role yet. Complete the coding task and depth check to view your scorecard.</p>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <a href="#task" class="button button-outline" style="font-size: 12px;">Coding Task ↗</a>
+            <a href="#depth" class="button button-primary" style="font-size: 12px;">Depth Check ↗</a>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  // Recruiter Portal Link Box
+  const recruiterNotice = `
+    <div style="margin: 20px 0; padding: 16px 20px; border: 1px dashed var(--border); border-radius: 10px; background: var(--raised); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+      <div>
+        <strong style="color: var(--primary); font-size: 14px;">🏢 Hiring Managers & Recruiters</strong>
+        <p style="margin: 4px 0 0 0; font-size: 12px; color: var(--muted);">Manage job requisitions, view company applicant pipelines, update candidate stages, and run side-by-side matrices in the dedicated portal.</p>
+      </div>
+      <a href="http://localhost:8000/portal/dashboard.html" target="_blank" class="button button-primary" style="font-size: 12px; padding: 6px 14px;">Open Recruiter Portal ↗</a>
+    </div>
+  `;
+
+  // Candidate cards for all candidates view
+  const cards = candidatesList.map((candidate) => {
+    const evList = candidate.evidence || [];
+    const skillProf = candidate.skill_profile || candidate.dims || {};
+    const strengths = candidate.strengths || [];
+    const concerns = candidate.concerns || [];
+    
+    return `<article class="candidate-row" data-candidate-id="${escapeHTML(candidate.candidate_id)}"><div class="rank-cell"><span>RANK</span><strong>#${candidate.rank || '-'}</strong></div><div class="candidate-overview"><div class="candidate-name-row"><h2>${escapeHTML(candidate.name)}</h2><span class="recommendation rec-${escapeHTML(candidate.recommendation || 'reviewed')}">${escapeHTML((candidate.recommendation || 'reviewed').replaceAll('_', ' '))}</span></div><div class="score-track"><i style="width:${candidate.overall_score || 0}%"></i></div><div class="candidate-meta"><span>${candidate.overall_score || 0}<small> / 100</small></span><span>${Math.round((candidate.confidence || 0.8) * 100)}% confidence</span><span>${escapeHTML(candidate.candidate_id)}</span></div>
   
   <div class="pipeline-actions" style="margin: 10px 0; display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
     <span style="font-size: 11px; color: var(--muted); font-weight: 600;">STAGE:</span>
@@ -623,7 +991,7 @@ async function renderShortlist() {
     <button class="button button-quiet status-btn" style="padding: 3px 8px; font-size: 11px;" data-cand="${escapeHTML(candidate.candidate_id)}" data-status="Rejected">✕ Reject</button>
   </div>
 
-  <p class="candidate-summary">${escapeHTML(candidate.summary)}</p><div class="strength-concerns"><div><span class="list-label">STRENGTH SIGNAL</span><p>${escapeHTML(candidate.strengths[0] ?? 'No strengths recorded')}</p></div><div><span class="list-label">OPEN QUESTION</span><p>${escapeHTML(candidate.concerns[0] ?? 'No concerns recorded')}</p></div></div><details class="evidence-details"><summary><span>Evidence Trail & Transparent Scorecard</span><span>${candidate.evidence.length} SKILLS VERIFIED <b>＋</b></span></summary><div class="evidence-list">${candidate.evidence.map((item) => `
+  <p class="candidate-summary">${escapeHTML(candidate.summary || 'Candidate assessment record active.')}</p><div class="strength-concerns"><div><span class="list-label">STRENGTH SIGNAL</span><p>${escapeHTML(strengths[0] ?? 'Consistently grounded code explanations.')}</p></div><div><span class="list-label">OPEN QUESTION</span><p>${escapeHTML(concerns[0] ?? 'No critical flags raised.')}</p></div></div><details class="evidence-details"><summary><span>Evidence Trail & Transparent Scorecard</span><span>${evList.length} SKILLS VERIFIED <b>＋</b></span></summary><div class="evidence-list">${evList.map((item) => `
     <div class="evidence-card" style="margin-bottom: 14px; padding: 14px; border: 1px solid var(--border); border-radius: 8px; background: var(--raised);">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
         <strong style="color: var(--primary); font-size: 13px;">${escapeHTML(item.skill_name || 'Technical Skill')}</strong>
@@ -652,10 +1020,11 @@ async function renderShortlist() {
           ${item.recruiter_confirmed ? '✔ Confirmed' : 'Confirm Evaluation ✔'}
         </button>
       </div>
-    </div>`).join('')}</div></details></div><div class="candidate-profile"><span class="metric-label">SKILL PROFILE</span>${Object.entries(candidate.skill_profile).map(([skill, value]) => `<div class="profile-row"><span>${escapeHTML(skill)}</span><b>${Number(value).toFixed(1)}</b></div>`).join('')}</div></article>`);
+    </div>`).join('')}</div></details></div><div class="candidate-profile"><span class="metric-label">SKILL PROFILE</span>${Object.entries(skillProf).map(([skill, value]) => `<div class="profile-row"><span>${escapeHTML(skill)}</span><b>${Number(value).toFixed(1)}</b></div>`).join('')}</div></article>`;
+  });
 
-  const candOptions = list.candidates.map((c, i) => `<option value="${i}">${escapeHTML(c.name)} (#${c.rank} · ${c.overall_score}/100)</option>`).join('');
-  const compareTool = list.candidates.length >= 2 ? `
+  const candOptions = candidatesList.map((c, i) => `<option value="${i}">${escapeHTML(c.name)} (#${c.rank || i+1} · ${c.overall_score || 0}/100)</option>`).join('');
+  const compareTool = candidatesList.length >= 2 ? `
     <details class="compare-details" style="margin: 20px 0; padding: 18px; border: 1px solid var(--border); border-radius: 12px; background: var(--raised);">
       <summary style="cursor: pointer; font-weight: 600; color: var(--link); display: flex; justify-content: space-between; align-items: center;">
         <span>⚖️ SIDE-BY-SIDE CANDIDATE COMPARISON MATRIX</span>
@@ -664,17 +1033,27 @@ async function renderShortlist() {
       <div style="margin-top: 18px;">
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
           <div><label style="font-size: 11px; color: var(--muted); display: block; margin-bottom: 6px;">CANDIDATE 1</label><select id="cmp-1" style="width: 100%; padding: 8px; border-radius: 6px; background: var(--card); border: 1px solid var(--border); color: var(--text);">${candOptions}</select></div>
-          <div><label style="font-size: 11px; color: var(--muted); display: block; margin-bottom: 6px;">CANDIDATE 2</label><select id="cmp-2" style="width: 100%; padding: 8px; border-radius: 6px; background: var(--card); border: 1px solid var(--border); color: var(--text);">${list.candidates.map((c, i) => `<option value="${i}" ${i === 1 ? 'selected' : ''}>${escapeHTML(c.name)} (#${c.rank} · ${c.overall_score}/100)</option>`).join('')}</select></div>
+          <div><label style="font-size: 11px; color: var(--muted); display: block; margin-bottom: 6px;">CANDIDATE 2</label><select id="cmp-2" style="width: 100%; padding: 8px; border-radius: 6px; background: var(--card); border: 1px solid var(--border); color: var(--text);">${candidatesList.map((c, i) => `<option value="${i}" ${i === 1 ? 'selected' : ''}>${escapeHTML(c.name)} (#${c.rank || i+1} · ${c.overall_score || 0}/100)</option>`).join('')}</select></div>
         </div>
         <div id="compare-matrix"></div>
       </div>
     </details>` : '';
 
-  shell(`${heading('05 / EVIDENCE REVIEW', 'Shortlist<span class="heading-dot">.</span>', `${escapeHTML(job.title)} / ${escapeHTML(job.company)} · Ranked by evidence, not resume polish.`, '<span class="review-stamp"><i class="status-dot online"></i> HUMAN REVIEW</span>')}
-    ${compareTool}
-    <div class="section-rail"><span>RANKED CANDIDATES</span><span>UPDATED ${new Date(list.generated_at).toLocaleDateString('en-US', { month: 'short', day: '2-digit' }).toUpperCase()}</span></div>
-    <section class="shortlist-list">${cards.length ? cards.join('') : '<div class="empty-state">No completed depth checks yet. Finish a session to include a candidate here.</div>'}</section>
-    <div class="shortlist-footnote"><span>↳</span><p>Scores are computed from individual answer evaluations. Every claim above links to a candidate quote. Final hiring decisions remain human.</p></div>`);
+  shell(`${heading(state.candidateId ? '05 / RESULTS' : '05 / EVIDENCE REVIEW', state.candidateId ? 'My Results<span class="heading-dot">.</span>' : 'Shortlist<span class="heading-dot">.</span>', `${escapeHTML(job.title)} / ${escapeHTML(job.company)} · Ranked by evidence, not resume polish.`, '<span class="review-stamp"><i class="status-dot online"></i> HUMAN REVIEW</span>')}
+    ${myScorecardHtml}
+    ${recruiterNotice}
+    <details class="all-applicants-details" ${state.candidateId ? '' : 'open'} style="margin-top: 16px;">
+      <summary style="cursor: pointer; font-size: 13px; font-weight: 600; color: var(--link); padding: 10px 0;">
+        <span>All Requisition Applicants & Comparative Pipeline (${candidatesList.length} Candidates)</span>
+        <span style="font-size: 11px; margin-left: 8px; padding: 2px 6px; border-radius: 4px; background: var(--raised); border: 1px solid var(--border);">TOGGLE ▾</span>
+      </summary>
+      <div style="margin-top: 14px;">
+        ${compareTool}
+        <div class="section-rail"><span>RANKED CANDIDATES</span><span>UPDATED ${new Date(list?.generated_at || Date.now()).toLocaleDateString('en-US', { month: 'short', day: '2-digit' }).toUpperCase()}</span></div>
+        <section class="shortlist-list">${cards.length ? cards.join('') : '<div class="empty-state">No completed depth checks yet for this role.</div>'}</section>
+      </div>
+    </details>
+    <div class="shortlist-footnote" style="margin-top: 24px;"><span>↳</span><p>Scores are computed from individual answer evaluations. Every claim links to verified quotes. Final hiring decisions remain human.</p></div>`);
 
   // Side-by-Side Compare Matrix Renderer
   const renderCompareMatrix = () => {
@@ -682,11 +1061,11 @@ async function renderShortlist() {
     const el2 = document.querySelector('#cmp-2');
     const container = document.querySelector('#compare-matrix');
     if (!el1 || !el2 || !container) return;
-    const c1 = list.candidates[parseInt(el1.value, 10)] || list.candidates[0];
-    const c2 = list.candidates[parseInt(el2.value, 10)] || list.candidates[1];
+    const c1 = candidatesList[parseInt(el1.value, 10)] || candidatesList[0];
+    const c2 = candidatesList[parseInt(el2.value, 10)] || candidatesList[1];
     if (!c1 || !c2) return;
 
-    const allSkills = Array.from(new Set([...Object.keys(c1.skill_profile || {}), ...Object.keys(c2.skill_profile || {})]));
+    const allSkills = Array.from(new Set([...Object.keys(c1.skill_profile || c1.dims || {}), ...Object.keys(c2.skill_profile || c2.dims || {})]));
     
     container.innerHTML = `
       <div style="overflow-x: auto;">
@@ -694,29 +1073,29 @@ async function renderShortlist() {
           <thead>
             <tr style="border-bottom: 2px solid var(--border); text-align: left;">
               <th style="padding: 10px; color: var(--muted); width: 25%;">DIMENSION / METRIC</th>
-              <th style="padding: 10px; width: 37.5%; color: var(--primary); font-size: 15px;">${escapeHTML(c1.name)} <span class="tag" style="font-size: 11px;">#${c1.rank}</span></th>
-              <th style="padding: 10px; width: 37.5%; color: var(--link); font-size: 15px;">${escapeHTML(c2.name)} <span class="tag" style="font-size: 11px;">#${c2.rank}</span></th>
+              <th style="padding: 10px; width: 37.5%; color: var(--primary); font-size: 15px;">${escapeHTML(c1.name)} <span class="tag" style="font-size: 11px;">#${c1.rank || 1}</span></th>
+              <th style="padding: 10px; width: 37.5%; color: var(--link); font-size: 15px;">${escapeHTML(c2.name)} <span class="tag" style="font-size: 11px;">#${c2.rank || 2}</span></th>
             </tr>
           </thead>
           <tbody>
             <tr style="border-bottom: 1px solid var(--border);">
               <td style="padding: 10px; color: var(--muted); font-weight: 600;">Overall Score</td>
-              <td style="padding: 10px; font-weight: 700; font-size: 18px; color: var(--verified);">${c1.overall_score} / 100</td>
-              <td style="padding: 10px; font-weight: 700; font-size: 18px; color: var(--verified);">${c2.overall_score} / 100</td>
+              <td style="padding: 10px; font-weight: 700; font-size: 18px; color: var(--verified);">${c1.overall_score || 0} / 100</td>
+              <td style="padding: 10px; font-weight: 700; font-size: 18px; color: var(--verified);">${c2.overall_score || 0} / 100</td>
             </tr>
             <tr style="border-bottom: 1px solid var(--border);">
               <td style="padding: 10px; color: var(--muted); font-weight: 600;">Confidence</td>
-              <td style="padding: 10px;">${Math.round(c1.confidence * 100)}%</td>
-              <td style="padding: 10px;">${Math.round(c2.confidence * 100)}%</td>
+              <td style="padding: 10px;">${Math.round((c1.confidence || 0.8) * 100)}%</td>
+              <td style="padding: 10px;">${Math.round((c2.confidence || 0.8) * 100)}%</td>
             </tr>
             <tr style="border-bottom: 1px solid var(--border);">
               <td style="padding: 10px; color: var(--muted); font-weight: 600;">Recommendation</td>
-              <td style="padding: 10px;"><span class="recommendation rec-${escapeHTML(c1.recommendation)}">${escapeHTML(c1.recommendation.replaceAll('_', ' '))}</span></td>
-              <td style="padding: 10px;"><span class="recommendation rec-${escapeHTML(c2.recommendation)}">${escapeHTML(c2.recommendation.replaceAll('_', ' '))}</span></td>
+              <td style="padding: 10px;"><span class="recommendation rec-${escapeHTML(c1.recommendation || 'reviewed')}">${escapeHTML((c1.recommendation || 'reviewed').replaceAll('_', ' '))}</span></td>
+              <td style="padding: 10px;"><span class="recommendation rec-${escapeHTML(c2.recommendation || 'reviewed')}">${escapeHTML((c2.recommendation || 'reviewed').replaceAll('_', ' '))}</span></td>
             </tr>
             ${allSkills.map(skill => {
-              const v1 = Number(c1.skill_profile?.[skill] ?? 0);
-              const v2 = Number(c2.skill_profile?.[skill] ?? 0);
+              const v1 = Number(c1.skill_profile?.[skill] ?? c1.dims?.[skill] ?? 0);
+              const v2 = Number(c2.skill_profile?.[skill] ?? c2.dims?.[skill] ?? 0);
               return `
                 <tr style="border-bottom: 1px solid var(--border);">
                   <td style="padding: 10px; color: var(--muted); text-transform: capitalize;">${escapeHTML(skill)}</td>
@@ -752,39 +1131,38 @@ async function renderShortlist() {
         const badge = card ? card.querySelector('.stage-badge') : null;
         if (badge) {
           badge.textContent = newStatus;
-          badge.style.color = newStatus === 'Shortlisted' ? 'var(--verified)' : (newStatus === 'Rejected' ? 'var(--bad, #ef4444)' : 'var(--link)');
+          badge.style.color = newStatus === 'Rejected' ? '#ef4444' : newStatus === 'Shortlisted' ? 'var(--verified)' : 'var(--primary)';
         }
       } catch (err) {
-        showError(err);
+        alert('Failed to update stage: ' + err.message);
       } finally {
         btn.disabled = false;
       }
     });
   });
 
-  // Interactive Recruiter Confirmation Handlers
-  app.querySelectorAll('.confirm-btn').forEach((btn) => {
-    btn.addEventListener('click', async (e) => {
-      e.preventDefault();
-      const sess = btn.dataset.sess;
-      const turn = parseInt(btn.dataset.turn, 10);
-      btn.disabled = true;
-      btn.textContent = 'Saving...';
+  // Human Review Confirm Handler
+  app.querySelectorAll('.confirm-btn').forEach((button) => {
+    button.addEventListener('click', async () => {
+      button.disabled = true;
+      const session = button.dataset.sess;
+      const turn = Number(button.dataset.turn);
       try {
-        await API.confirmEvidence(sess, turn, true);
-        btn.textContent = '✔ Confirmed';
-        btn.style.color = 'var(--verified)';
-        const card = btn.closest('.evidence-card');
-        const auditStatus = card ? card.querySelector('.audit-status') : null;
-        if (auditStatus) auditStatus.innerHTML = '<strong style="color: var(--verified);">✔ Recruiter Confirmed</strong>';
-      } catch (err) {
-        btn.disabled = false;
-        btn.textContent = 'Retry Confirm';
+        await API.confirmEvidence(session, turn, true);
+        button.textContent = '✔ Confirmed';
+        button.classList.add('confirmed');
+        const card = button.closest('.evidence-card');
+        const statusSpan = card ? card.querySelector('.audit-status') : null;
+        if (statusSpan) {
+          statusSpan.innerHTML = 'Human Review: <strong style="color: var(--verified);">✔ Recruiter Confirmed</strong>';
+        }
+      } catch (error) {
+        showError(error);
+        button.disabled = false;
       }
     });
   });
 }
-
 
 // Loads a candidate's node-link data and renders it with Cytoscape.
 async function renderGraph() {

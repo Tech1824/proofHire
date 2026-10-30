@@ -129,3 +129,53 @@ def resync_candidate_github(candidate_id: str, background_tasks: BackgroundTasks
         "candidate_id": candidate_id,
         "message": "Re-fetching repositories from GitHub and rebuilding knowledge graph."
     }
+
+@router.get("/{candidate_id}/evaluation")
+def get_candidate_evaluation(candidate_id: str, job_id: str = "job_1"):
+    from db.crud import engine, Session, select, Candidate, Profile, Submission, DepthSession, QaTurn
+    with Session(engine) as session:
+        cand = session.get(Candidate, candidate_id)
+        if not cand:
+            raise HTTPException(status_code=404, detail="Candidate not found")
+            
+        profile = session.exec(select(Profile).where(
+            Profile.candidate_id == candidate_id,
+            Profile.job_id == job_id
+        )).first()
+        
+        sub = session.exec(select(Submission).where(
+            Submission.candidate_id == candidate_id
+        ).order_by(Submission.created_at.desc())).first()
+        
+        sess_data = None
+        turns_data = []
+        if sub:
+            ds = session.exec(select(DepthSession).where(
+                DepthSession.submission_id == sub.submission_id
+            )).first()
+            if ds:
+                sess_data = ds.model_dump()
+                turns = session.exec(select(QaTurn).where(
+                    QaTurn.session_id == ds.session_id
+                ).order_by(QaTurn.turn_number)).all()
+                turns_data = [t.model_dump() for t in turns]
+                sess_data["turns"] = turns_data
+                
+        prof_dict = profile.model_dump() if profile else None
+        
+        # Calculate rank across job
+        rank = None
+        if prof_dict:
+            all_profs = session.exec(select(Profile).where(Profile.job_id == job_id).order_by(Profile.overall_score.desc())).all()
+            for i, p in enumerate(all_profs):
+                if p.candidate_id == candidate_id:
+                    rank = i + 1
+                    break
+                    
+        return {
+            "candidate": cand.model_dump(),
+            "profile": prof_dict,
+            "rank": rank,
+            "submission": sub.model_dump() if sub else None,
+            "session": sess_data
+        }

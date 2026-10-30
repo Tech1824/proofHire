@@ -24,10 +24,10 @@ function radar(c,k){const cx=200,cy=185,R=110,mx=Math.max(...GM.map(m=>c[m[0]]),
  GM.map((m,i)=>{const v=vals[i],l=pt(i,R+36);return `<g class="vx" tabindex="0" onclick="gsel('${m[0]}')" style="cursor:pointer"><title>${m[1]}: ${c[m[0]]}</title><circle cx="${v[0]}" cy="${v[1]}" r="${k===m[0]?10:7}" fill="${m[4]}" stroke="var(--panel)" stroke-width="2.5"/><text x="${l[0]}" y="${l[1]-2}" text-anchor="middle" class="svl">${m[0].toUpperCase()}</text><text x="${l[0]}" y="${l[1]+18}" text-anchor="middle" class="svn">${c[m[0]]}</text></g>`}).join("")+`</svg>`}
 function detail(g,k){const m=GM.find(x=>x[0]===k),ch=(t,fn)=>`<button class="chip cl" onclick="${fn}">${esc(t)}</button>`;let b="";
  if(k==="joblead")b=g.open.map(j=>ch(j.title+" · "+j.co,`nav('role:${j.id}')`)).join("");
- if(k==="candidate")b=D.apps.map(a=>ch(a.name+(a.score?" · "+a.score:""),`openC(${a.id})`)).join("");
+ if(k==="candidate")b=D.apps.map(a=>ch(a.name+(a.score?" · "+a.score:""),`openC('${a.id}')`)).join("");
  if(k==="skill")b=Object.entries(g.sk).sort((x,y)=>y[1]-x[1]).map(([s,n])=>`<span class="chip">${esc(s)} · ${n?n+" candidate"+(n>1?"s":""):"role only"}</span>`).join("");
- if(k==="experience")b=g.exp.map(e=>ch(`${e.a.name} · ${e.a.exp} yr · ${e.n} role${e.n>1?"s":""}`,`openC(${e.a.id})`)).join("");
- if(k==="project")b=g.proj.map(p=>ch(`${p.t} · ${p.a.name}`,`openR(${p.a.id})`)).join("");
+ if(k==="experience")b=g.exp.map(e=>ch(`${e.a.name} · ${e.a.exp} yr · ${e.n} role${e.n>1?"s":""}`,`openC('${e.a.id}')`)).join("");
+ if(k==="project")b=g.proj.map(p=>ch(`${p.t} · ${p.a.name}`,`openR('${p.a.id}')`)).join("");
  return `<div class="gcard" style="margin-top:20px"><span class="mono">Selected</span><h3 class="serif" style="font-size:30px;margin:8px 0 16px">${m[1]} · ${g.c[k]} node${g.c[k]===1?"":"s"}</h3>${b||'<span class="lead" style="font-size:15px">Nothing here yet.</span>'}</div>`}
 boot("graph",()=>{const g=gdata(),c=g.c,k=D.gk||"skill",mx=Math.max(...GM.map(m=>c[m[0]]),1),ev=c.total-c.candidate-c.joblead;
 return `<div class="page"><div class="gt serif">Knowledge Graph <span class="gtag">GRAPH</span></div>

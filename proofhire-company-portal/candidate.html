@@ -14,7 +14,7 @@
 boot("candidate",()=>{const a=sel();return `<div class="page">`+head("05",esc(a.name),`Applied for ${esc(jt(a.job))} · ${a.exp} years experience`,`<span class="tag ${st(a.status)}">${a.status}</span>`)+sec("Profile")+
 `<div class="cg"><div class="pn"><span class="k">Contact</span><b style="font-size:19px">${esc(a.email)}</b><p class="lead" style="margin-top:8px;font-size:16px">github.com/${esc(a.github)}</p></div>
 <div class="pn"><span class="k">Skills</span>${chips(a.skills)}</div>
-<div class="pn"><span class="k">Move to</span>${["Reviewed","Interview","Shortlisted","Rejected"].map(s=>`<button class="btn g s" style="margin:0 6px 6px 0" onclick="setSt(${a.id},'${s}')">${s}</button>`).join("")}</div>
+<div class="pn"><span class="k">Move to</span>${["Reviewed","Interview","Shortlisted","Rejected"].map(s=>`<button class="btn g s" style="margin:0 6px 6px 0" onclick="setSt('${a.id}','${s}')">${s}</button>`).join("")}</div>
 <div class="pn ${a.score?"click":""}" ${a.score?`data-open="r:${a.id}" tabindex="0"`:""}><span class="k">Assessment result</span>${a.score?`<div class="big">${a.score}</div><div class="mt" style="margin:10px 0">${a.rec}</div><span style="color:#6f8cff">Open AI report ↗</span>`:`<b>Not started</b>`}</div></div>`+foot()+`</div>`});
 </script>
 </body>

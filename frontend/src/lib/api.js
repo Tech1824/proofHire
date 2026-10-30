@@ -236,3 +236,31 @@ export function getShortlist(jobId) {
   };
   return mock({ ...shortlistExample, job_id: jobId, candidates: shortlistExample.candidates.concat(weak) });
 }
+export function loginUser(payload) {
+  if (!usesMocks()) {
+    return request('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+  }
+  return mock({ status: 'ok', user: { name: 'Demo Candidate', role: 'candidate' } });
+}
+
+export function getDemoAccounts() {
+  if (!usesMocks()) {
+    return request('/auth/demo-accounts');
+  }
+  return mock({ candidates: [], recruiters: [] });
+}
+
+export function getCandidateEvaluation(candidateId, jobId = 'job_1') {
+  if (!usesMocks()) {
+    return request('/candidates/' + candidateId + '/evaluation?job_id=' + jobId);
+  }
+  return mock({
+    candidate: candidates[0],
+    profile: shortlistExample.candidates[0],
+    rank: 1,
+    submission: { submission_id: 'sub_1' }
+  });
+}

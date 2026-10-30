@@ -41,7 +41,7 @@ function shell(){
   const name=NAV.flatMap(g=>g[1]).find(n=>n[0]===PAGE)[2];
   t.innerHTML=`<div class="crumb"><a class="h" href="dashboard.html">ProofHire</a> › <b>${name}</b> › <span>${esc(jt(D.jobId))}</span><span style="margin-left:12px;font-size:14px">Role</span>
    <select id="role" aria-label="Role" onchange="D.jobId=+this.value;save();render()">${D.jobs.map(j=>`<option value="${j.id}" ${j.id==D.jobId?"selected":""}>${esc(j.title)}</option>`).join("")}</select></div>
-   <span class="pill">● Demo</span><button class="ib" onclick="D.theme=D.theme==='dark'?'light':'dark';document.documentElement.dataset.theme=D.theme;save()" aria-label="Toggle theme">☀</button><a class="btn" href="applicants.html">Add candidate ↗</a>`;
+   <span class="pill">● Demo</span><button class="ib" onclick="D.theme=D.theme==='dark'?'light':'dark';document.documentElement.dataset.theme=D.theme;save()" aria-label="Toggle theme">☀</button><a class="btn" href="jobs.html">+ Create Job ↗</a>`;
 }
 function render(){shell();$("#v").innerHTML=CUR();}
 function boot(page,fn){PAGE=page;CUR=fn;if(!D.user&&page!=="login"){location.replace("login.html");return}render()}
