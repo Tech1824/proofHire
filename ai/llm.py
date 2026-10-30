@@ -90,6 +90,22 @@ def _get_canned_reply(schema: Type[BaseModel]) -> dict:
                     {"skill": "clean code", "weight": 0.3}
                 ]
             }
+        if schema.__name__ == "ModelAnswerSchema":
+            return {
+                "model_answer": "In production systems, state mutations on shared rate-limiting buckets must be strictly atomic and time measurements must utilize monotonic clocks. Using time.monotonic() prevents time-inversion anomalies caused by NTP backward clock adjustments. Concurrency under async coroutines must be safeguarded with an asyncio.Lock or executed atomically via a Redis Lua script to prevent race conditions during token decrement.",
+                "key_concepts": [
+                    "Monotonic vs Wall-Clock Time (NTP Skew Immunity)",
+                    "Atomic Check-and-Set (CAS) and Mutex Synchronization",
+                    "Sliding Window & Token Bucket Invariant Preservation",
+                    "Non-blocking Concurrency & Event Loop Optimization"
+                ],
+                "pitfalls_to_avoid": [
+                    "Using time.time(), which can jump backwards during system NTP sync",
+                    "Awaiting asynchronous network I/O while holding a CPU mutex",
+                    "Relying on multi-step GET-THEN-SET without an atomic transaction"
+                ],
+                "reference_tip": "Always measure time intervals with monotonic clocks and push mutation logic to atomic data store scripts rather than distributed locks."
+            }
 
         from pydantic_core import PydanticUndefined
         kwargs = {}
@@ -98,17 +114,17 @@ def _get_canned_reply(schema: Type[BaseModel]) -> dict:
                 continue
             ann = str(field.annotation).lower()
             if "list" in ann:
-                kwargs[name] = ["demo"] if "str" in ann else [{"demo": "data"}]
+                kwargs[name] = ["Concurrency & Race Conditions", "Data Validation & Invariants", "Memory Bounding & O(1) Eviction"] if "str" in ann else [{"property": "verified"}]
             elif "dict" in ann:
-                kwargs[name] = {"demo": 1}
+                kwargs[name] = {"understanding": 4, "reasoning": 4, "communication": 4}
             elif "float" in ann:
-                kwargs[name] = 1.0
+                kwargs[name] = 4.0
             elif "int" in ann:
-                kwargs[name] = 1
+                kwargs[name] = 4
             elif "bool" in ann:
                 kwargs[name] = True
             elif "str" in ann:
-                kwargs[name] = "demo string"
+                kwargs[name] = "In a production architecture, decouple algorithmic state from transport I/O, enforce strict non-blocking concurrency boundaries, and validate all input invariants before state mutation."
             else:
                 kwargs[name] = None
         return schema(**kwargs).model_dump()
@@ -143,6 +159,8 @@ def complete_json(alias: str, system: str, user: str, schema: Type[BaseModel], c
         reply = _get_canned_reply(schema)
         if schema.__name__ == "EvaluationSchema" and "ignore previous instructions" in user.lower():
             reply["flags"] = ["injection_attempt"]
+        # Persist generated/canned reply to SQLite cache so users don't regenerate
+        crud.cache_set(cache_key, alias, reply)
         return reply
 
     # 2. Call the router

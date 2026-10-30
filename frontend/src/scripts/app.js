@@ -899,38 +899,63 @@ async function renderDepth() {
       const qText = e.currentTarget.dataset.q;
       const snippet = e.currentTarget.dataset.snippet;
       const expects = e.currentTarget.dataset.expects;
+
+      // Check persistent client storage first to prevent duplicate AI generation
+      const storageKey = 'proofhire_ans_' + btoa(unescape(encodeURIComponent((qText || '').trim().slice(0, 60))));
+      const renderAns = (res, fromStorage) => {
+        if (!content) return;
+        content.dataset.loaded = 'true';
+        content.innerHTML = `
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <span class="badge" style="background: rgba(16, 185, 129, 0.15); color: #10b981; font-size: 12px; padding: 2px 8px;">
+              ${fromStorage ? '⚡ LOADED FROM PERSISTENT STORAGE (0ms)' : '✔ SAVED TO STORAGE (PERMANENT)'}
+            </span>
+          </div>
+          <div style="margin-bottom: 12px;">
+            <strong style="color: var(--text); font-size: 14.5px; display: block; margin-bottom: 4px;">Ideal Senior Engineering Response:</strong>
+            <p style="margin: 0; font-size: 14.5px; line-height: 1.6; color: var(--text); white-space: pre-wrap;">${escapeHTML(res.model_answer)}</p>
+          </div>
+          ${res.key_concepts && res.key_concepts.length ? `
+            <div style="margin-bottom: 10px;">
+              <strong style="color: var(--verified); font-size: 14px; display: block; margin-bottom: 4px;">Key Computer Science Principles:</strong>
+              <ul style="margin: 0; padding-left: 20px; font-size: 14px; color: var(--muted);">
+                ${res.key_concepts.map(c => `<li>${escapeHTML(c)}</li>`).join('')}
+              </ul>
+            </div>
+          ` : ''}
+          ${res.pitfalls_to_avoid && res.pitfalls_to_avoid.length ? `
+            <div style="margin-bottom: 10px;">
+              <strong style="color: var(--amber); font-size: 14px; display: block; margin-bottom: 4px;">Common Interview Pitfalls:</strong>
+              <ul style="margin: 0; padding-left: 20px; font-size: 14px; color: var(--muted);">
+                ${res.pitfalls_to_avoid.map(p => `<li>${escapeHTML(p)}</li>`).join('')}
+              </ul>
+            </div>
+          ` : ''}
+          ${res.reference_tip ? `
+            <div style="margin-top: 8px; padding-top: 8px; border-top: 1px dashed rgba(255,255,255,0.1); font-size: 14px; color: var(--primary);">
+              💡 <strong>Principal Engineer Tip:</strong> ${escapeHTML(res.reference_tip)}
+            </div>
+          ` : ''}
+        `;
+      };
+
+      const cachedRaw = localStorage.getItem(storageKey);
+      if (cachedRaw) {
+        try {
+          const cachedJson = JSON.parse(cachedRaw);
+          if (cachedJson && cachedJson.model_answer && !cachedJson.model_answer.includes('demo string')) {
+            renderAns(cachedJson, true);
+            return;
+          }
+        } catch (e) {}
+      }
+
       try {
         const res = await API.getModelAnswer({ question_text: qText, code_snippet: snippet, expects: expects });
-        if (content) {
-          content.dataset.loaded = 'true';
-          content.innerHTML = `
-            <div style="margin-bottom: 12px;">
-              <strong style="color: var(--text); font-size: 14.5px; display: block; margin-bottom: 4px;">Ideal Senior Engineering Response:</strong>
-              <p style="margin: 0; font-size: 14.5px; line-height: 1.6; color: var(--text); white-space: pre-wrap;">${escapeHTML(res.model_answer)}</p>
-            </div>
-            ${res.key_concepts && res.key_concepts.length ? `
-              <div style="margin-bottom: 10px;">
-                <strong style="color: var(--verified); font-size: 14px; display: block; margin-bottom: 4px;">Key Computer Science Principles:</strong>
-                <ul style="margin: 0; padding-left: 20px; font-size: 14px; color: var(--muted);">
-                  ${res.key_concepts.map(c => `<li>${escapeHTML(c)}</li>`).join('')}
-                </ul>
-              </div>
-            ` : ''}
-            ${res.pitfalls_to_avoid && res.pitfalls_to_avoid.length ? `
-              <div style="margin-bottom: 10px;">
-                <strong style="color: var(--amber); font-size: 14px; display: block; margin-bottom: 4px;">Common Interview Pitfalls:</strong>
-                <ul style="margin: 0; padding-left: 20px; font-size: 14px; color: var(--muted);">
-                  ${res.pitfalls_to_avoid.map(p => `<li>${escapeHTML(p)}</li>`).join('')}
-                </ul>
-              </div>
-            ` : ''}
-            ${res.reference_tip ? `
-              <div style="margin-top: 8px; padding-top: 8px; border-top: 1px dashed rgba(255,255,255,0.1); font-size: 14px; color: var(--primary);">
-                💡 <strong>Principal Engineer Tip:</strong> ${escapeHTML(res.reference_tip)}
-              </div>
-            ` : ''}
-          `;
-        }
+        try {
+          localStorage.setItem(storageKey, JSON.stringify(res));
+        } catch (e) {}
+        renderAns(res, res.from_storage || false);
       } catch (err) {
         if (content) content.innerHTML = `<span style="color: #ef4444; font-size: 14px;">Could not load model answer: ${escapeHTML(err.message)}</span>`;
       }
