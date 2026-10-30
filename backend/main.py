@@ -45,9 +45,12 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
+    err = str(exc)
+    if any(k in err.lower() for k in ("key", "secret", "token", "password")):
+        err = "An internal processing error occurred."
     return JSONResponse(
         status_code=500,
-        content={"error": {"code": "internal", "message": str(exc)}}
+        content={"error": {"code": "internal", "message": err}}
     )
 
 app.include_router(health.router)

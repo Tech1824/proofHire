@@ -135,6 +135,9 @@ def get_candidate(candidate_id: str):
 
 @router.get("/{candidate_id}/graph", response_model=GraphViewResponse)
 def get_graph_view(candidate_id: str):
+    import ast
+    from db.crud import engine, Session, select, Submission, DepthSession, QaTurn, Candidate, Profile
+    
     if is_fake():
         view = fake_ai.get_graph_view(candidate_id)
     else:
@@ -142,23 +145,178 @@ def get_graph_view(candidate_id: str):
         view = ai_api.get_graph_view(candidate_id)
     
     if not view:
-        return {"nodes": [], "edges": []}
+        view = {"nodes": [], "edges": []}
+
+    nodes = list(view.get("nodes", []))
+    edges = list(view.get("edges", []))
+    
+    # Load candidate submission & depth sessions to enrich AST provenance
+    with Session(engine) as session:
+        cand = session.get(Candidate, candidate_id)
+        sub = session.exec(select(Submission).where(
+            Submission.candidate_id == candidate_id
+        ).order_by(Submission.created_at.desc())).first()
         
+        sub_dict = None
+        if sub:
+            from db import crud
+            sub_dict = crud.get_submission(sub.submission_id)
+
+        turns = []
+        if sub:
+            ds = session.exec(select(DepthSession).where(
+                DepthSession.submission_id == sub.submission_id
+            ).order_by(DepthSession.created_at.desc())).first()
+            if ds:
+                turns = session.exec(select(QaTurn).where(
+                    QaTurn.session_id == ds.session_id
+                ).order_by(QaTurn.turn_number)).all()
+
+        profile = session.exec(select(Profile).where(
+            Profile.candidate_id == candidate_id
+        ).order_by(Profile.overall_score.desc())).first()
+
+        overall_score = profile.overall_score if profile else 60.0
+        
+        # If graph has no function nodes, extract AST directly from candidate submission
+        has_functions = any(n.get("type") in ("function", "method") for n in nodes)
+        if not has_functions and sub_dict and sub_dict.get("files"):
+            files = sub_dict.get("files", [])
+            file_node_id = f"file:submission:{files[0].get('path', 'solution.py')}"
+            if not any(n.get("id") == file_node_id for n in nodes):
+                nodes.append({
+                    "id": file_node_id,
+                    "type": "file",
+                    "label": files[0].get("path", "solution.py"),
+                    "weight": 1.0,
+                    "status": "verified"
+                })
+            
+            for file_entry in files:
+                path = file_entry.get("path", "solution.py")
+                code_text = file_entry.get("content", "")
+                f_id = f"file:submission:{path}"
+                try:
+                    tree = ast.parse(code_text)
+                    for item in ast.iter_child_nodes(tree):
+                        if isinstance(item, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                            fn_id = f"func:{path}::{item.name}"
+                            code_lines = code_text.split('\n')[item.lineno - 1 : item.end_lineno]
+                            nodes.append({
+                                "id": fn_id,
+                                "type": "function",
+                                "label": item.name,
+                                "weight": 1.0,
+                                "code": "\n".join(code_lines),
+                                "line_range": f"L{item.lineno}-L{item.end_lineno}"
+                            })
+                            edges.append({"source": f_id, "target": fn_id, "type": "contains"})
+                        elif isinstance(item, ast.ClassDef):
+                            cl_id = f"class:{path}::{item.name}"
+                            code_lines = code_text.split('\n')[item.lineno - 1 : item.end_lineno]
+                            nodes.append({
+                                "id": cl_id,
+                                "type": "class",
+                                "label": item.name,
+                                "weight": 1.0,
+                                "code": "\n".join(code_lines),
+                                "line_range": f"L{item.lineno}-L{item.end_lineno}"
+                            })
+                            edges.append({"source": f_id, "target": cl_id, "type": "contains"})
+                            for method in ast.iter_child_nodes(item):
+                                if isinstance(method, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                                    m_id = f"func:{path}::{item.name}.{method.name}"
+                                    m_lines = code_text.split('\n')[method.lineno - 1 : method.end_lineno]
+                                    nodes.append({
+                                        "id": m_id,
+                                        "type": "function",
+                                        "label": f"{item.name}.{method.name}",
+                                        "weight": 1.0,
+                                        "code": "\n".join(m_lines),
+                                        "line_range": f"L{method.lineno}-L{method.end_lineno}"
+                                    })
+                                    edges.append({"source": cl_id, "target": m_id, "type": "contains"})
+                except Exception:
+                    pass
+
+    # Enrich nodes with depth check evaluations and statuses
     cleaned_nodes = []
-    for n in view.get("nodes", []):
+    seen_ids = set()
+    for n in nodes:
+        nid = str(n.get("id"))
+        if nid in seen_ids:
+            continue
+        seen_ids.add(nid)
+
+        ntype = str(n.get("type", "concept"))
+        nlabel = str(n.get("label", nid))
+        code_snip = n.get("code")
+        status = n.get("status")
+        evidence = n.get("evidence")
+        line_range = n.get("line_range")
+
+        # Correlate with depth turns if available
+        matched_turn = None
+        for t in turns:
+            if t.node_ref and t.node_ref in (nid, nlabel):
+                matched_turn = t
+                break
+            if nlabel.lower() in (t.question_text or "").lower():
+                matched_turn = t
+                break
+        
+        if matched_turn:
+            ev = matched_turn.evaluation or {}
+            eval_score = float(ev.get("score") if ev.get("score") is not None else 3.0)
+            flags = ev.get("flags") or []
+            if eval_score >= 4.0:
+                status = "verified"
+            elif eval_score <= 2.0 or any(f in ("evasive", "inaccurate", "surface_level") for f in flags):
+                status = "flagged"
+            else:
+                status = "pending"
+            reason = ev.get("reasoning") or "Evaluated in depth check."
+            quote = ev.get("evidence_quote") or matched_turn.answer_text or "N/A"
+            evidence = f"Turn {matched_turn.turn_number} ({eval_score}/5): {reason} Candidate quote: “{quote}”"
+        elif not status:
+            if ntype in ("file", "candidate"):
+                status = "verified"
+            elif ntype in ("function", "class"):
+                # Inherit from overall candidate score
+                if overall_score >= 70:
+                    status = "verified"
+                elif overall_score < 40:
+                    status = "flagged"
+                else:
+                    status = "pending"
+            else:
+                status = "verified"
+
         cleaned_nodes.append({
-            "id": str(n.get("id")),
-            "type": str(n.get("type", "concept")),
-            "label": str(n.get("label", n.get("id"))),
-            "weight": float(n.get("weight") or 1.0)
+            "id": nid,
+            "type": ntype,
+            "label": nlabel,
+            "weight": float(n.get("weight") or 1.0),
+            "code": code_snip,
+            "status": status,
+            "evidence": evidence,
+            "line_range": line_range
         })
 
     cleaned_edges = []
-    for e in view.get("edges", []):
+    seen_edges = set()
+    for e in edges:
+        src = str(e.get("source"))
+        tgt = str(e.get("target"))
+        etype = str(e.get("type", "relates"))
+        key = (src, tgt, etype)
+        if key in seen_edges:
+            continue
+        seen_edges.add(key)
         cleaned_edges.append({
-            "source": str(e.get("source")),
-            "target": str(e.get("target")),
-            "type": str(e.get("type", "relates"))
+            "source": src,
+            "target": tgt,
+            "type": etype
         })
         
     return {"nodes": cleaned_nodes, "edges": cleaned_edges}

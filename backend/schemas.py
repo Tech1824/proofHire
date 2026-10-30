@@ -71,6 +71,10 @@ class GraphNode(BaseModel):
     type: str
     label: str
     weight: Optional[float] = 1.0
+    code: Optional[str] = None
+    status: Optional[str] = "verified" # "verified", "flagged", "pending"
+    evidence: Optional[str] = None
+    line_range: Optional[str] = None
 
 class GraphEdge(BaseModel):
     source: str

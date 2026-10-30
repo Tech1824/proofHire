@@ -107,7 +107,7 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = Query(None)
                     audio_buffer.extend(chunk)
                     
                     if silence_frames > 8: # roughly 2 seconds of silence
-                        print(f"Processing {len(audio_buffer, flush=True)} bytes of audio...")
+                        print(f"Processing {len(audio_buffer)} bytes of audio...", flush=True)
                         
                         # Process audio
                         wav_data = pcm_to_wav(audio_buffer)

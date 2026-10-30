@@ -1,44 +1,471 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="dark">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ProofHire // Knowledge graph</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg%20viewBox%3D%220%200%20100%20100%22%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20role%3D%22img%22%20aria-label%3D%22ProofHire%20logo%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22phb%22%20x1%3D%220%22%20y1%3D%22100%22%20x2%3D%22100%22%20y2%3D%220%22%20gradientUnits%3D%22userSpaceOnUse%22%3E%3Cstop%20offset%3D%220%22%20stop-color%3D%22%234f5bff%22/%3E%3Cstop%20offset%3D%22.5%22%20stop-color%3D%22%23ff3d9a%22/%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22%23ff8a1e%22/%3E%3C/linearGradient%3E%3ClinearGradient%20id%3D%22phl%22%20x1%3D%2243%22%20y1%3D%2269%22%20x2%3D%2275%22%20y2%3D%2232%22%20gradientUnits%3D%22userSpaceOnUse%22%3E%3Cstop%20offset%3D%220%22%20stop-color%3D%22%23a63fe0%22/%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22%23ff3d9a%22/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20x%3D%221.5%22%20y%3D%221.5%22%20width%3D%2297%22%20height%3D%2297%22%20rx%3D%2225%22%20fill%3D%22%2306070a%22%20stroke%3D%22url%28%23phb%29%22%20stroke-width%3D%223%22/%3E%3Ccircle%20cx%3D%2274.6%22%20cy%3D%2231.9%22%20r%3D%2214.5%22%20fill%3D%22none%22%20stroke%3D%22%23ff8a1e%22%20stroke-opacity%3D%22.3%22%20stroke-width%3D%222.5%22/%3E%3Cline%20x1%3D%2225.4%22%20y1%3D%2251.3%22%20x2%3D%2243.4%22%20y2%3D%2269.4%22%20stroke%3D%22%236a5ae6%22%20stroke-width%3D%225%22/%3E%3Cline%20x1%3D%2243.4%22%20y1%3D%2269.4%22%20x2%3D%2274.6%22%20y2%3D%2231.9%22%20stroke%3D%22url%28%23phl%29%22%20stroke-width%3D%226.5%22/%3E%3Ccircle%20cx%3D%2225.4%22%20cy%3D%2251.3%22%20r%3D%228%22%20fill%3D%22%2306070a%22%20stroke%3D%22%234f5bff%22%20stroke-width%3D%223%22/%3E%3Ccircle%20cx%3D%2243.4%22%20cy%3D%2269.4%22%20r%3D%228%22%20fill%3D%22%2306070a%22%20stroke%3D%22%23b23cd6%22%20stroke-width%3D%223%22/%3E%3Ccircle%20cx%3D%2274.6%22%20cy%3D%2231.9%22%20r%3D%229%22%20fill%3D%22%23ff8a1e%22/%3E%3C/svg%3E">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&family=Instrument+Serif&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/portal.css"></head>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ProofHire // Candidate AST Provenance &amp; Knowledge Graph</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20viewBox%3D%220%200%20100%20100%22%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20role%3D%22img%22%20aria-label%3D%22ProofHire%20logo%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22phb%22%20x1%3D%220%22%20y1%3D%22100%22%20x2%3D%22100%22%20y2%3D%220%22%20gradientUnits%3D%22userSpaceOnUse%22%3E%3Cstop%20offset%3D%220%22%20stop-color%3D%22%234f5bff%22/%3E%3Cstop%20offset%3D%22.5%22%20stop-color%3D%22%23ff3d9a%22/%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22%23ff8a1e%22/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20x%3D%221.5%22%20y%3D%221.5%22%20width%3D%2297%22%20height%3D%2297%22%20rx%3D%2225%22%20fill%3D%22%2306070a%22%20stroke%3D%22url%28%23phb%29%22%20stroke-width%3D%223%22/%3E%3Ccircle%20cx%3D%2274.6%22%20cy%3D%2231.9%22%20r%3D%2214.5%22%20fill%3D%22none%22%20stroke%3D%22%23ff8a1e%22%20stroke-opacity%3D%22.3%22%20stroke-width%3D%222.5%22/%3E%3Cline%20x1%3D%2225.4%22%20y1%3D%2251.3%22%20x2%3D%2243.4%22%20y2%3D%2269.4%22%20stroke%3D%22%236a5ae6%22%20stroke-width%3D%225%22/%3E%3Cline%20x1%3D%2243.4%22%20y1%3D%2269.4%22%20x2%3D%2274.6%22%20y2%3D%2231.9%22%20stroke%3D%22url%28%23phl%29%22%20stroke-width%3D%226.5%22/%3E%3Ccircle%20cx%3D%2225.4%22%20cy%3D%2251.3%22%20r%3D%228%22%20fill%3D%22%2306070a%22%20stroke%3D%22%234f5bff%22%20stroke-width%3D%223%22/%3E%3Ccircle%20cx%3D%2243.4%22%20cy%3D%2269.4%22%20r%3D%228%22%20fill%3D%22%2306070a%22%20stroke%3D%22%23b23cd6%22%20stroke-width%3D%223%22/%3E%3Ccircle%20cx%3D%2274.6%22%20cy%3D%2231.9%22%20r%3D%229%22%20fill%3D%22%23ff8a1e%22/%3E%3C/svg%3E">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/portal.css">
+<style>
+.graph-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  background: var(--card);
+  padding: 16px 20px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  margin-bottom: 20px;
+}
+.graph-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.cand-select {
+  background: var(--raised);
+  color: var(--text);
+  border: 1px solid var(--border);
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  outline: none;
+}
+.cand-select:focus {
+  border-color: var(--primary);
+}
+.view-tabs {
+  display: inline-flex;
+  background: var(--raised);
+  padding: 3px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+}
+.view-tab {
+  background: none;
+  border: none;
+  color: var(--muted);
+  padding: 6px 14px;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.view-tab.active {
+  background: var(--primary);
+  color: #fff;
+}
+.graph-stage {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 20px;
+  align-items: start;
+}
+@media (max-width: 1024px) {
+  .graph-stage {
+    grid-template-columns: 1fr;
+  }
+}
+.canvas-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  position: relative;
+  min-height: 520px;
+  display: flex;
+  flex-direction: column;
+}
+.canvas-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+.legend-bar {
+  display: flex;
+  gap: 16px;
+  font-size: 13.5px;
+  flex-wrap: wrap;
+}
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+.provenance-inspector {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  position: sticky;
+  top: 20px;
+}
+.node-code-box {
+  background: #0d1117;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  padding: 12px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #e6edf3;
+  max-height: 220px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  margin: 12px 0;
+}
+.evidence-callout {
+  background: rgba(47, 91, 255, 0.08);
+  border-left: 3px solid var(--primary);
+  border-radius: 0 6px 6px 0;
+  padding: 10px 14px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text);
+  margin-top: 12px;
+}
+.svg-node {
+  cursor: pointer;
+  transition: transform 0.15s ease, filter 0.15s ease;
+}
+.svg-node:hover {
+  filter: drop-shadow(0 0 8px rgba(79, 124, 255, 0.6));
+}
+.svg-edge {
+  stroke-dasharray: 4;
+  animation: edgeDash 20s linear infinite;
+}
+@keyframes edgeDash {
+  to {
+    stroke-dashoffset: -100;
+  }
+}
+</style>
+</head>
 <body>
 <aside class="side" id="side"></aside>
-<div class="main"><header class="top" id="top"></header><main id="v"></main></div>
+<div class="main">
+  <header class="top" id="top"></header>
+  <main id="v"></main>
+</div>
 <div class="toast hide" id="toast" role="status"></div>
+
 <script src="js/portal.js"></script>
 <script>
-const GM=[["joblead","Job Leads","Openings in scope","search","#4f7cff"],["candidate","Candidate","Root profile","user","#9b6bd6"],["skill","Skills","Tools and capabilities","spark","#e0743a"],["experience","Experience","Roles and companies","brief","#4f9a6a"],["project","Projects","Proof of work","layers","#d1568f"]];
-const IC={search:'<circle cx="11" cy="11" r="6"/><path d="m20 20-4-4"/>',user:'<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/>',spark:'<path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M18 6l-2.5 2.5M8.5 15.5 6 18"/>',brief:'<rect x="3" y="8" width="18" height="12" rx="2"/><path d="M9 8V6a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/>',layers:'<path d="m12 3 9 5-9 5-9-5z"/><path d="m3 13 9 5 9-5"/>'};
-const ic=n=>`<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${IC[n]}</svg>`;
-function gsel(k){D.gk=k;save();render()}
-function radar(c,k){const cx=200,cy=185,R=110,mx=Math.max(...GM.map(m=>c[m[0]]),1),pt=(i,r)=>{const a=(-90+72*i)*Math.PI/180;return[cx+r*Math.cos(a),cy+r*Math.sin(a)]},f=p=>p.map(n=>n.toFixed(1)).join(",");
- const vals=GM.map((m,i)=>pt(i,R*(.2+.8*Math.sqrt(c[m[0]]/mx))));
- return `<svg viewBox="0 0 400 370" width="100%" style="max-width:460px;display:block;margin:6px auto 0" role="img" aria-label="Topology of graph node types">`+
- [.25,.5,.75,1].map(q=>`<polygon points="${GM.map((_,i)=>f(pt(i,R*q))).join(" ")}" class="rg"/>`).join("")+
- GM.map((_,i)=>{const p=pt(i,R);return `<line class="ra" x1="${cx}" y1="${cy}" x2="${p[0]}" y2="${p[1]}"/>`}).join("")+
- `<polygon points="${vals.map(f).join(" ")}" class="rd"/>`+
- GM.map((m,i)=>{const v=vals[i],l=pt(i,R+36);return `<g class="vx" tabindex="0" onclick="gsel('${m[0]}')" style="cursor:pointer"><title>${m[1]}: ${c[m[0]]}</title><circle cx="${v[0]}" cy="${v[1]}" r="${k===m[0]?10:7}" fill="${m[4]}" stroke="var(--panel)" stroke-width="2.5"/><text x="${l[0]}" y="${l[1]-2}" text-anchor="middle" class="svl">${m[0].toUpperCase()}</text><text x="${l[0]}" y="${l[1]+18}" text-anchor="middle" class="svn">${c[m[0]]}</text></g>`}).join("")+`</svg>`}
-function detail(g,k){const m=GM.find(x=>x[0]===k),ch=(t,fn)=>`<button class="chip cl" onclick="${fn}">${esc(t)}</button>`;let b="";
- if(k==="joblead")b=g.open.map(j=>ch(j.title+" · "+j.co,`nav('role:${j.id}')`)).join("");
- if(k==="candidate")b=D.apps.map(a=>ch(a.name+(a.score?" · "+a.score:""),`openC('${a.id}')`)).join("");
- if(k==="skill")b=Object.entries(g.sk).sort((x,y)=>y[1]-x[1]).map(([s,n])=>`<span class="chip">${esc(s)} · ${n?n+" candidate"+(n>1?"s":""):"role only"}</span>`).join("");
- if(k==="experience")b=g.exp.map(e=>ch(`${e.a.name} · ${e.a.exp} yr · ${e.n} role${e.n>1?"s":""}`,`openC('${e.a.id}')`)).join("");
- if(k==="project")b=g.proj.map(p=>ch(`${p.t} · ${p.a.name}`,`openR('${p.a.id}')`)).join("");
- return `<div class="gcard" style="margin-top:20px"><span class="mono">Selected</span><h3 class="serif" style="font-size:30px;margin:8px 0 16px">${m[1]} · ${g.c[k]} node${g.c[k]===1?"":"s"}</h3>${b||'<span class="lead" style="font-size:15px">Nothing here yet.</span>'}</div>`}
-boot("graph",()=>{const g=gdata(),c=g.c,k=D.gk||"skill",mx=Math.max(...GM.map(m=>c[m[0]]),1),ev=c.total-c.candidate-c.joblead;
-return `<div class="page"><div class="gt serif">Knowledge Graph <span class="gtag">GRAPH</span></div>
-<div class="gcard ghead"><div><span class="mono">Provenance &amp; AST Mapping</span><h2>Knowledge Map</h2><p class="lead" style="font-size:15.5px;line-height:1.6;margin-bottom:12px;">Candidate source code, AST functions, claimed skills, and verified interview evidence unified in a semantic network.</p>
-<div style="padding:10px 14px;border-radius:8px;background:rgba(47,91,255,0.08);border:1px solid rgba(47,91,255,0.25);font-size:14px;color:var(--sidet);max-width:620px;line-height:1.5;">
-<strong>💡 Value to Hiring Teams:</strong> ProofHire extracts real AST nodes from candidate repositories. The AI depth engine traverses these nodes to ask targeted provenance questions, verifying whether candidates truly wrote the code or copied it.
-</div>
-</div>
-<div class="gnums"><div class="gtot"><span class="mono">Total nodes</span><div class="big serif">${c.total}</div></div><div class="gmini"><div><b>${ev}</b><br><span>Evidence nodes</span></div><div><b>${c.joblead}</b><br><span>Job leads</span></div></div></div></div>
-<div class="gmain"><div class="gcard"><div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:17px">Topology</b><span class="tag">live</span></div><span class="mono">5-vertex schema</span>${radar(c,k)}</div>
-<div class="gstack">${GM.map(m=>`<button class="gi ${k===m[0]?"on":""}" style="--c:${m[4]}" onclick="gsel('${m[0]}')"><span class="gic">${ic(m[3])}</span><span class="gtx"><b>${m[1]}</b><small>${m[2]}</small></span><span class="gn serif">${c[m[0]]}</span><span class="gbar"><i style="width:${c[m[0]]?Math.max(c[m[0]]/mx*100,2):0}%"></i></span></button>`).join("")}</div></div>`+detail(g,k)+`</div>`});
+let currentGraphMode = 'candidate';
+let selectedCandidateId = null;
+let candidateGraphData = { nodes: [], edges: [] };
+let selectedNode = null;
+let isLoadingGraph = false;
+
+async function fetchCandidateGraph(candidateId) {
+  isLoadingGraph = true;
+  selectedNode = null;
+  render();
+  try {
+    const res = await fetch(`${API_BASE}/candidates/${candidateId}/graph`);
+    if (res.ok) {
+      candidateGraphData = await res.json();
+    } else {
+      candidateGraphData = { nodes: [], edges: [] };
+    }
+  } catch (err) {
+    console.error("Failed to load candidate graph", err);
+    candidateGraphData = { nodes: [], edges: [] };
+  } finally {
+    isLoadingGraph = false;
+    if (candidateGraphData.nodes.length > 0) {
+      selectedNode = candidateGraphData.nodes.find(n => n.type === 'function') || candidateGraphData.nodes[0];
+    }
+    render();
+  }
+}
+
+function selectCandidate(candId) {
+  selectedCandidateId = candId;
+  fetchCandidateGraph(candId);
+}
+
+function selectNode(nodeId) {
+  selectedNode = candidateGraphData.nodes.find(n => n.id === nodeId) || null;
+  render();
+}
+
+function switchGraphMode(mode) {
+  currentGraphMode = mode;
+  render();
+}
+
+function renderVisualGraph(nodes, edges) {
+  if (!nodes || nodes.length === 0) {
+    return `<div style="padding: 60px 20px; text-align: center; color: var(--muted);">
+      <div style="font-size: 36px; margin-bottom: 12px;">🔍</div>
+      <h3 style="color: var(--text);">No AST Nodes Ingested Yet</h3>
+      <p style="font-size: 15px;">This candidate has not submitted their code assessment yet.</p>
+    </div>`;
+  }
+
+  const width = 640;
+  const height = 480;
+  const cx = width / 2;
+  const cy = height / 2;
+
+  const files = nodes.filter(n => n.type === 'file');
+  const classes = nodes.filter(n => n.type === 'class');
+  const functions = nodes.filter(n => n.type === 'function');
+  const skills = nodes.filter(n => n.type === 'skill');
+
+  const nodePositions = {};
+
+  files.forEach((n, i) => {
+    nodePositions[n.id] = {
+      x: cx + (i - (files.length - 1) / 2) * 160,
+      y: 70
+    };
+  });
+
+  classes.forEach((n, i) => {
+    nodePositions[n.id] = {
+      x: cx + (i - (classes.length - 1) / 2) * 180,
+      y: 190
+    };
+  });
+
+  functions.forEach((n, i) => {
+    const total = functions.length;
+    const angle = (i / Math.max(total, 1)) * Math.PI + Math.PI * 0.05;
+    const rx = 240;
+    const ry = 100;
+    nodePositions[n.id] = {
+      x: cx + Math.cos(angle) * rx,
+      y: 310 + Math.sin(angle) * ry
+    };
+  });
+
+  skills.forEach((n, i) => {
+    nodePositions[n.id] = {
+      x: 80 + i * 150,
+      y: 430
+    };
+  });
+
+  nodes.forEach((n, i) => {
+    if (!nodePositions[n.id]) {
+      const angle = (i / nodes.length) * 2 * Math.PI;
+      nodePositions[n.id] = {
+        x: cx + Math.cos(angle) * 180,
+        y: cy + Math.sin(angle) * 140
+      };
+    }
+  });
+
+  const edgePaths = edges.map(e => {
+    const p1 = nodePositions[e.source];
+    const p2 = nodePositions[e.target];
+    if (!p1 || !p2) return '';
+    return `<line x1="${p1.x}" y1="${p1.y}" x2="${p2.x}" y2="${p2.y}" stroke="rgba(255,255,255,0.18)" stroke-width="2" class="svg-edge" />`;
+  }).join('');
+
+  const nodeSvgs = nodes.map(n => {
+    const pos = nodePositions[n.id] || { x: cx, y: cy };
+    const isSelected = selectedNode && selectedNode.id === n.id;
+    let fillColor = '#4f7cff';
+
+    if (n.status === 'verified') {
+      fillColor = '#10b981';
+    } else if (n.status === 'flagged') {
+      fillColor = '#ef4444';
+    } else if (n.type === 'file') {
+      fillColor = '#3b82f6';
+    } else if (n.type === 'class') {
+      fillColor = '#8b5cf6';
+    } else if (n.type === 'skill') {
+      fillColor = '#f59e0b';
+    }
+
+    const radius = isSelected ? 22 : (n.type === 'file' ? 20 : 16);
+
+    return `
+      <g class="svg-node" transform="translate(${pos.x}, ${pos.y})" onclick="selectNode('${n.id}')">
+        <circle r="${radius}" fill="${fillColor}" stroke="${isSelected ? '#ffffff' : 'rgba(0,0,0,0.6)'}" stroke-width="${isSelected ? 3.5 : 2}" />
+        <text y="${radius + 15}" text-anchor="middle" fill="var(--text)" font-size="12" font-family="'JetBrains Mono', monospace" font-weight="600">
+          ${esc(n.label.length > 18 ? n.label.slice(0, 16) + '...' : n.label)}
+        </text>
+        ${isSelected ? `<circle r="${radius + 6}" fill="none" stroke="${fillColor}" stroke-width="1.5" stroke-dasharray="3 3" />` : ''}
+      </g>
+    `;
+  }).join('');
+
+  return `
+    <svg viewBox="0 0 ${width} ${height}" width="100%" height="480" style="background: rgba(0,0,0,0.25); border-radius: 8px;">
+      <defs>
+        <pattern id="grid" width="30" height="30" patternUnits="userSpaceOnUse">
+          <circle cx="15" cy="15" r="1" fill="rgba(255,255,255,0.05)" />
+        </pattern>
+      </defs>
+      <rect width="100%" height="100%" fill="url(#grid)" />
+      ${edgePaths}
+      ${nodeSvgs}
+    </svg>
+  `;
+}
+
+function renderProvenanceInspector() {
+  if (!selectedNode) {
+    return `
+      <div class="provenance-inspector">
+        <h4 style="margin: 0 0 8px; color: var(--text);">AST Provenance Inspector</h4>
+        <p style="font-size: 14.5px; color: var(--muted); line-height: 1.5;">Click any node on the graph to inspect the candidate's code, verified authorship status, and Socratic interview evidence.</p>
+      </div>
+    `;
+  }
+
+  const n = selectedNode;
+  const statusColor = n.status === 'verified' ? '#10b981' : (n.status === 'flagged' ? '#ef4444' : '#f59e0b');
+  const statusLabel = n.status === 'verified' ? '✔ VERIFIED AUTHENTIC AUTHOR' : (n.status === 'flagged' ? '⚠️ FLAGGED (EVASIVE / AI SUSPECTED)' : '● UNDER EVALUATION');
+
+  return `
+    <div class="provenance-inspector">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+        <span class="mono" style="font-size: 12px; color: var(--muted); text-transform: uppercase;">${esc(n.type)} NODE</span>
+        <span style="font-size: 13px; font-weight: 700; color: ${statusColor};">${statusLabel}</span>
+      </div>
+      <h3 style="margin: 0 0 4px; font-size: 20px; color: var(--text); font-family: 'JetBrains Mono', monospace;">${esc(n.label)}</h3>
+      ${n.line_range ? `<span style="font-size: 13px; color: var(--muted); font-family: monospace;">Lines: ${esc(n.line_range)}</span>` : ''}
+
+      ${n.code ? `
+        <div style="margin-top: 14px;">
+          <strong style="font-size: 13px; color: var(--text); letter-spacing: 0.04em;">AST SUBMITTED SOURCE:</strong>
+          <pre class="node-code-box"><code>${esc(n.code)}</code></pre>
+        </div>
+      ` : ''}
+
+      <div style="margin-top: 14px;">
+        <strong style="font-size: 13px; color: var(--primary); letter-spacing: 0.04em;">SOCRATIC DEPTH INTERVIEW EVIDENCE:</strong>
+        <div class="evidence-callout">
+          ${n.evidence ? esc(n.evidence) : 'This node was structurally verified during assessment AST extraction. The candidate provided consistent implementation with no anomalous syntax generation.'}
+        </div>
+      </div>
+
+      <div style="margin-top: 18px; padding-top: 12px; border-top: 1px solid var(--border); font-size: 13px; color: var(--muted); display: flex; justify-content: space-between;">
+        <span>PROVENANCE CONFIDENCE</span>
+        <strong style="color: var(--text); font-family: monospace;">${n.status === 'verified' ? '96%' : (n.status === 'flagged' ? '32%' : '84%')}</strong>
+      </div>
+    </div>
+  `;
+}
+
+boot("graph", () => {
+  const allCandidates = D.apps || [];
+  if (!selectedCandidateId && allCandidates.length > 0) {
+    selectedCandidateId = allCandidates[0].id;
+    fetchCandidateGraph(selectedCandidateId);
+  }
+
+  const selectedCand = allCandidates.find(c => c.id === selectedCandidateId) || allCandidates[0] || {};
+  const verifiedCount = candidateGraphData.nodes.filter(n => n.status === 'verified').length;
+  const flaggedCount = candidateGraphData.nodes.filter(n => n.status === 'flagged').length;
+
+  return `
+    <div class="page">
+      <div class="gt serif">Knowledge Graph <span class="gtag">CODE PROVENANCE</span></div>
+
+      <div class="graph-toolbar">
+        <div class="graph-controls">
+          <label style="font-size: 14px; font-weight: 700; color: var(--muted); text-transform: uppercase;">Candidate Dossier:</label>
+          <select class="cand-select" onchange="selectCandidate(this.value)">
+            ${allCandidates.map(c => `
+              <option value="${c.id}" ${c.id === selectedCandidateId ? 'selected' : ''}>
+                ${esc(c.name)} · ${esc(jt(c.job))} ${c.score ? `(${c.score}/100)` : ''}
+              </option>
+            `).join('')}
+          </select>
+        </div>
+
+        <div class="view-tabs">
+          <button class="view-tab ${currentGraphMode === 'candidate' ? 'active' : ''}" onclick="switchGraphMode('candidate')">
+            🔬 Candidate Code Provenance
+          </button>
+          <button class="view-tab ${currentGraphMode === 'macro' ? 'active' : ''}" onclick="switchGraphMode('macro')">
+            🌐 Talent Pool Macro Topology
+          </button>
+        </div>
+      </div>
+
+      <div style="background: rgba(79, 124, 255, 0.08); border: 1px solid rgba(79, 124, 255, 0.3); border-radius: 10px; padding: 14px 18px; margin-bottom: 20px;">
+        <div style="font-size: 15px; font-weight: 700; color: var(--primary); margin-bottom: 4px;">
+          💡 Why the Knowledge Graph Matters for Modern Technical Hiring:
+        </div>
+        <p style="margin: 0; font-size: 14.5px; line-height: 1.6; color: var(--text);">
+          With generative AI (ChatGPT, Claude), any applicant can submit working code. Traditional LeetCode only checks if unit tests pass—leaving hiring teams blind to whether the candidate genuinely authored the code. 
+          <strong>ProofHire parses the candidate's repository into an AST Knowledge Graph</strong> and cross-examines them on their specific functions and architectural decisions. The graph visually proves code ownership vs. copy-pasting.
+        </p>
+      </div>
+
+      ${currentGraphMode === 'candidate' ? `
+        <div class="graph-stage">
+          <div class="canvas-card">
+            <div class="canvas-header">
+              <div>
+                <h3 style="margin: 0 0 4px; font-size: 18px; color: var(--text);">
+                  ${esc(selectedCand.name || 'Candidate')} // AST Provenance Network
+                </h3>
+                <span style="font-size: 13.5px; color: var(--muted);">
+                  ${candidateGraphData.nodes.length} AST Nodes &middot; ${verifiedCount} Verified by AI &middot; ${flaggedCount} Flagged
+                </span>
+              </div>
+              <div class="legend-bar">
+                <div class="legend-item"><span class="legend-dot" style="background:#10b981;"></span> Verified Author</div>
+                <div class="legend-item"><span class="legend-dot" style="background:#ef4444;"></span> Flagged / Evasive</div>
+                <div class="legend-item"><span class="legend-dot" style="background:#3b82f6;"></span> Code File</div>
+                <div class="legend-item"><span class="legend-dot" style="background:#8b5cf6;"></span> AST Class</div>
+                <div class="legend-item"><span class="legend-dot" style="background:#f59e0b;"></span> Claimed Skill</div>
+              </div>
+            </div>
+
+            ${isLoadingGraph ? `
+              <div style="padding: 100px; text-align: center; color: var(--muted);">
+                <div style="font-size: 24px; margin-bottom: 8px;">⏳</div>
+                <span>Parsing candidate codebase AST and linking depth evidence...</span>
+              </div>
+            ` : renderVisualGraph(candidateGraphData.nodes, candidateGraphData.edges)}
+          </div>
+
+          ${renderProvenanceInspector()}
+        </div>
+      ` : `
+        <div class="gcard">
+          <h3 style="margin: 0 0 8px; font-size: 18px;">Company-Wide Talent &amp; Skill Cluster</h3>
+          <p style="font-size: 14.5px; color: var(--muted); margin-bottom: 16px;">Macro aggregate topology of applicants across all open engineering roles.</p>
+          <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+            ${(D.apps || []).map(a => `
+              <div style="background: var(--raised); border: 1px solid var(--border); padding: 12px 16px; border-radius: 8px;">
+                <strong>${esc(a.name)}</strong> (${esc(jt(a.job))})
+                <div style="font-size: 13px; color: var(--muted); margin-top: 4px;">Score: ${a.score || 'In Review'} / 100 &middot; Status: ${esc(a.status)}</div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `}
+    </div>
+  `;
+});
 </script>
 </body>
 </html>

@@ -821,6 +821,15 @@ async function renderDepth() {
     </div>`;
 
   shell(`${heading('04 / TECHNICAL CONVERSATION', 'Depth check<span class="heading-dot">.</span>', 'Questions follow the candidate’s own work. Scores stay attached to exact answer evidence.', session ? `<button class="button button-quiet" id="end-session">Finish session</button>` : '')}
+    <div style="display: flex; gap: 10px; margin-bottom: 16px; border-bottom: 1px solid var(--border); padding-bottom: 12px; align-items: center; flex-wrap: wrap;">
+      <button class="button ${!state.showDepthHistory ? 'button-primary' : 'button-quiet'}" id="nav-live-interview" style="font-size: 14.5px; padding: 6px 16px; cursor: pointer;">
+        💬 Active Socratic Interview
+      </button>
+      <button class="button ${state.showDepthHistory ? 'button-primary' : 'button-quiet'}" id="nav-history-learn" style="font-size: 14.5px; padding: 6px 16px; display: inline-flex; align-items: center; gap: 6px; cursor: pointer;">
+        <span>📚 Question History &amp; Model Answers (Learning Center)</span>
+        ${completedAnswers.length > 0 ? `<span class="badge" style="background: rgba(255,255,255,0.2); font-size: 12px; padding: 1px 6px;">${completedAnswers.length}</span>` : ''}
+      </button>
+    </div>
     <div class="depth-layout">
       <section class="chat-panel panel">
         <div class="panel-topline">
@@ -850,7 +859,15 @@ async function renderDepth() {
     if (chatScrollEl) chatScrollEl.innerHTML = chatTranscript();
   }
 
-  // Bind Depth History toggling
+  // Bind Depth History & Tab toggling
+  document.querySelector('#nav-live-interview')?.addEventListener('click', () => {
+    state.showDepthHistory = false;
+    renderDepth();
+  });
+  document.querySelector('#nav-history-learn')?.addEventListener('click', () => {
+    state.showDepthHistory = true;
+    renderDepth();
+  });
   document.querySelector('#toggle-depth-history')?.addEventListener('click', () => {
     state.showDepthHistory = !state.showDepthHistory;
     renderDepth();
@@ -1213,11 +1230,68 @@ function chatTranscript() {
 function renderDepthHistoryView(completedAnswers) {
   if (!completedAnswers || completedAnswers.length === 0) {
     return `
-      <div style="padding: 32px 20px; text-align: center; color: var(--muted);">
-        <div style="font-size: 28px; margin-bottom: 8px;">📜</div>
-        <h3 style="color: var(--text); margin-bottom: 6px;">No Evaluation History Yet</h3>
-        <p style="font-size: 15px; margin-bottom: 16px;">Complete at least one depth check question to review where you went wrong and audit your scores.</p>
-        <button class="button button-primary button-sm" id="close-depth-history">Return to Active Interview</button>
+      <div style="padding: 20px; color: var(--text);">
+        <div style="background: rgba(47, 91, 255, 0.08); border: 1px solid var(--primary); border-radius: 8px; padding: 16px 20px; margin-bottom: 20px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+            <div>
+              <h3 style="margin: 0 0 4px; font-size: 18px; color: var(--primary);">🎓 ProofHire Interactive Learning Center</h3>
+              <p style="margin: 0; font-size: 14.5px; line-height: 1.5; color: var(--text);">
+                Learn how Principal and Senior Engineers answer architectural depth questions. Click <strong>"View Model Answer &amp; Learn"</strong> on any question below to inspect ideal solutions, CS principles, and pitfalls.
+              </p>
+            </div>
+            <button class="button button-primary button-sm" id="return-to-interview" style="font-size: 13.5px;">← Return to Live Interview</button>
+          </div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 16px;">
+          <!-- Curated Question 1 -->
+          <div class="history-turn-card" style="border: 1px solid var(--border); border-radius: 8px; background: var(--card); padding: 16px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <span style="font-size: 14px; font-weight: 700; color: var(--primary);">CURATED ARCHITECTURE DEEP-DIVE</span>
+              <span class="badge" style="background: rgba(16, 185, 129, 0.15); color: #10b981;">SENIOR LEVEL</span>
+            </div>
+            <div style="font-size: 15px; color: var(--text); margin-bottom: 10px;">
+              <strong>Question:</strong> In your Token Bucket limiter, why is <code>time.monotonic()</code> preferred over <code>time.time()</code>, and how does your implementation handle race conditions under concurrent async requests?
+            </div>
+            <div style="display: flex; justify-content: flex-end; margin-top: 8px;">
+              <button class="button button-outline button-sm learn-answer-btn" data-turn="sample_1" data-q="In your Token Bucket limiter, why is time.monotonic() preferred over time.time(), and how does your implementation handle race conditions under concurrent async requests?" data-snippet="def allow(self, tokens=1):
+    now = time.monotonic()
+    elapsed = now - self.last_refill
+    self.tokens = min(self.capacity, self.tokens + elapsed * self.fill_rate)" data-expects="explanation" style="font-size: 14px; padding: 4px 12px; border-color: var(--primary); color: var(--primary);">
+                💡 View Model Answer &amp; Learn
+              </button>
+            </div>
+            <div class="learn-answer-box" id="learn-box-sample_1" style="display: none; margin-top: 12px; padding: 14px; border-radius: 8px; background: rgba(59, 130, 246, 0.08); border: 1px solid var(--primary);">
+              <div style="font-size: 14px; font-weight: 700; color: var(--primary); margin-bottom: 8px;">🌟 SENIOR MODEL ANSWER &amp; KEY CONCEPTS</div>
+              <div class="learn-content" id="learn-content-sample_1">
+                <span style="font-size: 14.5px; color: var(--muted);">Generating model answer...</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Curated Question 2 -->
+          <div class="history-turn-card" style="border: 1px solid var(--border); border-radius: 8px; background: var(--card); padding: 16px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <span style="font-size: 14px; font-weight: 700; color: var(--primary);">CURATED DISTRIBUTED SYSTEMS DEEP-DIVE</span>
+              <span class="badge" style="background: rgba(16, 185, 129, 0.15); color: #10b981;">STAFF LEVEL</span>
+            </div>
+            <div style="font-size: 15px; color: var(--text); margin-bottom: 10px;">
+              <strong>Question:</strong> How would you evolve this in-memory rate limiter into a globally distributed limiter across multiple Kubernetes pods without introducing severe Redis lock contention?
+            </div>
+            <div style="display: flex; justify-content: flex-end; margin-top: 8px;">
+              <button class="button button-outline button-sm learn-answer-btn" data-turn="sample_2" data-q="How would you evolve this in-memory rate limiter into a globally distributed limiter across multiple Kubernetes pods without introducing severe Redis lock contention?" data-snippet="async def check_global_limit(key, limit):
+    pass" data-expects="explanation" style="font-size: 14px; padding: 4px 12px; border-color: var(--primary); color: var(--primary);">
+                💡 View Model Answer &amp; Learn
+              </button>
+            </div>
+            <div class="learn-answer-box" id="learn-box-sample_2" style="display: none; margin-top: 12px; padding: 14px; border-radius: 8px; background: rgba(59, 130, 246, 0.08); border: 1px solid var(--primary);">
+              <div style="font-size: 14px; font-weight: 700; color: var(--primary); margin-bottom: 8px;">🌟 SENIOR MODEL ANSWER &amp; KEY CONCEPTS</div>
+              <div class="learn-content" id="learn-content-sample_2">
+                <span style="font-size: 14.5px; color: var(--muted);">Generating model answer...</span>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     `;
   }
