@@ -121,15 +121,15 @@ function shell(content) {
 
   const authWidget = state.candidateId && state.candidate ? `
     <div class="user-pill">
-      <span style="color: var(--verified); font-size: 11px;">●</span>
-      <span style="color: var(--muted); font-size: 13px;">CANDIDATE:</span>
+      <span style="color: var(--verified); font-size: 13.5px;">●</span>
+      <span style="color: var(--muted); font-size: 14px;">CANDIDATE:</span>
       <strong style="color: var(--text);">${escapeHTML(state.candidate.name)}</strong>
-      <button id="switch-account-btn" style="background: var(--card); border: 1px solid var(--border); border-radius: 4px; color: var(--link); cursor: pointer; font-size: 13px; padding: 2px 6px; margin-left: 4px;">Sign Out</button>
+      <button id="switch-account-btn" style="background: var(--card); border: 1px solid var(--border); border-radius: 4px; color: var(--link); cursor: pointer; font-size: 14px; padding: 2px 6px; margin-left: 4px;">Sign Out</button>
     </div>` : `
-    <a href="#candidate" class="button button-quiet" style="border: 1px solid var(--border); font-size: 13.5px; padding: 4px 10px;">🔑 Sign In / Register</a>`;
+    <a href="#candidate" class="button button-quiet" style="border: 1px solid var(--border); font-size: 14.5px; padding: 4px 10px;">🔑 Sign In / Register</a>`;
 
   const recruiterWidget = `
-    <a href="http://localhost:8000/portal/dashboard.html" target="_blank" class="button button-quiet" style="border: 1px solid var(--border); font-size: 13.5px; padding: 4px 10px; display: inline-flex; align-items: center; gap: 5px; color: var(--text);" title="Access hiring manager pipeline, jobs, and evaluations">
+    <a href="http://localhost:8000/portal/dashboard.html" target="_blank" class="button button-quiet" style="border: 1px solid var(--border); font-size: 14.5px; padding: 4px 10px; display: inline-flex; align-items: center; gap: 5px; color: var(--text);" title="Access hiring manager pipeline, jobs, and evaluations">
       🏢 Recruiter Portal ↗
     </a>`;
 
@@ -146,7 +146,7 @@ function shell(content) {
       </aside>
       <div class="workspace">
       <header class="topbar">
-        <div class="breadcrumb"><a href="#jobs">ProofHire</a><span aria-hidden="true">›</span><span style="color: var(--muted); font-size: 13.5px;">Candidate Desk</span><span aria-hidden="true">›</span><strong>${pageLabel}</strong>${selectedJob ? `<span aria-hidden="true">›</span><span class="breadcrumb-role">${escapeHTML(selectedJob.title)}</span>` : ''}</div>
+        <div class="breadcrumb"><a href="#jobs">ProofHire</a><span aria-hidden="true">›</span><span style="color: var(--muted); font-size: 14.5px;">Candidate Desk</span><span aria-hidden="true">›</span><strong>${pageLabel}</strong>${selectedJob ? `<span aria-hidden="true">›</span><span class="breadcrumb-role">${escapeHTML(selectedJob.title)}</span>` : ''}</div>
         <label class="role-switcher"><span>Role</span><select id="role-switcher" aria-label="Selected role">${state.jobs.map((job) => `<option value="${escapeHTML(job.job_id)}" ${job.job_id === state.selectedJobId ? 'selected' : ''}>${escapeHTML(job.title)}</option>`).join('')}</select></label>
         <div class="topbar-right">
           ${authWidget}
@@ -256,7 +256,7 @@ async function renderJobs() {
   const cards = await Promise.all(jobs.map(async (job, index) => {
     const detail = await API.getJob(job.job_id);
     const metaHtml = [detail.company, detail.seniority + ' track', detail.salary, detail.location, detail.work_mode, detail.employment_type, detail.years_experience ? `${detail.years_experience}+ Yrs Exp` : null].filter(Boolean).map(item => escapeHTML(item)).join(' <span class="separator">/</span> ');
-    const respHtml = (detail.responsibilities && detail.responsibilities.length) ? `<div style="margin-top: 12px; font-size: 13px; color: #94a3b8;"><strong>RESPONSIBILITIES:</strong><ul style="margin: 4px 0 0 16px; padding: 0;">${detail.responsibilities.map(r => `<li>${escapeHTML(r)}</li>`).join('')}</ul></div>` : '';
+    const respHtml = (detail.responsibilities && detail.responsibilities.length) ? `<div style="margin-top: 12px; font-size: 14px; color: #94a3b8;"><strong>RESPONSIBILITIES:</strong><ul style="margin: 4px 0 0 16px; padding: 0;">${detail.responsibilities.map(r => `<li>${escapeHTML(r)}</li>`).join('')}</ul></div>` : '';
     return `<article class="job-row"><div class="job-index">0${index + 1}</div><div class="job-main"><div class="job-company">${metaHtml}</div><h2>${escapeHTML(detail.title)}</h2><p>${escapeHTML(detail.description)}</p>${respHtml}<div class="skill-list" style="margin-top: 12px;">${detail.required_skills.map((skill) => `<span class="skill-tag">${escapeHTML(skill)}</span>`).join('')}</div></div><div class="job-metrics"><span class="metric-label">ASSESSMENT</span><strong>Technical Assessment</strong><span class="metric-meta">DYNAMIC TASK · CODE + DEPTH</span><button class="button button-primary open-job" data-job="${escapeHTML(detail.job_id)}">Apply / Start Assessment <span>↗</span></button></div></article>`;
   }));
   shell(`${heading('01 / CANDIDATE DESK', 'Open Positions<span class="heading-dot">.</span>', 'Browse active requisitions, review verified technical requirements, and start your evidence-backed assessment.', '<a class="button button-primary" href="#candidate">' + (state.candidateId ? 'My Profile 👤' : 'Sign In / Apply ↗') + '</a>')}
@@ -286,15 +286,15 @@ function renderCandidate() {
       </div>
 
       <div id="pane-demo">
-        <div style="margin-bottom: 14px; font-size: 13px; color: var(--muted);">Select a realistic pre-seeded candidate profile to inspect live evaluations, resume in-progress interviews, or review scoring evidence:</div>
+        <div style="margin-bottom: 14px; font-size: 14px; color: var(--muted);">Select a realistic pre-seeded candidate profile to inspect live evaluations, resume in-progress interviews, or review scoring evidence:</div>
         <div class="demo-candidates-grid">
           <div class="demo-cand-card">
             <div>
               <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
-                <strong style="font-size: 15px; color: var(--text);">Arjun Mehta</strong>
-                <span style="font-size: 13.5px; padding: 2px 8px; border-radius: 4px; background: rgba(52, 216, 160, 0.15); color: var(--verified); font-weight: 600;">Rank #1 · 88/100</span>
+                <strong style="font-size: 16px; color: var(--text);">Arjun Mehta</strong>
+                <span style="font-size: 14.5px; padding: 2px 8px; border-radius: 4px; background: rgba(52, 216, 160, 0.15); color: var(--verified); font-weight: 600;">Rank #1 · 88/100</span>
               </div>
-              <p style="font-size: 14px; color: var(--muted); margin: 0 0 12px 0;">Senior Fullstack & Distributed Systems. Completed challenge with 6 recruiter-verified evidence claims.</p>
+              <p style="font-size: 15px; color: var(--muted); margin: 0 0 12px 0;">Senior Fullstack & Distributed Systems. Completed challenge with 6 recruiter-verified evidence claims.</p>
             </div>
             <button class="button button-primary demo-login-btn" type="button" data-cand="cand_arjun" data-sub="sub_arjun_1" data-sess="sess_arjun_1" style="width: 100%;">Sign in as Arjun (Shortlisted) ↗</button>
           </div>
@@ -302,10 +302,10 @@ function renderCandidate() {
           <div class="demo-cand-card">
             <div>
               <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
-                <strong style="font-size: 15px; color: var(--text);">Asha Rao</strong>
-                <span style="font-size: 13.5px; padding: 2px 8px; border-radius: 4px; background: rgba(61, 90, 254, 0.15); color: var(--primary); font-weight: 600;">Rank #2 · 72/100</span>
+                <strong style="font-size: 16px; color: var(--text);">Asha Rao</strong>
+                <span style="font-size: 14.5px; padding: 2px 8px; border-radius: 4px; background: rgba(61, 90, 254, 0.15); color: var(--primary); font-weight: 600;">Rank #2 · 72/100</span>
               </div>
-              <p style="font-size: 14px; color: var(--muted); margin: 0 0 12px 0;">Backend Python Developer. Clean data structures, solid sliding window implementation with depth answers.</p>
+              <p style="font-size: 15px; color: var(--muted); margin: 0 0 12px 0;">Backend Python Developer. Clean data structures, solid sliding window implementation with depth answers.</p>
             </div>
             <button class="button button-outline demo-login-btn" type="button" data-cand="cand_asha" data-sub="sub_asha_1" data-sess="sess_asha_1" style="width: 100%;">Sign in as Asha (Interview) ↗</button>
           </div>
@@ -313,10 +313,10 @@ function renderCandidate() {
           <div class="demo-cand-card">
             <div>
               <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
-                <strong style="font-size: 15px; color: var(--text);">Rohan Verma</strong>
-                <span style="font-size: 13.5px; padding: 2px 8px; border-radius: 4px; background: rgba(255, 138, 30, 0.15); color: var(--amber); font-weight: 600;">In Progress (Turn 3/5)</span>
+                <strong style="font-size: 16px; color: var(--text);">Rohan Verma</strong>
+                <span style="font-size: 14.5px; padding: 2px 8px; border-radius: 4px; background: rgba(255, 138, 30, 0.15); color: var(--amber); font-weight: 600;">In Progress (Turn 3/5)</span>
               </div>
-              <p style="font-size: 14px; color: var(--muted); margin: 0 0 12px 0;">Junior Backend applicant. Has saved submission draft and 3 completed depth turns ready to resume.</p>
+              <p style="font-size: 15px; color: var(--muted); margin: 0 0 12px 0;">Junior Backend applicant. Has saved submission draft and 3 completed depth turns ready to resume.</p>
             </div>
             <button class="button button-outline demo-login-btn" type="button" data-cand="cand_rohan" data-sub="sub_rohan_1" data-sess="sess_rohan_1" style="width: 100%;">Resume as Rohan (In-Progress) ↗</button>
           </div>
@@ -324,10 +324,10 @@ function renderCandidate() {
           <div class="demo-cand-card">
             <div>
               <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
-                <strong style="font-size: 15px; color: var(--text);">Ravi Kumar</strong>
-                <span style="font-size: 13.5px; padding: 2px 8px; border-radius: 4px; background: rgba(239, 68, 68, 0.15); color: #ef4444; font-weight: 600;">Score: 39/100 · Rejected</span>
+                <strong style="font-size: 16px; color: var(--text);">Ravi Kumar</strong>
+                <span style="font-size: 14.5px; padding: 2px 8px; border-radius: 4px; background: rgba(239, 68, 68, 0.15); color: #ef4444; font-weight: 600;">Score: 39/100 · Rejected</span>
               </div>
-              <p style="font-size: 14px; color: var(--muted); margin: 0 0 12px 0;">Junior Applicant. Demonstrates how shallow buzzwords and misconceptions are flagged by rubric.</p>
+              <p style="font-size: 15px; color: var(--muted); margin: 0 0 12px 0;">Junior Applicant. Demonstrates how shallow buzzwords and misconceptions are flagged by rubric.</p>
             </div>
             <button class="button button-quiet demo-login-btn" type="button" data-cand="cand_ravi" data-sub="sub_ravi_1" data-sess="sess_ravi_1" style="width: 100%;">Sign in as Ravi (Flagged) ↗</button>
           </div>
@@ -335,11 +335,11 @@ function renderCandidate() {
 
         <div style="margin-top: 24px; padding: 18px; border: 1px solid var(--border); border-radius: 10px; background: var(--card);">
           <form id="manual-login-form" style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
-            <label style="font-size: 14px; color: var(--muted); font-weight: 600;">OR ENTER REGISTERED CANDIDATE EMAIL / ID:</label>
+            <label style="font-size: 15px; color: var(--muted); font-weight: 600;">OR ENTER REGISTERED CANDIDATE EMAIL / ID:</label>
             <input id="manual-login-input" placeholder="e.g. arjun.mehta@devmail.io or cand_arjun" style="flex: 1; min-width: 240px; padding: 8px 12px; border-radius: 6px; background: var(--raised); border: 1px solid var(--border); color: var(--text);" required>
             <button class="button button-primary" type="submit">Sign In ↗</button>
           </form>
-          <div id="manual-login-msg" style="margin-top: 8px; font-size: 14px;"></div>
+          <div id="manual-login-msg" style="margin-top: 8px; font-size: 15px;"></div>
         </div>
       </div>
 
@@ -349,17 +349,17 @@ function renderCandidate() {
           <label>FULL NAME<input name="name" required placeholder="Asha Rao"></label>
           <div class="form-pair">
             <label>EMAIL<input name="email" type="email" required placeholder="asha@example.com"></label>
-            <label>GITHUB URL <a href="http://localhost:8000/api/auth/github/login" style="font-size: 13px; margin-left: 8px; color: #3b82f6;">[Connect for Higher Limits]</a><input name="github_url" type="url" placeholder="https://github.com/username"><input type="hidden" name="github_token" value="${escapeHTML(githubToken)}"></label>
+            <label>GITHUB URL <a href="http://localhost:8000/api/auth/github/login" style="font-size: 14px; margin-left: 8px; color: #3b82f6;">[Connect for Higher Limits]</a><input name="github_url" type="url" placeholder="https://github.com/username"><input type="hidden" name="github_token" value="${escapeHTML(githubToken)}"></label>
           </div>
-          ${githubToken ? '<div style="color: #10b981; font-size: 13.5px; margin-bottom: 12px;">✓ GitHub Account Connected</div>' : ''}
+          ${githubToken ? '<div style="color: #10b981; font-size: 14.5px; margin-bottom: 12px;">✓ GitHub Account Connected</div>' : ''}
           <label>LINKEDIN OR RESUME PROFILE <span class="label-note">PASTE TEXT OR UPLOAD FILE</span>
             <div style="display: flex; gap: 8px; margin-bottom: 8px;">
-              <input type="file" id="resume-upload" accept=".txt,.md,.pdf" style="font-size: 13.5px;">
+              <input type="file" id="resume-upload" accept=".txt,.md,.pdf" style="font-size: 14.5px;">
             </div>
             <textarea name="linkedin_text" id="resume-text" rows="4" placeholder="Paste profile summary or upload a text-based resume file..."></textarea>
           </label>
           <div class="field-divider"><span>PROJECT CONTEXT</span><span>02 — 02</span></div>
-          <div style="color: #64748b; font-size: 13.5px; padding: 12px 0;">Repositories and commits are parsed automatically into an interactive Knowledge Graph.</div>
+          <div style="color: #64748b; font-size: 14.5px; padding: 12px 0;">Repositories and commits are parsed automatically into an interactive Knowledge Graph.</div>
           <div class="form-actions">
             <button class="button button-primary" type="submit">Register & Build Candidate Graph <span>↗</span></button>
           </div>
@@ -434,7 +434,7 @@ function renderCandidate() {
       const noteEl = document.querySelector('#resume-upload-status') || (() => {
         const span = document.createElement('div');
         span.id = 'resume-upload-status';
-        span.style.cssText = 'font-size: 13.5px; margin-top: 6px; font-weight: 500;';
+        span.style.cssText = 'font-size: 14.5px; margin-top: 6px; font-weight: 500;';
         event.target.parentNode.appendChild(span);
         return span;
       })();
@@ -491,12 +491,12 @@ function renderCandidate() {
   shell(`${heading('02 / CANDIDATE PROFILE', 'Your verified profile<span class="heading-dot">.</span>', 'Update your details, adjust claimed experience, or fetch newly uploaded GitHub projects into your Knowledge Graph.')}
     <div style="margin-bottom: 20px; padding: 12px 18px; border: 1px solid var(--border); border-radius: 8px; background: var(--raised); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
       <div>
-        <span style="font-size: 13.5px; color: var(--muted); font-weight: 600;">ACTIVE CANDIDATE:</span> 
-        <strong style="font-size: 15px; color: var(--text);">${escapeHTML(prior?.name ?? '')}</strong> 
-        <code style="font-size: 13.5px; margin-left: 8px; padding: 2px 6px; border-radius: 4px; background: var(--card); border: 1px solid var(--border); color: var(--primary);">${escapeHTML(state.candidateId)}</code> 
-        <span style="font-size: 14px; color: var(--muted); margin-left: 10px;">${escapeHTML(prior?.email ?? '')}</span>
+        <span style="font-size: 14.5px; color: var(--muted); font-weight: 600;">ACTIVE CANDIDATE:</span> 
+        <strong style="font-size: 16px; color: var(--text);">${escapeHTML(prior?.name ?? '')}</strong> 
+        <code style="font-size: 14.5px; margin-left: 8px; padding: 2px 6px; border-radius: 4px; background: var(--card); border: 1px solid var(--border); color: var(--primary);">${escapeHTML(state.candidateId)}</code> 
+        <span style="font-size: 15px; color: var(--muted); margin-left: 10px;">${escapeHTML(prior?.email ?? '')}</span>
       </div>
-      <button id="profile-logout-btn" class="button button-quiet" style="font-size: 13.5px; padding: 4px 10px;" type="button">Switch Account / Sign Out</button>
+      <button id="profile-logout-btn" class="button button-quiet" style="font-size: 14.5px; padding: 4px 10px;" type="button">Switch Account / Sign Out</button>
     </div>
 
     <div class="form-layout"><form class="terminal-form" id="candidate-form">
@@ -504,17 +504,17 @@ function renderCandidate() {
       <label>FULL NAME<input name="name" required placeholder="Asha Rao" value="${escapeHTML(prior?.name ?? '')}"></label>
       <div class="form-pair">
         <label>EMAIL<input name="email" type="email" required placeholder="asha@example.com" value="${escapeHTML(prior?.email ?? '')}"></label>
-        <label>GITHUB URL <a href="http://localhost:8000/api/auth/github/login" style="font-size: 13px; margin-left: 8px; color: #3b82f6;">[Connect for Higher Limits]</a><input name="github_url" type="url" placeholder="https://github.com/username" value="${escapeHTML(prior?.github_url ?? '')}"><input type="hidden" name="github_token" value="${escapeHTML(githubToken)}"></label>
+        <label>GITHUB URL <a href="http://localhost:8000/api/auth/github/login" style="font-size: 14px; margin-left: 8px; color: #3b82f6;">[Connect for Higher Limits]</a><input name="github_url" type="url" placeholder="https://github.com/username" value="${escapeHTML(prior?.github_url ?? '')}"><input type="hidden" name="github_token" value="${escapeHTML(githubToken)}"></label>
       </div>
-      ${githubToken ? '<div style="color: #10b981; font-size: 13.5px; margin-bottom: 12px;">✓ GitHub Account Connected</div>' : ''}
+      ${githubToken ? '<div style="color: #10b981; font-size: 14.5px; margin-bottom: 12px;">✓ GitHub Account Connected</div>' : ''}
       <label>LINKEDIN OR RESUME PROFILE <span class="label-note">PASTE TEXT OR UPLOAD FILE</span>
         <div style="display: flex; gap: 8px; margin-bottom: 8px;">
-          <input type="file" id="resume-upload" accept=".txt,.md,.pdf" style="font-size: 13.5px;">
+          <input type="file" id="resume-upload" accept=".txt,.md,.pdf" style="font-size: 14.5px;">
         </div>
         <textarea name="linkedin_text" id="resume-text" rows="4" placeholder="Paste profile summary or upload a text-based resume file...">${escapeHTML(prior?.linkedin_text ?? '')}</textarea>
       </label>
       <div class="field-divider"><span>PROJECT CONTEXT</span><span>02 — 02</span></div>
-      <div style="color: #64748b; font-size: 13.5px; padding: 12px 0;">Repositories and commits are parsed automatically into an interactive Knowledge Graph.</div>
+      <div style="color: #64748b; font-size: 14.5px; padding: 12px 0;">Repositories and commits are parsed automatically into an interactive Knowledge Graph.</div>
       <div class="form-actions" style="display: flex; gap: 12px; flex-wrap: wrap;">
         <button class="button button-primary" type="submit">Update Details <span>✔</span></button>
         <button class="button button-outline" id="resync-github-btn" type="button">🔄 Fetch & Re-sync GitHub Projects</button>
@@ -530,11 +530,11 @@ function renderCandidate() {
       <div class="mini-stat"><span>GRAPH STATUS</span><b>${escapeHTML(prior?.graph_status ?? 'NOT BUILT')}</b></div>
       <div id="candidate-result">${prior?.graph_summary ? `<div class="result-callout"><i class="status-dot online"></i><strong>GRAPH ACTIVE</strong><span>${prior.graph_summary.nodes ?? 0} nodes · ${prior.graph_summary.edges ?? 0} edges</span><a href="#graph" style="margin-left: 8px;">View graph →</a></div>` : ''}</div>
       <div style="margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--border);">
-        <span style="font-size: 13px; color: var(--muted); font-weight: 600; letter-spacing: 0.05em; display: block; margin-bottom: 8px;">QUICK ASSESSMENT LINKS</span>
+        <span style="font-size: 14px; color: var(--muted); font-weight: 600; letter-spacing: 0.05em; display: block; margin-bottom: 8px;">QUICK ASSESSMENT LINKS</span>
         <div style="display: flex; flex-direction: column; gap: 6px;">
-          <a href="#task" class="text-link" style="font-size: 14px;">→ 03 / Practical Assessment</a>
-          <a href="#depth" class="text-link" style="font-size: 14px;">→ 04 / AI Depth Check Interview</a>
-          <a href="#shortlist" class="text-link" style="font-size: 14px;">→ 05 / My Evaluation & Results</a>
+          <a href="#task" class="text-link" style="font-size: 15px;">→ 03 / Practical Assessment</a>
+          <a href="#depth" class="text-link" style="font-size: 15px;">→ 04 / AI Depth Check Interview</a>
+          <a href="#shortlist" class="text-link" style="font-size: 15px;">→ 05 / My Evaluation & Results</a>
         </div>
       </div>
     </aside>
@@ -620,16 +620,16 @@ async function renderTask() {
     }
   }
   const task = state.task;
-  shell(`${heading('03 / ASSESSMENT', 'Technical Assessment<span class="heading-dot">.</span>', 'Solve the role-specific problem. Your submitted implementation will form the basis of the AI depth check interview.', `<button class="button button-quiet" id="reset-code-btn" type="button" style="font-size: 13.5px;">↺ Reset starter template</button>`)}
+  shell(`${heading('03 / ASSESSMENT', 'Technical Assessment<span class="heading-dot">.</span>', 'Solve the role-specific problem. Your submitted implementation will form the basis of the AI depth check interview.', `<button class="button button-quiet" id="reset-code-btn" type="button" style="font-size: 14.5px;">↺ Reset starter template</button>`)}
     <div class="task-layout">
       <section class="task-brief panel">
         <div class="panel-topline">
           <span>ASSESSMENT BRIEF</span>
           <span class="live-tag"><i class="status-dot online"></i> ${escapeHTML(job.company)}</span>
         </div>
-        <div style="margin-bottom: 14px; padding: 8px 12px; background: rgba(255,255,255,0.03); border-radius: 6px; border: 1px solid var(--border); font-size: 14px; color: var(--muted); display: flex; justify-content: space-between; align-items: center;">
+        <div style="margin-bottom: 14px; padding: 8px 12px; background: rgba(255,255,255,0.03); border-radius: 6px; border: 1px solid var(--border); font-size: 15px; color: var(--muted); display: flex; justify-content: space-between; align-items: center;">
           <span>Target Position: <strong style="color: var(--text);">${escapeHTML(job.title)}</strong></span>
-          <span style="font-size: 13.5px; color: var(--primary); font-family: monospace;">${escapeHTML(job.job_id)}</span>
+          <span style="font-size: 14.5px; color: var(--primary); font-family: monospace;">${escapeHTML(job.job_id)}</span>
         </div>
         ${task ? `
           <div class="task-heading">
@@ -789,17 +789,17 @@ async function renderDepth() {
           <span><i class="status-dot ${session ? 'online' : 'offline'}"></i> ${session ? `SESSION ${escapeHTML(session.slice(-8))}` : 'SESSION NOT STARTED'}</span>
           <div style="display:flex; align-items:center; gap:8px;">
             ${completedAnswers.length > 0 ? `
-              <button class="button ${state.showDepthHistory ? 'button-primary' : 'button-quiet'}" id="toggle-depth-history" style="font-size: 13.5px; padding: 2px 10px; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px;">
+              <button class="button ${state.showDepthHistory ? 'button-primary' : 'button-quiet'}" id="toggle-depth-history" style="font-size: 14.5px; padding: 2px 10px; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px;">
                 ${state.showDepthHistory ? '💬 Active Interview' : `📜 Turn History & Audit (${completedAnswers.length})`}
               </button>
             ` : ''}
-            <span>${turn ? `<span class="badge" style="margin-right: 8px; font-size: 13px; padding: 2px 8px;">${escapeHTML(turn.phase_label ?? (turn.turn_number <= 3 ? 'PHASE 1: PROVENANCE' : 'PHASE 2: CODE VERIFICATION'))}</span>TURN ${turn.turn_number} / 6` : 'WAITING'}</span>
+            <span>${turn ? `<span class="badge" style="margin-right: 8px; font-size: 14px; padding: 2px 8px;">${escapeHTML(turn.phase_label ?? (turn.turn_number <= 3 ? 'PHASE 1: PROVENANCE' : 'PHASE 2: CODE VERIFICATION'))}</span>TURN ${turn.turn_number} / 6` : 'WAITING'}</span>
           </div>
         </div>
 
         ${state.showDepthHistory ? renderDepthHistoryView(completedAnswers) : `
           <div class="chat-scroll" id="chat-scroll">${session ? `<div class="chat-message system-message"><span class="message-stamp">PROOFHIRE / INTERVIEWER</span><p class="typewriter">${escapeHTML(turn?.text ?? (result?.status === 'done' ? 'Depth check complete. Your answers are ready for recruiter review.' : 'Session complete.'))}</p>${turn?.code_snippet ? `<pre class="snippet"><span>${escapeHTML(turn.code_snippet.path)}:${turn.code_snippet.start_line}</span><code>${escapeHTML(turn.code_snippet.code)}</code></pre>` : ''}</div>${result ? `<div class="chat-message answer-message"><span class="message-stamp">CANDIDATE / TURN ${result.evaluation.turn_number}</span><p>${escapeHTML(result.evaluation.evidence_quote || 'No answer provided.')}</p><span class="answer-score">SCORE ${result.evaluation.score}/5 · ${escapeHTML(result.evaluation.flags.join(', ') || 'NO FLAGS')}</span></div><div class="chat-message system-message follow-up"><span class="message-stamp">PROOFHIRE / NEXT</span><p class="typewriter">${escapeHTML(result.next?.text ?? 'Depth check complete. The evidence is ready for recruiter review.')}</p></div>` : ''}` : emptyChatHtml}</div>
-          ${session && !isDone ? `<form id="answer-form" class="answer-form"><label for="candidate-answer">${turn?.expects === 'code' ? 'CODE RESPONSE' : 'YOUR RESPONSE'}</label>${turn?.expects === 'code' ? '<textarea id="candidate-answer" name="answer" class="code-input" rows="4" placeholder="Write or paste a small code change..."></textarea>' : '<textarea id="candidate-answer" name="answer" rows="3" placeholder="Explain your reasoning, referring to the submitted code..."></textarea>'}<div class="answer-controls"><span class="form-hint">ENTER TO SEND · SHIFT+ENTER FOR NEW LINE</span><button class="button button-primary" type="submit">Send answer <span>↗</span></button></div></form><div class="voice-controls" style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border-color);"><button class="button button-outline" id="start-voice-call" type="button">🎙️ Start Voice-to-Voice Call (Alpha)</button><div id="voice-status" style="margin-top: 8px; font-size: 14px; font-family: monospace; color: var(--accent-color);"></div></div>` : session ? `<div class="session-complete"><i class="status-dot online"></i> <strong>SESSION COMPLETE</strong> · EVIDENCE SAVED<div style="margin-top: 14px; display: flex; gap: 10px; align-items: center;"><a href="#shortlist" class="button button-primary">Review in Shortlist →</a><button class="button button-quiet" id="restart-depth" type="button">Start new session ↻</button></div></div>` : ''}
+          ${session && !isDone ? `<form id="answer-form" class="answer-form"><label for="candidate-answer">${turn?.expects === 'code' ? 'CODE RESPONSE' : 'YOUR RESPONSE'}</label>${turn?.expects === 'code' ? '<textarea id="candidate-answer" name="answer" class="code-input" rows="4" placeholder="Write or paste a small code change..."></textarea>' : '<textarea id="candidate-answer" name="answer" rows="3" placeholder="Explain your reasoning, referring to the submitted code..."></textarea>'}<div class="answer-controls"><span class="form-hint">ENTER TO SEND · SHIFT+ENTER FOR NEW LINE</span><button class="button button-primary" type="submit">Send answer <span>↗</span></button></div></form><div class="voice-controls" style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border-color);"><button class="button button-outline" id="start-voice-call" type="button">🎙️ Start Voice-to-Voice Call (Alpha)</button><div id="voice-status" style="margin-top: 8px; font-size: 15px; font-family: monospace; color: var(--accent-color);"></div></div>` : session ? `<div class="session-complete"><i class="status-dot online"></i> <strong>SESSION COMPLETE</strong> · EVIDENCE SAVED<div style="margin-top: 14px; display: flex; gap: 10px; align-items: center;"><a href="#shortlist" class="button button-primary">Review in Shortlist →</a><button class="button button-quiet" id="restart-depth" type="button">Start new session ↻</button></div></div>` : ''}
         `}
       </section>
 
@@ -1055,37 +1055,37 @@ function chatTranscript() {
         <p style="margin: 6px 0 10px;">${escapeHTML(entry.answer)}</p>
 
         <div class="eval-audit-box" style="margin-top: 10px; padding: 10px 12px; background: rgba(0, 0, 0, 0.45); border: 1px solid var(--border); border-radius: 8px;">
-          <div style="font-size: 13px; font-weight: 700; color: var(--amber); margin-bottom: 4px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 4px;">
+          <div style="font-size: 14px; font-weight: 700; color: var(--amber); margin-bottom: 4px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 4px;">
             <span>WHERE YOU WENT WRONG / RUBRIC ANALYSIS</span>
             <div style="display: flex; gap: 4px; align-items: center;">
-              ${(evaluation.flags || []).map(f => `<span class="flag-tag" style="font-size: 12px; padding: 1px 6px;">${escapeHTML(f)}</span>`).join('')}
+              ${(evaluation.flags || []).map(f => `<span class="flag-tag" style="font-size: 14px; padding: 1px 6px;">${escapeHTML(f)}</span>`).join('')}
             </div>
           </div>
-          <p style="margin: 0 0 6px; font-size: 13.5px; line-height: 1.6; color: var(--text);">${escapeHTML(evaluation.reasoning || 'Evaluated against question constraints and code context.')}</p>
+          <p style="margin: 0 0 6px; font-size: 14.5px; line-height: 1.6; color: var(--text);">${escapeHTML(evaluation.reasoning || 'Evaluated against question constraints and code context.')}</p>
 
           ${evaluation.dimensions && Object.keys(evaluation.dimensions).length ? `
-            <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 6px; font-size: 13px; color: var(--muted); border-top: 1px dashed rgba(255,255,255,0.08); padding-top: 6px;">
+            <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 6px; font-size: 14px; color: var(--muted); border-top: 1px dashed rgba(255,255,255,0.08); padding-top: 6px;">
               ${Object.entries(evaluation.dimensions).map(([d, val]) => `<span>${escapeHTML(d)}: <b style="color:var(--text);">${val}/5</b></span>`).join('')}
             </div>
           ` : ''}
 
           ${isDisputed ? `
-            <div style="margin-top: 6px; padding: 6px 10px; background: rgba(255, 138, 30, 0.12); border: 1px solid #ff8a1e; border-radius: 6px; font-size: 13.5px; color: #ff8a1e;">
+            <div style="margin-top: 6px; padding: 6px 10px; background: rgba(255, 138, 30, 0.12); border: 1px solid #ff8a1e; border-radius: 6px; font-size: 14.5px; color: #ff8a1e;">
               <strong>⚠️ Evaluation Issue Reported:</strong> “${escapeHTML(evaluation.dispute_reason || 'Candidate contested this evaluation.')}”
-              <div style="font-size: 13px; color: var(--muted); margin-top: 2px;">This turn has been flagged for human recruiter audit.</div>
+              <div style="font-size: 14px; color: var(--muted); margin-top: 2px;">This turn has been flagged for human recruiter audit.</div>
             </div>
           ` : `
             <div style="display: flex; justify-content: flex-end; margin-top: 6px;">
-              <button class="button button-quiet button-sm open-dispute-trigger" data-turn="${evaluation.turn_number}" style="font-size: 13px; padding: 2px 8px; border: 1px solid var(--border); color: var(--muted);">
+              <button class="button button-quiet button-sm open-dispute-trigger" data-turn="${evaluation.turn_number}" style="font-size: 14px; padding: 2px 8px; border: 1px solid var(--border); color: var(--muted);">
                 🚩 Report Evaluation Issue
               </button>
             </div>
             <div class="dispute-box" id="dispute-box-${evaluation.turn_number}" style="display: none; margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.1);">
-              <label style="font-size: 13px; color: var(--amber); display: block; margin-bottom: 4px;">CONTEST THIS EVALUATION</label>
-              <textarea class="code-input dispute-reason-input" id="dispute-reason-${evaluation.turn_number}" rows="2" style="width: 100%; font-size: 13.5px; padding: 6px; border-radius: 4px; margin-bottom: 6px;" placeholder="Explain why this score or reasoning is inaccurate..."></textarea>
+              <label style="font-size: 14px; color: var(--amber); display: block; margin-bottom: 4px;">CONTEST THIS EVALUATION</label>
+              <textarea class="code-input dispute-reason-input" id="dispute-reason-${evaluation.turn_number}" rows="2" style="width: 100%; font-size: 14.5px; padding: 6px; border-radius: 4px; margin-bottom: 6px;" placeholder="Explain why this score or reasoning is inaccurate..."></textarea>
               <div style="display: flex; gap: 6px; justify-content: flex-end;">
-                <button class="button button-quiet button-sm cancel-dispute-btn" data-turn="${evaluation.turn_number}" style="font-size: 13px; padding: 2px 8px;">Cancel</button>
-                <button class="button button-primary button-sm submit-dispute-btn" data-turn="${evaluation.turn_number}" style="font-size: 13px; padding: 2px 8px;">Submit Report ↗</button>
+                <button class="button button-quiet button-sm cancel-dispute-btn" data-turn="${evaluation.turn_number}" style="font-size: 14px; padding: 2px 8px;">Cancel</button>
+                <button class="button button-primary button-sm submit-dispute-btn" data-turn="${evaluation.turn_number}" style="font-size: 14px; padding: 2px 8px;">Submit Report ↗</button>
               </div>
             </div>
           `}
@@ -1102,7 +1102,7 @@ function renderDepthHistoryView(completedAnswers) {
       <div style="padding: 32px 20px; text-align: center; color: var(--muted);">
         <div style="font-size: 28px; margin-bottom: 8px;">📜</div>
         <h3 style="color: var(--text); margin-bottom: 6px;">No Evaluation History Yet</h3>
-        <p style="font-size: 14px; margin-bottom: 16px;">Complete at least one depth check question to review where you went wrong and audit your scores.</p>
+        <p style="font-size: 15px; margin-bottom: 16px;">Complete at least one depth check question to review where you went wrong and audit your scores.</p>
         <button class="button button-primary button-sm" id="close-depth-history">Return to Active Interview</button>
       </div>
     `;
@@ -1112,9 +1112,9 @@ function renderDepthHistoryView(completedAnswers) {
     <div class="depth-history-container" style="padding: 16px; overflow-y: auto; max-height: calc(100vh - 250px);">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--border);">
         <div>
-          <div style="font-size: 13px; color: var(--primary); font-weight: 700; letter-spacing: 0.05em;">DEPTH CHECK AUDIT LEDGER</div>
+          <div style="font-size: 14px; color: var(--primary); font-weight: 700; letter-spacing: 0.05em;">DEPTH CHECK AUDIT LEDGER</div>
           <h3 style="margin: 2px 0 4px; font-size: 18px; color: var(--text);">Turn History &amp; Evaluator Rubric</h3>
-          <p style="margin: 0; font-size: 14px; color: var(--muted);">See where marks were deducted, review AI evaluator reasoning, and contest inaccurate evaluations.</p>
+          <p style="margin: 0; font-size: 15px; color: var(--muted);">See where marks were deducted, review AI evaluator reasoning, and contest inaccurate evaluations.</p>
         </div>
         <button class="button button-quiet button-sm" id="close-depth-history">← Return to Session</button>
       </div>
@@ -1131,59 +1131,59 @@ function renderDepthHistoryView(completedAnswers) {
             <div class="history-turn-card" style="border: 1px solid var(--border); border-radius: 8px; background: var(--card); padding: 16px;">
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px;">
                 <div style="display: flex; align-items: center; gap: 8px;">
-                  <span style="font-size: 14px; font-weight: 700; color: var(--text);">TURN ${turnNum} OF 6</span>
-                  <span style="font-size: 13px; padding: 2px 6px; border-radius: 4px; background: rgba(255,255,255,0.06); color: var(--muted);">
+                  <span style="font-size: 15px; font-weight: 700; color: var(--text);">TURN ${turnNum} OF 6</span>
+                  <span style="font-size: 14px; padding: 2px 6px; border-radius: 4px; background: rgba(255,255,255,0.06); color: var(--muted);">
                     ${escapeHTML(qTurn.phase_label ?? (turnNum <= 3 ? 'PHASE 1: PROVENANCE' : 'PHASE 2: CODE VERIFICATION'))}
                   </span>
                 </div>
                 <div style="display: flex; gap: 6px; align-items: center;">
-                  <span style="font-size: 14px; font-weight: 700; color: ${scoreColor}; padding: 2px 8px; background: rgba(255,255,255,0.05); border-radius: 4px; border: 1px solid var(--border);">
+                  <span style="font-size: 15px; font-weight: 700; color: ${scoreColor}; padding: 2px 8px; background: rgba(255,255,255,0.05); border-radius: 4px; border: 1px solid var(--border);">
                     SCORE ${evalItem.score}/5
                   </span>
-                  ${(evalItem.flags || []).map(f => `<span class="flag-tag" style="font-size: 12px; padding: 1px 6px;">${escapeHTML(f)}</span>`).join('')}
+                  ${(evalItem.flags || []).map(f => `<span class="flag-tag" style="font-size: 14px; padding: 1px 6px;">${escapeHTML(f)}</span>`).join('')}
                 </div>
               </div>
 
               ${qTurn.text ? `
-                <div style="margin: 10px 0; font-size: 14px; color: var(--muted); background: var(--raised); padding: 10px 12px; border-radius: 6px;">
+                <div style="margin: 10px 0; font-size: 15px; color: var(--muted); background: var(--raised); padding: 10px 12px; border-radius: 6px;">
                   <strong style="color: var(--primary); display: block; margin-bottom: 4px;">Interviewer Question:</strong>
                   <div style="color: var(--text);">${escapeHTML(qTurn.text)}</div>
                   ${qTurn.code_snippet ? `<pre class="snippet" style="margin-top: 8px;"><span>${escapeHTML(qTurn.code_snippet.path)}:${qTurn.code_snippet.start_line}</span><code>${escapeHTML(qTurn.code_snippet.code)}</code></pre>` : ''}
                 </div>
               ` : ''}
 
-              <div style="margin: 10px 0; font-size: 14px;">
+              <div style="margin: 10px 0; font-size: 15px;">
                 <strong style="color: var(--link); display: block; margin-bottom: 4px;">Your Submitted Answer:</strong>
-                <p style="margin: 0; padding: 8px 12px; background: rgba(59, 130, 246, 0.05); border-left: 2px solid var(--link); border-radius: 0 4px 4px 0; font-family: 'JetBrains Mono', monospace; font-size: 13.5px; color: var(--text); white-space: pre-wrap;">${escapeHTML(entry.answer || evalItem.evidence_quote || 'No answer recorded.')}</p>
+                <p style="margin: 0; padding: 8px 12px; background: rgba(59, 130, 246, 0.05); border-left: 2px solid var(--link); border-radius: 0 4px 4px 0; font-family: 'JetBrains Mono', monospace; font-size: 14.5px; color: var(--text); white-space: pre-wrap;">${escapeHTML(entry.answer || evalItem.evidence_quote || 'No answer recorded.')}</p>
               </div>
 
               <div style="margin-top: 12px; padding: 12px 14px; background: rgba(0, 0, 0, 0.4); border-radius: 6px; border: 1px solid rgba(255,255,255,0.06);">
-                <div style="font-size: 13px; font-weight: 700; color: var(--amber); margin-bottom: 6px; letter-spacing: 0.04em;">EVALUATOR RUBRIC ANALYSIS / WHERE YOU WENT WRONG</div>
-                <p style="margin: 0 0 10px; font-size: 13.5px; line-height: 1.6; color: var(--text);">${escapeHTML(evalItem.reasoning || 'Assessed against technical criteria.')}</p>
+                <div style="font-size: 14px; font-weight: 700; color: var(--amber); margin-bottom: 6px; letter-spacing: 0.04em;">EVALUATOR RUBRIC ANALYSIS / WHERE YOU WENT WRONG</div>
+                <p style="margin: 0 0 10px; font-size: 14.5px; line-height: 1.6; color: var(--text);">${escapeHTML(evalItem.reasoning || 'Assessed against technical criteria.')}</p>
 
                 ${evalItem.dimensions && Object.keys(evalItem.dimensions).length ? `
-                  <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 8px; font-size: 13px; color: var(--muted); border-top: 1px dashed rgba(255,255,255,0.08); padding-top: 6px;">
+                  <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 8px; font-size: 14px; color: var(--muted); border-top: 1px dashed rgba(255,255,255,0.08); padding-top: 6px;">
                     ${Object.entries(evalItem.dimensions).map(([d, val]) => `<span>${escapeHTML(d)}: <b style="color:var(--text);">${val}/5</b></span>`).join('')}
                   </div>
                 ` : ''}
 
                 ${isDisputed ? `
-                  <div style="margin-top: 8px; padding: 8px 12px; background: rgba(255, 138, 30, 0.12); border: 1px solid #ff8a1e; border-radius: 6px; font-size: 13.5px; color: #ff8a1e;">
+                  <div style="margin-top: 8px; padding: 8px 12px; background: rgba(255, 138, 30, 0.12); border: 1px solid #ff8a1e; border-radius: 6px; font-size: 14.5px; color: #ff8a1e;">
                     <strong>⚠️ Evaluation Issue Reported:</strong> “${escapeHTML(evalItem.dispute_reason || '')}”
-                    <div style="font-size: 13px; color: var(--muted); margin-top: 4px;">This turn has been flagged for human recruiter audit.</div>
+                    <div style="font-size: 14px; color: var(--muted); margin-top: 4px;">This turn has been flagged for human recruiter audit.</div>
                   </div>
                 ` : `
                   <div style="display: flex; justify-content: flex-end; margin-top: 8px;">
-                    <button class="button button-quiet button-sm open-dispute-trigger" data-turn="${turnNum}" style="font-size: 13px; padding: 3px 10px; border: 1px solid var(--border); color: var(--muted);">
+                    <button class="button button-quiet button-sm open-dispute-trigger" data-turn="${turnNum}" style="font-size: 14px; padding: 3px 10px; border: 1px solid var(--border); color: var(--muted);">
                       🚩 Report Evaluation Issue
                     </button>
                   </div>
                   <div class="dispute-box" id="dispute-box-${turnNum}" style="display: none; margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.1);">
-                    <label style="font-size: 13px; color: var(--amber); display: block; margin-bottom: 4px;">CONTEST THIS EVALUATION</label>
-                    <textarea class="code-input dispute-reason-input" id="dispute-reason-${turnNum}" rows="2" style="width: 100%; font-size: 13.5px; padding: 6px; border-radius: 4px; margin-bottom: 6px;" placeholder="Explain why you believe this score or reasoning was inaccurate..."></textarea>
+                    <label style="font-size: 14px; color: var(--amber); display: block; margin-bottom: 4px;">CONTEST THIS EVALUATION</label>
+                    <textarea class="code-input dispute-reason-input" id="dispute-reason-${turnNum}" rows="2" style="width: 100%; font-size: 14.5px; padding: 6px; border-radius: 4px; margin-bottom: 6px;" placeholder="Explain why you believe this score or reasoning was inaccurate..."></textarea>
                     <div style="display: flex; gap: 6px; justify-content: flex-end;">
-                      <button class="button button-quiet button-sm cancel-dispute-btn" data-turn="${turnNum}" style="font-size: 13px; padding: 2px 8px;">Cancel</button>
-                      <button class="button button-primary button-sm submit-dispute-btn" data-turn="${turnNum}" style="font-size: 13px; padding: 2px 8px;">Submit Report ↗</button>
+                      <button class="button button-quiet button-sm cancel-dispute-btn" data-turn="${turnNum}" style="font-size: 14px; padding: 2px 8px;">Cancel</button>
+                      <button class="button button-primary button-sm submit-dispute-btn" data-turn="${turnNum}" style="font-size: 14px; padding: 2px 8px;">Submit Report ↗</button>
                     </div>
                   </div>
                 `}
@@ -1194,7 +1194,7 @@ function renderDepthHistoryView(completedAnswers) {
       </div>
 
       <div style="margin-top: 20px; text-align: center;">
-        <button class="button button-primary button-sm" id="return-to-interview" style="font-size: 13.5px;">← Return to Live Assessment</button>
+        <button class="button button-primary button-sm" id="return-to-interview" style="font-size: 14.5px;">← Return to Live Assessment</button>
       </div>
     </div>
   `;
@@ -1269,44 +1269,44 @@ async function renderShortlist() {
       <section class="evaluation-banner" style="border: 2px solid var(--border); background: var(--card); border-radius: 12px; padding: 22px; margin-bottom: 24px;">
         <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 14px; margin-bottom: 16px;">
           <div>
-            <div style="font-size: 13.5px; color: var(--muted); font-weight: 600; letter-spacing: 0.05em;">YOUR VERIFIED EVALUATION SCORECARD</div>
+            <div style="font-size: 14.5px; color: var(--muted); font-weight: 600; letter-spacing: 0.05em;">YOUR VERIFIED EVALUATION SCORECARD</div>
             <h2 style="margin: 4px 0; font-size: 22px; color: var(--text);">${escapeHTML(myEval.candidate?.name || state.candidate?.name)}</h2>
-            <div style="font-size: 13px; color: var(--muted);">${escapeHTML(job.title)} · ${escapeHTML(job.company)}</div>
+            <div style="font-size: 14px; color: var(--muted);">${escapeHTML(job.title)} · ${escapeHTML(job.company)}</div>
           </div>
           <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
             <div style="text-align: right;">
-              <span style="font-size: 13.5px; color: var(--muted); display: block;">OVERALL SCORE</span>
-              <strong style="font-size: 24px; color: var(--verified);">${prof.overall_score || 0}<small style="font-size: 14px; color: var(--muted);">/100</small></strong>
+              <span style="font-size: 14.5px; color: var(--muted); display: block;">OVERALL SCORE</span>
+              <strong style="font-size: 24px; color: var(--verified);">${prof.overall_score || 0}<small style="font-size: 15px; color: var(--muted);">/100</small></strong>
             </div>
             <div style="text-align: right; padding-left: 12px; border-left: 1px solid var(--border);">
-              <span style="font-size: 13.5px; color: var(--muted); display: block;">RANK</span>
+              <span style="font-size: 14.5px; color: var(--muted); display: block;">RANK</span>
               <strong style="font-size: 24px; color: var(--primary);">#${myEval.rank || 1}</strong>
             </div>
             <div style="text-align: right; padding-left: 12px; border-left: 1px solid var(--border);">
-              <span style="font-size: 13.5px; color: var(--muted); display: block;">STATUS</span>
-              <span class="recommendation rec-${escapeHTML(prof.recommendation || 'reviewed')}" style="font-size: 14px; margin-top: 4px; display: inline-block;">${escapeHTML((prof.recommendation || 'reviewed').replaceAll('_', ' '))}</span>
+              <span style="font-size: 14.5px; color: var(--muted); display: block;">STATUS</span>
+              <span class="recommendation rec-${escapeHTML(prof.recommendation || 'reviewed')}" style="font-size: 15px; margin-top: 4px; display: inline-block;">${escapeHTML((prof.recommendation || 'reviewed').replaceAll('_', ' '))}</span>
             </div>
           </div>
         </div>
 
-        <div style="padding: 10px 14px; background: rgba(52, 216, 160, 0.1); border: 1px solid var(--verified); border-radius: 8px; margin-bottom: 16px; font-size: 14px; color: var(--verified); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+        <div style="padding: 10px 14px; background: rgba(52, 216, 160, 0.1); border: 1px solid var(--verified); border-radius: 8px; margin-bottom: 16px; font-size: 15px; color: var(--verified); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
           <span>✔ <strong>Human Recruiter Audit:</strong> ${confirmedCount} of ${myEvList.length} evidence claims verified by hiring recruiter.</span>
-          <span style="font-size: 13.5px; color: var(--text);">${Math.round((prof.confidence || 0.85) * 100)}% evaluation confidence</span>
+          <span style="font-size: 14.5px; color: var(--text);">${Math.round((prof.confidence || 0.85) * 100)}% evaluation confidence</span>
         </div>
 
-        <p style="font-size: 13px; color: var(--text); line-height: 1.6; margin-bottom: 16px;">${escapeHTML(prof.summary || 'Assessment record complete.')}</p>
+        <p style="font-size: 14px; color: var(--text); line-height: 1.6; margin-bottom: 16px;">${escapeHTML(prof.summary || 'Assessment record complete.')}</p>
 
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-bottom: 18px;">
           <div style="padding: 14px; border: 1px solid var(--border); border-radius: 8px; background: var(--raised);">
             <span class="metric-label" style="margin-bottom: 8px; display: block;">KEY STRENGTHS</span>
-            <ul style="margin: 0; padding-left: 18px; font-size: 14px; color: var(--text); line-height: 1.6;">
+            <ul style="margin: 0; padding-left: 18px; font-size: 15px; color: var(--text); line-height: 1.6;">
               ${(prof.strengths || []).map(s => `<li>${escapeHTML(s)}</li>`).join('') || '<li>Consistent architectural clarity.</li>'}
             </ul>
           </div>
           <div style="padding: 14px; border: 1px solid var(--border); border-radius: 8px; background: var(--raised);">
             <span class="metric-label" style="margin-bottom: 8px; display: block;">SKILL PROFILE BREAKDOWN</span>
             ${Object.entries(mySkillProf).map(([skill, val]) => `
-              <div style="display: flex; justify-content: space-between; font-size: 13.5px; margin-bottom: 4px;">
+              <div style="display: flex; justify-content: space-between; font-size: 14.5px; margin-bottom: 4px;">
                 <span style="color: var(--muted); text-transform: capitalize;">${escapeHTML(skill)}</span>
                 <b>${Number(val).toFixed(1)} / 5.0</b>
               </div>
@@ -1320,14 +1320,14 @@ async function renderShortlist() {
             ${myEvList.map(item => `
               <div class="evidence-card" style="margin-bottom: 12px; padding: 12px 14px; border: 1px solid var(--border); border-radius: 8px; background: var(--raised);">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                  <strong style="color: var(--primary); font-size: 13px;">${escapeHTML(item.skill_name || 'Technical Reasoning')}</strong>
-                  <span style="font-size: 13.5px; font-weight: 600; padding: 2px 8px; border-radius: 4px; background: var(--verified-bg); color: var(--verified);">TURN ${String(item.turn_number).padStart(2, '0')} · SCORE: ${item.score}/5</span>
+                  <strong style="color: var(--primary); font-size: 14px;">${escapeHTML(item.skill_name || 'Technical Reasoning')}</strong>
+                  <span style="font-size: 14.5px; font-weight: 600; padding: 2px 8px; border-radius: 4px; background: var(--verified-bg); color: var(--verified);">TURN ${String(item.turn_number).padStart(2, '0')} · SCORE: ${item.score}/5</span>
                 </div>
-                <div style="margin: 6px 0; font-size: 14px;"><b style="color: var(--primary);">Interviewer Question:</b> ${escapeHTML(item.question || 'Grounded question')}</div>
-                <div style="margin: 6px 0; font-size: 14px;"><b style="color: var(--link);">Your Answer Quote:</b> <blockquote style="margin: 4px 0; padding: 6px 10px; border-left: 2px solid var(--link); font-style: italic; font-size: 13.5px; background: rgba(59, 130, 246, 0.05);">“${escapeHTML(item.quote || item.candidate_answer)}”</blockquote></div>
-                <div style="font-size: 13.5px; color: var(--muted); margin-top: 6px;"><b>Rubric Analysis:</b> ${escapeHTML(item.reasoning || 'Evaluated against verified criteria.')}</div>
-                ${item.disputed ? `<div style="margin-top: 6px; padding: 6px 10px; background: rgba(255, 138, 30, 0.12); border: 1px solid #ff8a1e; border-radius: 6px; font-size: 13.5px; color: #ff8a1e;">⚠️ <strong>Candidate Contested:</strong> “${escapeHTML(item.dispute_reason || '')}” <span style="font-size: 13px; opacity: 0.8;">(Flagged for audit)</span></div>` : ''}
-                <div style="margin-top: 6px; font-size: 13.5px; color: var(--verified); font-weight: 600;">${item.recruiter_confirmed ? '✔ Recruiter Confirmed' : 'Pending Confirmation'}</div>
+                <div style="margin: 6px 0; font-size: 15px;"><b style="color: var(--primary);">Interviewer Question:</b> ${escapeHTML(item.question || 'Grounded question')}</div>
+                <div style="margin: 6px 0; font-size: 15px;"><b style="color: var(--link);">Your Answer Quote:</b> <blockquote style="margin: 4px 0; padding: 6px 10px; border-left: 2px solid var(--link); font-style: italic; font-size: 14.5px; background: rgba(59, 130, 246, 0.05);">“${escapeHTML(item.quote || item.candidate_answer)}”</blockquote></div>
+                <div style="font-size: 14.5px; color: var(--muted); margin-top: 6px;"><b>Rubric Analysis:</b> ${escapeHTML(item.reasoning || 'Evaluated against verified criteria.')}</div>
+                ${item.disputed ? `<div style="margin-top: 6px; padding: 6px 10px; background: rgba(255, 138, 30, 0.12); border: 1px solid #ff8a1e; border-radius: 6px; font-size: 14.5px; color: #ff8a1e;">⚠️ <strong>Candidate Contested:</strong> “${escapeHTML(item.dispute_reason || '')}” <span style="font-size: 14px; opacity: 0.8;">(Flagged for audit)</span></div>` : ''}
+                <div style="margin-top: 6px; font-size: 14.5px; color: var(--verified); font-weight: 600;">${item.recruiter_confirmed ? '✔ Recruiter Confirmed' : 'Pending Confirmation'}</div>
               </div>
             `).join('')}
           </div>
@@ -1339,12 +1339,12 @@ async function renderShortlist() {
       <div style="margin-bottom: 24px; padding: 18px; border: 1px solid var(--border); border-radius: 10px; background: var(--card);">
         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
           <div>
-            <strong style="color: var(--text); font-size: 15px;">Assessment In Progress</strong>
-            <p style="margin: 4px 0 0 0; font-size: 14px; color: var(--muted);">You have not finished the full assessment for this role yet. Complete the coding task and depth check to view your scorecard.</p>
+            <strong style="color: var(--text); font-size: 16px;">Assessment In Progress</strong>
+            <p style="margin: 4px 0 0 0; font-size: 15px; color: var(--muted);">You have not finished the full assessment for this role yet. Complete the coding task and depth check to view your scorecard.</p>
           </div>
           <div style="display: flex; gap: 8px;">
-            <a href="#task" class="button button-outline" style="font-size: 14px;">Coding Task ↗</a>
-            <a href="#depth" class="button button-primary" style="font-size: 14px;">Depth Check ↗</a>
+            <a href="#task" class="button button-outline" style="font-size: 15px;">Coding Task ↗</a>
+            <a href="#depth" class="button button-primary" style="font-size: 15px;">Depth Check ↗</a>
           </div>
         </div>
       </div>
@@ -1355,10 +1355,10 @@ async function renderShortlist() {
   const recruiterNotice = `
     <div style="margin: 20px 0; padding: 16px 20px; border: 1px dashed var(--border); border-radius: 10px; background: var(--raised); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
       <div>
-        <strong style="color: var(--primary); font-size: 14px;">🏢 Hiring Managers & Recruiters</strong>
-        <p style="margin: 4px 0 0 0; font-size: 14px; color: var(--muted);">Manage job requisitions, view company applicant pipelines, update candidate stages, and run side-by-side matrices in the dedicated portal.</p>
+        <strong style="color: var(--primary); font-size: 15px;">🏢 Hiring Managers & Recruiters</strong>
+        <p style="margin: 4px 0 0 0; font-size: 15px; color: var(--muted);">Manage job requisitions, view company applicant pipelines, update candidate stages, and run side-by-side matrices in the dedicated portal.</p>
       </div>
-      <a href="http://localhost:8000/portal/dashboard.html" target="_blank" class="button button-primary" style="font-size: 14px; padding: 6px 14px;">Open Recruiter Portal ↗</a>
+      <a href="http://localhost:8000/portal/dashboard.html" target="_blank" class="button button-primary" style="font-size: 15px; padding: 6px 14px;">Open Recruiter Portal ↗</a>
     </div>
   `;
 
@@ -1372,34 +1372,34 @@ async function renderShortlist() {
     return `<article class="candidate-row" data-candidate-id="${escapeHTML(candidate.candidate_id)}"><div class="rank-cell"><span>RANK</span><strong>#${candidate.rank || '-'}</strong></div><div class="candidate-overview"><div class="candidate-name-row"><h2>${escapeHTML(candidate.name)}</h2><span class="recommendation rec-${escapeHTML(candidate.recommendation || 'reviewed')}">${escapeHTML((candidate.recommendation || 'reviewed').replaceAll('_', ' '))}</span></div><div class="score-track"><i style="width:${candidate.overall_score || 0}%"></i></div><div class="candidate-meta"><span>${candidate.overall_score || 0}<small> / 100</small></span><span>${Math.round((candidate.confidence || 0.8) * 100)}% confidence</span><span>${escapeHTML(candidate.candidate_id)}</span></div>
   
   <div class="pipeline-actions" style="margin: 8px 0; display: flex; gap: 8px; align-items: center;">
-    <span style="font-size: 13.5px; color: var(--muted); font-weight: 600;">APPLICATION STATUS:</span>
-    <span class="stage-badge" style="padding: 2px 8px; border-radius: 4px; font-size: 13.5px; font-weight: 600; background: var(--raised); border: 1px solid var(--border); color: var(--verified);">${escapeHTML(candidate.status || 'Reviewed')}</span>
+    <span style="font-size: 14.5px; color: var(--muted); font-weight: 600;">APPLICATION STATUS:</span>
+    <span class="stage-badge" style="padding: 2px 8px; border-radius: 4px; font-size: 14.5px; font-weight: 600; background: var(--raised); border: 1px solid var(--border); color: var(--verified);">${escapeHTML(candidate.status || 'Reviewed')}</span>
   </div>
 
   <p class="candidate-summary">${escapeHTML(candidate.summary || 'Candidate assessment record active.')}</p><div class="strength-concerns"><div><span class="list-label">STRENGTH SIGNAL</span><p>${escapeHTML(strengths[0] ?? 'Consistently grounded code explanations.')}</p></div><div><span class="list-label">OPEN QUESTION</span><p>${escapeHTML(concerns[0] ?? 'No critical flags raised.')}</p></div></div><details class="evidence-details"><summary><span>Evidence Trail & Transparent Scorecard</span><span>${evList.length} SKILLS VERIFIED <b>＋</b></span></summary><div class="evidence-list">${evList.map((item) => `
     <div class="evidence-card" style="margin-bottom: 14px; padding: 14px; border: 1px solid var(--border); border-radius: 8px; background: var(--raised);">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-        <strong style="color: var(--primary); font-size: 13px;">${escapeHTML(item.skill_name || 'Technical Skill')}</strong>
-        <span style="font-size: 13.5px; font-weight: 600; padding: 2px 8px; border-radius: 4px; background: var(--verified-bg); color: var(--verified);">TURN ${String(item.turn_number).padStart(2, '0')} · SCORE: ${item.score}/5</span>
+        <strong style="color: var(--primary); font-size: 14px;">${escapeHTML(item.skill_name || 'Technical Skill')}</strong>
+        <span style="font-size: 14.5px; font-weight: 600; padding: 2px 8px; border-radius: 4px; background: var(--verified-bg); color: var(--verified);">TURN ${String(item.turn_number).padStart(2, '0')} · SCORE: ${item.score}/5</span>
       </div>
-      <div style="font-size: 13.5px; margin-bottom: 8px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 14px;">
-        <span>📍 <b>Identified in:</b> <code style="font-size: 13.5px; color: var(--text);">${escapeHTML(item.where_identified || item.source_file_path || 'Submission Code')}</code></span>
+      <div style="font-size: 14.5px; margin-bottom: 8px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 14px;">
+        <span>📍 <b>Identified in:</b> <code style="font-size: 14.5px; color: var(--text);">${escapeHTML(item.where_identified || item.source_file_path || 'Submission Code')}</code></span>
         <span>📂 <b>Project/Task:</b> <strong style="color: var(--text);">${escapeHTML(item.project_or_task || 'Task Challenge')}</strong></span>
       </div>
-      <div style="margin: 8px 0; padding: 8px 10px; border-left: 3px solid var(--primary); background: rgba(61, 90, 254, 0.05); font-size: 14px; border-radius: 0 4px 4px 0;">
+      <div style="margin: 8px 0; padding: 8px 10px; border-left: 3px solid var(--primary); background: rgba(61, 90, 254, 0.05); font-size: 15px; border-radius: 0 4px 4px 0;">
         <b style="color: var(--primary);">Question Asked:</b> ${escapeHTML(item.question || 'Grounded technical question')}
       </div>
-      <div style="margin: 8px 0; padding: 8px 10px; border-left: 3px solid var(--link); background: rgba(59, 130, 246, 0.05); font-size: 14px; border-radius: 0 4px 4px 0;">
+      <div style="margin: 8px 0; padding: 8px 10px; border-left: 3px solid var(--link); background: rgba(59, 130, 246, 0.05); font-size: 15px; border-radius: 0 4px 4px 0;">
         <b style="color: var(--link);">Candidate Answer:</b>
-        <p style="margin: 4px 0 0 0; white-space: pre-wrap; font-family: 'JetBrains Mono', monospace; font-size: 13.5px; color: var(--text);">${escapeHTML(item.candidate_answer || item.quote)}</p>
+        <p style="margin: 4px 0 0 0; white-space: pre-wrap; font-family: 'JetBrains Mono', monospace; font-size: 14.5px; color: var(--text);">${escapeHTML(item.candidate_answer || item.quote)}</p>
       </div>
-      <div style="margin: 8px 0; font-size: 14px; color: var(--text);">
+      <div style="margin: 8px 0; font-size: 15px; color: var(--text);">
         <b>Evaluator Reasoning:</b> ${escapeHTML(item.reasoning || 'Evaluated against technical rubric.')}
-        ${item.quote ? `<blockquote style="margin: 6px 0 0 0; padding: 6px 10px; border-left: 2px solid var(--verified); font-style: italic; font-size: 13.5px; color: var(--verified);">“${escapeHTML(item.quote)}”</blockquote>` : ''}
+        ${item.quote ? `<blockquote style="margin: 6px 0 0 0; padding: 6px 10px; border-left: 2px solid var(--verified); font-style: italic; font-size: 14.5px; color: var(--verified);">“${escapeHTML(item.quote)}”</blockquote>` : ''}
       </div>
-      ${item.disputed ? `<div style="margin: 8px 0; padding: 6px 10px; background: rgba(255, 138, 30, 0.15); border: 1px solid #ff8a1e; border-radius: 6px; font-size: 13.5px; color: #ff8a1e;">⚠️ <strong>Candidate Contested Evaluation:</strong> “${escapeHTML(item.dispute_reason || '')}”</div>` : ''}
+      ${item.disputed ? `<div style="margin: 8px 0; padding: 6px 10px; background: rgba(255, 138, 30, 0.15); border: 1px solid #ff8a1e; border-radius: 6px; font-size: 14.5px; color: #ff8a1e;">⚠️ <strong>Candidate Contested Evaluation:</strong> “${escapeHTML(item.dispute_reason || '')}”</div>` : ''}
       <div style="margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
-        <span class="audit-status" style="font-size: 13.5px; color: var(--muted);">
+        <span class="audit-status" style="font-size: 14.5px; color: var(--muted);">
           Recruiter Audit: ${item.recruiter_confirmed ? '<strong style="color: var(--verified);">✔ Confirmed by Hiring Team</strong>' : '<span style="color: var(--amber);">Pending Recruiter Review</span>'}
         </span>
       </div>
@@ -1411,21 +1411,21 @@ async function renderShortlist() {
     <details class="compare-details" style="margin: 20px 0; padding: 18px; border: 1px solid var(--border); border-radius: 12px; background: var(--raised);">
       <summary style="cursor: pointer; font-weight: 600; color: var(--link); display: flex; justify-content: space-between; align-items: center;">
         <span>⚖️ SIDE-BY-SIDE CANDIDATE COMPARISON MATRIX</span>
-        <span style="font-size: 13.5px; padding: 3px 8px; border-radius: 4px; background: var(--primary); color: #fff;">COMPARE <b>＋</b></span>
+        <span style="font-size: 14.5px; padding: 3px 8px; border-radius: 4px; background: var(--primary); color: #fff;">COMPARE <b>＋</b></span>
       </summary>
       <div style="margin-top: 18px;">
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
-          <div><label style="font-size: 13.5px; color: var(--muted); display: block; margin-bottom: 6px;">CANDIDATE 1</label><select id="cmp-1" style="width: 100%; padding: 8px; border-radius: 6px; background: var(--card); border: 1px solid var(--border); color: var(--text);">${candOptions}</select></div>
-          <div><label style="font-size: 13.5px; color: var(--muted); display: block; margin-bottom: 6px;">CANDIDATE 2</label><select id="cmp-2" style="width: 100%; padding: 8px; border-radius: 6px; background: var(--card); border: 1px solid var(--border); color: var(--text);">${candidatesList.map((c, i) => `<option value="${i}" ${i === 1 ? 'selected' : ''}>${escapeHTML(c.name)} (#${c.rank || i+1} · ${c.overall_score || 0}/100)</option>`).join('')}</select></div>
+          <div><label style="font-size: 14.5px; color: var(--muted); display: block; margin-bottom: 6px;">CANDIDATE 1</label><select id="cmp-1" style="width: 100%; padding: 8px; border-radius: 6px; background: var(--card); border: 1px solid var(--border); color: var(--text);">${candOptions}</select></div>
+          <div><label style="font-size: 14.5px; color: var(--muted); display: block; margin-bottom: 6px;">CANDIDATE 2</label><select id="cmp-2" style="width: 100%; padding: 8px; border-radius: 6px; background: var(--card); border: 1px solid var(--border); color: var(--text);">${candidatesList.map((c, i) => `<option value="${i}" ${i === 1 ? 'selected' : ''}>${escapeHTML(c.name)} (#${c.rank || i+1} · ${c.overall_score || 0}/100)</option>`).join('')}</select></div>
         </div>
         <div id="compare-matrix"></div>
       </div>
     </details>` : '';
 
   const guestNotice = !state.candidateId ? `
-    <div style="margin-bottom: 20px; padding: 14px 18px; background: var(--raised); border: 1px solid var(--border); border-radius: 8px; font-size: 13px; display: flex; justify-content: space-between; align-items: center;">
+    <div style="margin-bottom: 20px; padding: 14px 18px; background: var(--raised); border: 1px solid var(--border); border-radius: 8px; font-size: 14px; display: flex; justify-content: space-between; align-items: center;">
       <span>💡 <strong>Previewing Requisition Results:</strong> Sign in with your candidate account to access your personal scorecard, verified evidence trail, and dispute reporting.</span>
-      <a href="#candidate" class="button button-primary" style="padding: 4px 12px; font-size: 13.5px;">Sign In ↗</a>
+      <a href="#candidate" class="button button-primary" style="padding: 4px 12px; font-size: 14.5px;">Sign In ↗</a>
     </div>` : '';
 
   shell(`${heading('05 / RESULTS & EVALUATION', state.candidateId ? 'My Results<span class="heading-dot">.</span>' : 'Assessment Results<span class="heading-dot">.</span>', `${escapeHTML(job.title)} / ${escapeHTML(job.company)} · Ranked by verified evidence, not resume polish.`, '<span class="review-stamp"><i class="status-dot online"></i> HUMAN REVIEW</span>')}
@@ -1433,9 +1433,9 @@ async function renderShortlist() {
     ${myScorecardHtml}
     ${recruiterNotice}
     <details class="all-applicants-details" ${state.candidateId ? '' : 'open'} style="margin-top: 16px;">
-      <summary style="cursor: pointer; font-size: 13px; font-weight: 600; color: var(--link); padding: 10px 0;">
+      <summary style="cursor: pointer; font-size: 14px; font-weight: 600; color: var(--link); padding: 10px 0;">
         <span>All Requisition Applicants & Comparative Pipeline (${candidatesList.length} Candidates)</span>
-        <span style="font-size: 13.5px; margin-left: 8px; padding: 2px 6px; border-radius: 4px; background: var(--raised); border: 1px solid var(--border);">TOGGLE ▾</span>
+        <span style="font-size: 14.5px; margin-left: 8px; padding: 2px 6px; border-radius: 4px; background: var(--raised); border: 1px solid var(--border);">TOGGLE ▾</span>
       </summary>
       <div style="margin-top: 14px;">
         ${compareTool}
@@ -1459,12 +1459,12 @@ async function renderShortlist() {
     
     container.innerHTML = `
       <div style="overflow-x: auto;">
-        <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
           <thead>
             <tr style="border-bottom: 2px solid var(--border); text-align: left;">
               <th style="padding: 10px; color: var(--muted); width: 25%;">DIMENSION / METRIC</th>
-              <th style="padding: 10px; width: 37.5%; color: var(--primary); font-size: 15px;">${escapeHTML(c1.name)} <span class="tag" style="font-size: 13.5px;">#${c1.rank || 1}</span></th>
-              <th style="padding: 10px; width: 37.5%; color: var(--link); font-size: 15px;">${escapeHTML(c2.name)} <span class="tag" style="font-size: 13.5px;">#${c2.rank || 2}</span></th>
+              <th style="padding: 10px; width: 37.5%; color: var(--primary); font-size: 16px;">${escapeHTML(c1.name)} <span class="tag" style="font-size: 14.5px;">#${c1.rank || 1}</span></th>
+              <th style="padding: 10px; width: 37.5%; color: var(--link); font-size: 16px;">${escapeHTML(c2.name)} <span class="tag" style="font-size: 14.5px;">#${c2.rank || 2}</span></th>
             </tr>
           </thead>
           <tbody>
@@ -1517,7 +1517,7 @@ async function renderGraph() {
       <div class="empty-state" style="padding: 40px 20px; text-align: center; border: 1px dashed var(--border); border-radius: 12px; background: var(--card); margin-top: 20px;">
         <div style="font-size: 36px; margin-bottom: 12px;">🕸️</div>
         <h2 style="margin-bottom: 8px; font-size: 20px; color: var(--text);">No Candidate Profile Loaded</h2>
-        <p style="max-width: 520px; margin: 0 auto 20px; font-size: 14px; color: var(--muted); line-height: 1.6;">
+        <p style="max-width: 520px; margin: 0 auto 20px; font-size: 15px; color: var(--muted); line-height: 1.6;">
           The knowledge graph maps candidate code repositories, AST functions, and claimed skills into a semantic network. Sign in to your candidate account or preview a verified demo graph.
         </p>
         <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
@@ -1554,7 +1554,7 @@ async function renderGraph() {
       <div class="empty-state" style="padding: 40px 20px; text-align: center; border: 1px dashed var(--border); border-radius: 12px; background: var(--card); margin-top: 20px;">
         <div style="font-size: 36px; margin-bottom: 12px;">⚙️</div>
         <h2 style="margin-bottom: 8px; font-size: 20px; color: var(--text);">Graph Not Built Yet for ${escapeHTML(candidate?.name || 'Candidate')}</h2>
-        <p style="max-width: 520px; margin: 0 auto 20px; font-size: 14px; color: var(--muted); line-height: 1.6;">
+        <p style="max-width: 520px; margin: 0 auto 20px; font-size: 15px; color: var(--muted); line-height: 1.6;">
           ProofHire builds your interactive knowledge graph automatically when you sync your GitHub repositories or submit an assessment. No repositories or code submissions have been ingested for this profile yet.
         </p>
         <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
