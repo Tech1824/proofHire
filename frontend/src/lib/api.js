@@ -193,6 +193,36 @@ export function confirmEvidence(sessionId, turnNumber, confirmed = true) {
   return mock({ status: 'ok', confirmed });
 }
 
+export function updateCandidateStatus(candidateId, status) {
+  if (!usesMocks()) {
+    return request(`/candidates/${candidateId}/status`, {
+      method: 'POST',
+      body: JSON.stringify({ status })
+    });
+  }
+  return mock({ status: 'ok', candidate_id: candidateId, new_status: status });
+}
+
+export function updateCandidate(candidateId, payload) {
+  if (!usesMocks()) {
+    return request(`/candidates/${candidateId}`, {
+      method: 'PUT',
+      body: JSON.stringify(payload)
+    });
+  }
+  return mock({ ...payload, candidate_id: candidateId });
+}
+
+export function resyncCandidateGithub(candidateId, payload = {}) {
+  if (!usesMocks()) {
+    return request(`/candidates/${candidateId}/resync`, {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+  }
+  return mock({ status: 'processing', candidate_id: candidateId });
+}
+
 // Returns the evidence-ranked shortlist for one job.
 export function getShortlist(jobId) {
   if (!usesMocks()) return request(`/shortlist/${jobId}`);

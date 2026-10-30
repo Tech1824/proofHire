@@ -16,7 +16,7 @@ const state = {
   error: ''
 };
 const routes = [
-  ['jobs', '01', 'Jobs'], ['candidate', '02', 'Candidate'], ['task', '03', 'Task'],
+  ['jobs', '01', 'Jobs'], ['candidate', '02', state.candidateId ? 'Profile' : 'Intake'], ['task', '03', 'Task'],
   ['depth', '04', 'Depth check'], ['shortlist', '05', 'Shortlist'], ['graph', '06', 'Graph']
 ];
 
@@ -63,7 +63,7 @@ function shell(content) {
   const workspaceRoutes = routes.filter(([key]) => ['jobs', 'candidate', 'shortlist'].includes(key));
   const assessmentRoutes = routes.filter(([key]) => ['task', 'depth', 'graph'].includes(key));
   const renderNavItem = ([key, number, label]) => `<a href="#${key}" class="nav-link ${active === key ? 'active' : ''}" title="${label}" data-tooltip="${label}"><span class="nav-icon" aria-hidden="true">${({ jobs: '▦', candidate: '＋', task: '≡', depth: '◉', shortlist: '☷', graph: '⌘' })[key]}</span><span class="nav-label">${label}</span></a>`;
-  const action = ({ jobs: ['#candidate', 'Add candidate'], candidate: ['#jobs', 'View roles'], task: ['#depth', 'Depth check'], depth: ['#shortlist', 'Review shortlist'], shortlist: ['#candidate', 'Add candidate'], graph: ['#depth', 'Depth check'] })[active];
+  const action = ({ jobs: ['#candidate', state.candidateId ? 'My Profile' : '+ Add candidate'], candidate: ['#jobs', 'View roles'], task: ['#depth', 'Depth check'], depth: ['#shortlist', 'Review shortlist'], shortlist: ['#candidate', 'Add candidate'], graph: ['#depth', 'Depth check'] })[active];
   const collapsed = localStorage.getItem('proofhire-sidebar-collapsed') === 'true';
   app.innerHTML = `
     <div class="app-frame ${collapsed ? 'sidebar-collapsed' : ''}">
@@ -188,14 +188,22 @@ async function renderJobs() {
 
 // Draws a candidate profile form and stores submitted project files.
 function renderCandidate() {
+  const isRegistered = Boolean(state.candidateId);
   const prior = state.candidate;
   const urlParams = new URLSearchParams(window.location.search);
   const githubToken = urlParams.get('github_token') || prior?.github_token || '';
-  shell(`${heading('02 / CANDIDATE INTAKE', 'Show us the work<span class="heading-dot">.</span>', 'Add a profile and project context. LinkedIn is pasted as text; nothing is scraped.')}
+  
+  const headingTitle = isRegistered ? '02 / CANDIDATE PROFILE' : '02 / CANDIDATE REGISTRATION';
+  const headingSubtitle = isRegistered ? 'Your verified profile<span class="heading-dot">.</span>' : 'Show us the work<span class="heading-dot">.</span>';
+  const headingLead = isRegistered 
+    ? 'Update your details, adjust claimed experience, or fetch newly uploaded GitHub projects into your Knowledge Graph.'
+    : 'Create your candidate profile and project context. LinkedIn is pasted as text; nothing is scraped.';
+
+  shell(`${heading(headingTitle, headingSubtitle, headingLead)}
     <div class="form-layout"><form class="terminal-form" id="candidate-form">
-      <div class="form-topline"><span>NEW CANDIDATE RECORD</span><span>01 — 02</span></div>
+      <div class="form-topline"><span>${isRegistered ? 'REGISTERED PROFILE' : 'NEW CANDIDATE REGISTRATION'}</span><span>${isRegistered ? escapeHTML(state.candidateId) : '01 — 02'}</span></div>
       <label>FULL NAME<input name="name" required placeholder="Asha Rao" value="${escapeHTML(prior?.name ?? '')}"></label>
-      <div class="form-pair"><label>EMAIL<input name="email" type="email" required placeholder="asha@example.com" value="${escapeHTML(prior?.email ?? '')}"></label><label>GITHUB URL <a href="http://localhost:8000/api/auth/github/login" style="font-size: 10px; margin-left: 8px; color: #3b82f6;">[Connect for Higher Limits]</a><input name="github_url" type="url" placeholder="https://github.com/username"><input type="hidden" name="github_token" value="${escapeHTML(githubToken)}"></label></div>
+      <div class="form-pair"><label>EMAIL<input name="email" type="email" required placeholder="asha@example.com" value="${escapeHTML(prior?.email ?? '')}"></label><label>GITHUB URL <a href="http://localhost:8000/api/auth/github/login" style="font-size: 10px; margin-left: 8px; color: #3b82f6;">[Connect for Higher Limits]</a><input name="github_url" type="url" placeholder="https://github.com/username" value="${escapeHTML(prior?.github_url ?? '')}"><input type="hidden" name="github_token" value="${escapeHTML(githubToken)}"></label></div>
       ${githubToken ? '<div style="color: #10b981; font-size: 11px; margin-bottom: 12px;">✓ GitHub Account Connected</div>' : ''}
       <label>LINKEDIN OR RESUME PROFILE <span class="label-note">PASTE TEXT OR UPLOAD FILE</span>
         <div style="display: flex; gap: 8px; margin-bottom: 8px;">
@@ -204,24 +212,81 @@ function renderCandidate() {
         <textarea name="linkedin_text" id="resume-text" rows="4" placeholder="Paste profile summary or upload a text-based resume file...">${escapeHTML(prior?.linkedin_text ?? '')}</textarea>
       </label>
       <div class="field-divider"><span>PROJECT CONTEXT</span><span>02 — 02</span></div>
-      <div style="color: #64748b; font-size: 11px; padding: 12px 0;">GitHub handles the rest. We will automatically fetch your top public repositories and build the graph.</div>
-      <div class="form-actions"><span class="form-hint"><i class="status-dot online"></i> Builds a local knowledge graph</span><button class="button button-primary" type="submit">Build candidate graph <span>↗</span></button></div>
-    </form><aside class="side-note"><div class="side-note-index">INTAKE / NOTE 01</div><div class="note-glyph">⌁</div><h3>Work before words.</h3><p>Project code and profile claims become connected evidence for a focused, fair depth check.</p><div class="note-separator"></div><div class="mini-stat"><span>DATA HANDLING</span><b>LOCAL FIRST</b></div><div class="mini-stat"><span>PROFILE SOURCE</span><b>PASTED BY USER</b></div><div id="candidate-result"></div></aside></div>`);
+      <div style="color: #64748b; font-size: 11px; padding: 12px 0;">GitHub handles the rest. Repositories and commits are parsed into a live Knowledge Graph.</div>
+      <div class="form-actions" style="display: flex; gap: 12px; flex-wrap: wrap;">
+        <button class="button button-primary" type="submit">${isRegistered ? 'Update Details <span>✔</span>' : 'Build candidate graph <span>↗</span>'}</button>
+        ${isRegistered ? '<button class="button button-outline" id="resync-github-btn" type="button">🔄 Fetch & Re-sync GitHub Projects</button>' : ''}
+      </div>
+    </form><aside class="side-note"><div class="side-note-index">PROFILE / NOTE 01</div><div class="note-glyph">⌁</div><h3>Work before words.</h3><p>Project code and profile claims become connected evidence for a focused, fair depth check.</p><div class="note-separator"></div><div class="mini-stat"><span>DATA HANDLING</span><b>LOCAL FIRST</b></div><div class="mini-stat"><span>GRAPH STATUS</span><b>${escapeHTML(prior?.graph_status ?? 'NOT BUILT')}</b></div><div id="candidate-result">${isRegistered && prior?.graph_summary ? `<div class="result-callout"><i class="status-dot online"></i><strong>GRAPH ACTIVE</strong><span>${prior.graph_summary.nodes ?? 0} nodes · ${prior.graph_summary.edges ?? 0} edges</span><a href="#graph" style="margin-left: 8px;">View graph →</a></div>` : ''}</div></aside></div>`);
+
   document.querySelector('#resume-upload')?.addEventListener('change', (event) => {
     const file = event.target.files[0];
     if (!file) return;
     const reader = new FileReader();
     reader.onload = (e) => {
-      const text = e.target.result;
-      document.querySelector('#resume-text').value = text;
+      document.querySelector('#resume-text').value = e.target.result;
     };
     reader.readAsText(file);
   });
+
+  // Re-sync GitHub Projects Handler
+  document.querySelector('#resync-github-btn')?.addEventListener('click', async (e) => {
+    e.preventDefault();
+    const resyncBtn = e.currentTarget;
+    resyncBtn.disabled = true;
+    resyncBtn.textContent = 'Syncing GitHub...';
+    const form = document.querySelector('#candidate-form');
+    const githubUrl = form.querySelector('[name="github_url"]').value;
+    const resultDiv = document.querySelector('#candidate-result');
+    resultDiv.innerHTML = `<div class="result-callout" style="border-color: #3b82f6;"><i class="status-dot online" style="background: #3b82f6;"></i><strong style="color: #3b82f6;">FETCHING NEW REPOSITORIES & REBUILDING GRAPH...</strong><span>Connecting to GitHub API to ingest newly uploaded projects...</span><div style="margin-top: 12px; height: 4px; width: 100%; background: #1e293b; border-radius: 4px; overflow: hidden;"><div style="height: 100%; width: 50%; background: #3b82f6; animation: progress-indeterminate 1.5s infinite ease-in-out;"></div></div></div>`;
+
+    try {
+      await API.resyncCandidateGithub(state.candidateId, { github_url: githubUrl });
+      let candidate = await API.getCandidate(state.candidateId);
+      while (candidate.graph_status === 'processing' || candidate.graph_status === 'pending') {
+        await new Promise(r => setTimeout(r, 2500));
+        candidate = await API.getCandidate(state.candidateId);
+      }
+      state.candidate = candidate;
+      localStorage.setItem('proofhire-cand-data', JSON.stringify(candidate));
+      resultDiv.innerHTML = `<div class="result-callout"><i class="status-dot online"></i><strong style="color: #10b981;">GRAPH RE-SYNC COMPLETE!</strong><span>${candidate.graph_summary?.nodes ?? 0} nodes · ${candidate.graph_summary?.edges ?? 0} edges</span><a href="#graph" style="margin-left: 8px;">Explore Graph →</a></div>`;
+      resyncBtn.disabled = false;
+      resyncBtn.textContent = '🔄 Fetch & Re-sync GitHub Projects';
+    } catch (err) {
+      resultDiv.innerHTML = `<div class="result-callout" style="border-color: #ef4444;"><strong style="color: #ef4444;">RE-SYNC FAILED</strong><span>${escapeHTML(err.message)}</span></div>`;
+      resyncBtn.disabled = false;
+      resyncBtn.textContent = 'Retry Re-sync';
+    }
+  });
+
   document.querySelector('#candidate-form').addEventListener('submit', async (event) => {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
     const button = event.currentTarget.querySelector('[type="submit"]');
     button.disabled = true;
+    
+    if (isRegistered) {
+      button.textContent = 'Updating...';
+      try {
+        const updated = await API.updateCandidate(state.candidateId, {
+          name: form.get('name'),
+          email: form.get('email'),
+          github_url: form.get('github_url'),
+          linkedin_text: form.get('linkedin_text')
+        });
+        state.candidate = { ...state.candidate, ...updated };
+        localStorage.setItem('proofhire-cand-data', JSON.stringify(state.candidate));
+        button.disabled = false;
+        button.textContent = 'Updated Successfully! ✔';
+        setTimeout(() => { button.textContent = 'Update Details ✔'; }, 2000);
+      } catch (err) {
+        showError(err);
+        button.disabled = false;
+        button.textContent = 'Retry Update';
+      }
+      return;
+    }
+
     button.textContent = 'Building graph...';
     showGlobalLoader('Building Candidate Graph...');
     try {
@@ -260,11 +325,10 @@ function renderCandidate() {
     } finally {
       hideGlobalLoader();
     }
-
   });
 }
 
-// Draws task details and accepts a code submission for the selected job.
+// Draws the active task
 function renderTask() {
   const job = state.jobs.find((item) => item.job_id === state.selectedJobId) ?? state.jobs[0];
   const task = state.task;
@@ -548,7 +612,18 @@ async function sendAnswer(event) {
 // Loads and draws candidates with expandable evidence on the shortlist.
 async function renderShortlist() {
   const [job, list] = await Promise.all([API.getJob(state.selectedJobId), API.getShortlist(state.selectedJobId)]);
-  const cards = list.candidates.map((candidate) => `<article class="candidate-row"><div class="rank-cell"><span>RANK</span><strong>#${candidate.rank}</strong></div><div class="candidate-overview"><div class="candidate-name-row"><h2>${escapeHTML(candidate.name)}</h2><span class="recommendation rec-${escapeHTML(candidate.recommendation)}">${escapeHTML(candidate.recommendation.replaceAll('_', ' '))}</span></div><div class="score-track"><i style="width:${candidate.overall_score}%"></i></div><div class="candidate-meta"><span>${candidate.overall_score}<small> / 100</small></span><span>${Math.round(candidate.confidence * 100)}% confidence</span><span>${escapeHTML(candidate.candidate_id)}</span></div><p class="candidate-summary">${escapeHTML(candidate.summary)}</p><div class="strength-concerns"><div><span class="list-label">STRENGTH SIGNAL</span><p>${escapeHTML(candidate.strengths[0] ?? 'No strengths recorded')}</p></div><div><span class="list-label">OPEN QUESTION</span><p>${escapeHTML(candidate.concerns[0] ?? 'No concerns recorded')}</p></div></div><details class="evidence-details"><summary><span>Evidence Trail & Transparent Scorecard</span><span>${candidate.evidence.length} SKILLS VERIFIED <b>＋</b></span></summary><div class="evidence-list">${candidate.evidence.map((item) => `
+  
+  const cards = list.candidates.map((candidate) => `<article class="candidate-row" data-candidate-id="${escapeHTML(candidate.candidate_id)}"><div class="rank-cell"><span>RANK</span><strong>#${candidate.rank}</strong></div><div class="candidate-overview"><div class="candidate-name-row"><h2>${escapeHTML(candidate.name)}</h2><span class="recommendation rec-${escapeHTML(candidate.recommendation)}">${escapeHTML(candidate.recommendation.replaceAll('_', ' '))}</span></div><div class="score-track"><i style="width:${candidate.overall_score}%"></i></div><div class="candidate-meta"><span>${candidate.overall_score}<small> / 100</small></span><span>${Math.round(candidate.confidence * 100)}% confidence</span><span>${escapeHTML(candidate.candidate_id)}</span></div>
+  
+  <div class="pipeline-actions" style="margin: 10px 0; display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+    <span style="font-size: 11px; color: var(--muted); font-weight: 600;">STAGE:</span>
+    <span class="stage-badge" style="padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; background: var(--raised); border: 1px solid var(--border); color: var(--verified);">${escapeHTML(candidate.status || 'Reviewed')}</span>
+    <button class="button button-quiet status-btn" style="padding: 3px 8px; font-size: 11px;" data-cand="${escapeHTML(candidate.candidate_id)}" data-status="Shortlisted">★ Shortlist</button>
+    <button class="button button-quiet status-btn" style="padding: 3px 8px; font-size: 11px;" data-cand="${escapeHTML(candidate.candidate_id)}" data-status="Interview">📅 Interview</button>
+    <button class="button button-quiet status-btn" style="padding: 3px 8px; font-size: 11px;" data-cand="${escapeHTML(candidate.candidate_id)}" data-status="Rejected">✕ Reject</button>
+  </div>
+
+  <p class="candidate-summary">${escapeHTML(candidate.summary)}</p><div class="strength-concerns"><div><span class="list-label">STRENGTH SIGNAL</span><p>${escapeHTML(candidate.strengths[0] ?? 'No strengths recorded')}</p></div><div><span class="list-label">OPEN QUESTION</span><p>${escapeHTML(candidate.concerns[0] ?? 'No concerns recorded')}</p></div></div><details class="evidence-details"><summary><span>Evidence Trail & Transparent Scorecard</span><span>${candidate.evidence.length} SKILLS VERIFIED <b>＋</b></span></summary><div class="evidence-list">${candidate.evidence.map((item) => `
     <div class="evidence-card" style="margin-bottom: 14px; padding: 14px; border: 1px solid var(--border); border-radius: 8px; background: var(--raised);">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
         <strong style="color: var(--primary); font-size: 13px;">${escapeHTML(item.skill_name || 'Technical Skill')}</strong>
@@ -578,10 +653,115 @@ async function renderShortlist() {
         </button>
       </div>
     </div>`).join('')}</div></details></div><div class="candidate-profile"><span class="metric-label">SKILL PROFILE</span>${Object.entries(candidate.skill_profile).map(([skill, value]) => `<div class="profile-row"><span>${escapeHTML(skill)}</span><b>${Number(value).toFixed(1)}</b></div>`).join('')}</div></article>`);
+
+  const candOptions = list.candidates.map((c, i) => `<option value="${i}">${escapeHTML(c.name)} (#${c.rank} · ${c.overall_score}/100)</option>`).join('');
+  const compareTool = list.candidates.length >= 2 ? `
+    <details class="compare-details" style="margin: 20px 0; padding: 18px; border: 1px solid var(--border); border-radius: 12px; background: var(--raised);">
+      <summary style="cursor: pointer; font-weight: 600; color: var(--link); display: flex; justify-content: space-between; align-items: center;">
+        <span>⚖️ SIDE-BY-SIDE CANDIDATE COMPARISON MATRIX</span>
+        <span style="font-size: 11px; padding: 3px 8px; border-radius: 4px; background: var(--primary); color: #fff;">COMPARE <b>＋</b></span>
+      </summary>
+      <div style="margin-top: 18px;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+          <div><label style="font-size: 11px; color: var(--muted); display: block; margin-bottom: 6px;">CANDIDATE 1</label><select id="cmp-1" style="width: 100%; padding: 8px; border-radius: 6px; background: var(--card); border: 1px solid var(--border); color: var(--text);">${candOptions}</select></div>
+          <div><label style="font-size: 11px; color: var(--muted); display: block; margin-bottom: 6px;">CANDIDATE 2</label><select id="cmp-2" style="width: 100%; padding: 8px; border-radius: 6px; background: var(--card); border: 1px solid var(--border); color: var(--text);">${list.candidates.map((c, i) => `<option value="${i}" ${i === 1 ? 'selected' : ''}>${escapeHTML(c.name)} (#${c.rank} · ${c.overall_score}/100)</option>`).join('')}</select></div>
+        </div>
+        <div id="compare-matrix"></div>
+      </div>
+    </details>` : '';
+
   shell(`${heading('05 / EVIDENCE REVIEW', 'Shortlist<span class="heading-dot">.</span>', `${escapeHTML(job.title)} / ${escapeHTML(job.company)} · Ranked by evidence, not resume polish.`, '<span class="review-stamp"><i class="status-dot online"></i> HUMAN REVIEW</span>')}
+    ${compareTool}
     <div class="section-rail"><span>RANKED CANDIDATES</span><span>UPDATED ${new Date(list.generated_at).toLocaleDateString('en-US', { month: 'short', day: '2-digit' }).toUpperCase()}</span></div>
     <section class="shortlist-list">${cards.length ? cards.join('') : '<div class="empty-state">No completed depth checks yet. Finish a session to include a candidate here.</div>'}</section>
     <div class="shortlist-footnote"><span>↳</span><p>Scores are computed from individual answer evaluations. Every claim above links to a candidate quote. Final hiring decisions remain human.</p></div>`);
+
+  // Side-by-Side Compare Matrix Renderer
+  const renderCompareMatrix = () => {
+    const el1 = document.querySelector('#cmp-1');
+    const el2 = document.querySelector('#cmp-2');
+    const container = document.querySelector('#compare-matrix');
+    if (!el1 || !el2 || !container) return;
+    const c1 = list.candidates[parseInt(el1.value, 10)] || list.candidates[0];
+    const c2 = list.candidates[parseInt(el2.value, 10)] || list.candidates[1];
+    if (!c1 || !c2) return;
+
+    const allSkills = Array.from(new Set([...Object.keys(c1.skill_profile || {}), ...Object.keys(c2.skill_profile || {})]));
+    
+    container.innerHTML = `
+      <div style="overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+          <thead>
+            <tr style="border-bottom: 2px solid var(--border); text-align: left;">
+              <th style="padding: 10px; color: var(--muted); width: 25%;">DIMENSION / METRIC</th>
+              <th style="padding: 10px; width: 37.5%; color: var(--primary); font-size: 15px;">${escapeHTML(c1.name)} <span class="tag" style="font-size: 11px;">#${c1.rank}</span></th>
+              <th style="padding: 10px; width: 37.5%; color: var(--link); font-size: 15px;">${escapeHTML(c2.name)} <span class="tag" style="font-size: 11px;">#${c2.rank}</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="border-bottom: 1px solid var(--border);">
+              <td style="padding: 10px; color: var(--muted); font-weight: 600;">Overall Score</td>
+              <td style="padding: 10px; font-weight: 700; font-size: 18px; color: var(--verified);">${c1.overall_score} / 100</td>
+              <td style="padding: 10px; font-weight: 700; font-size: 18px; color: var(--verified);">${c2.overall_score} / 100</td>
+            </tr>
+            <tr style="border-bottom: 1px solid var(--border);">
+              <td style="padding: 10px; color: var(--muted); font-weight: 600;">Confidence</td>
+              <td style="padding: 10px;">${Math.round(c1.confidence * 100)}%</td>
+              <td style="padding: 10px;">${Math.round(c2.confidence * 100)}%</td>
+            </tr>
+            <tr style="border-bottom: 1px solid var(--border);">
+              <td style="padding: 10px; color: var(--muted); font-weight: 600;">Recommendation</td>
+              <td style="padding: 10px;"><span class="recommendation rec-${escapeHTML(c1.recommendation)}">${escapeHTML(c1.recommendation.replaceAll('_', ' '))}</span></td>
+              <td style="padding: 10px;"><span class="recommendation rec-${escapeHTML(c2.recommendation)}">${escapeHTML(c2.recommendation.replaceAll('_', ' '))}</span></td>
+            </tr>
+            ${allSkills.map(skill => {
+              const v1 = Number(c1.skill_profile?.[skill] ?? 0);
+              const v2 = Number(c2.skill_profile?.[skill] ?? 0);
+              return `
+                <tr style="border-bottom: 1px solid var(--border);">
+                  <td style="padding: 10px; color: var(--muted); text-transform: capitalize;">${escapeHTML(skill)}</td>
+                  <td style="padding: 10px;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 4px;"><b>${v1.toFixed(1)}</b><small>/ 5.0</small></div>
+                    <div class="dimension-track" style="height: 6px; border-radius: 3px; background: var(--raised); overflow: hidden;"><i style="width: ${v1 * 20}%; height: 100%; display: block; background: var(--primary);"></i></div>
+                  </td>
+                  <td style="padding: 10px;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 4px;"><b>${v2.toFixed(1)}</b><small>/ 5.0</small></div>
+                    <div class="dimension-track" style="height: 6px; border-radius: 3px; background: var(--raised); overflow: hidden;"><i style="width: ${v2 * 20}%; height: 100%; display: block; background: var(--link);"></i></div>
+                  </td>
+                </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>`;
+  };
+
+  document.querySelector('#cmp-1')?.addEventListener('change', renderCompareMatrix);
+  document.querySelector('#cmp-2')?.addEventListener('change', renderCompareMatrix);
+  renderCompareMatrix();
+
+  // Pipeline Status Buttons Handler
+  app.querySelectorAll('.status-btn').forEach((btn) => {
+    btn.addEventListener('click', async (e) => {
+      e.preventDefault();
+      const candId = btn.dataset.cand;
+      const newStatus = btn.dataset.status;
+      btn.disabled = true;
+      try {
+        await API.updateCandidateStatus(candId, newStatus);
+        const card = btn.closest('.candidate-row');
+        const badge = card ? card.querySelector('.stage-badge') : null;
+        if (badge) {
+          badge.textContent = newStatus;
+          badge.style.color = newStatus === 'Shortlisted' ? 'var(--verified)' : (newStatus === 'Rejected' ? 'var(--bad, #ef4444)' : 'var(--link)');
+        }
+      } catch (err) {
+        showError(err);
+      } finally {
+        btn.disabled = false;
+      }
+    });
+  });
+
   // Interactive Recruiter Confirmation Handlers
   app.querySelectorAll('.confirm-btn').forEach((btn) => {
     btn.addEventListener('click', async (e) => {
@@ -604,6 +784,7 @@ async function renderShortlist() {
     });
   });
 }
+
 
 // Loads a candidate's node-link data and renders it with Cytoscape.
 async function renderGraph() {

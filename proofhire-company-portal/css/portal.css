@@ -1,5 +1,5 @@
-:root{--bg:#05070d;--panel:#0a0d18;--ink:#f4f6fb;--mut:#9aa3b8;--line:#1a2033;--chip:#0f1424;--acc:#2f5bff;--ok:#19c37d;--warn:#ff9a3d;--bad:#ff5c7a;--side:#060810;--sidet:#d3d8e6;--act:#10163a;--g1:#101a4d66;--g2:#3a114a66}
-:root[data-theme=light]{--bg:#f1f3fb;--panel:#fff;--ink:#0b0f1a;--mut:#5b6478;--line:#dfe3ee;--chip:#eef0f8;--ok:#0f9d78;--warn:#c2570c;--bad:#d6334f;--g1:#c9d3ff66;--g2:#f3c9ff66}
+:root{--bg:#05070d;--panel:#0a0d18;--ink:#f4f6fb;--mut:#9aa3b8;--line:#1a2033;--chip:#0f1424;--acc:#2f5bff;--ok:#19c37d;--warn:#ff9a3d;--bad:#ff5c7a;--side:#060810;--sidet:#d3d8e6;--act:#10163a;--g1:#101a4d66;--g2:#3a114a66;--gl:#4a5578;--gt:#262e4a}
+:root[data-theme=light]{--bg:#f1f3fb;--panel:#fff;--ink:#0b0f1a;--mut:#5b6478;--line:#dfe3ee;--chip:#eef0f8;--ok:#0f9d78;--warn:#c2570c;--bad:#d6334f;--g1:#c9d3ff66;--g2:#f3c9ff66;--gl:#c7cee3;--gt:#e6e9f4}
 *{box-sizing:border-box}html,body{margin:0;min-height:100%}
 body{font-family:Inter,system-ui,sans-serif;background:var(--bg);color:var(--ink);display:flex;min-height:100vh}
 button,input,select,textarea{font:inherit}
@@ -81,3 +81,31 @@ label{display:block;font-size:12px;letter-spacing:.04em;text-transform:uppercase
 button.sc{font:inherit;text-align:left;cursor:pointer}
 .sc.on{border-color:var(--c,var(--acc));box-shadow:0 10px 28px -16px var(--c,var(--acc))}
 @media(prefers-reduced-motion:reduce){.click:hover{transform:none}}
+
+.serif{font-family:"Instrument Serif",Georgia,serif;font-weight:400}
+.mono{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--mut)}
+.gt{display:flex;align-items:center;gap:12px;font-size:30px;margin-bottom:22px}
+.gtag{font-family:"JetBrains Mono",monospace;font-size:10px;letter-spacing:.1em;background:var(--chip);border:1px solid var(--line);border-radius:20px;padding:4px 10px;color:var(--mut)}
+.gcard{background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:28px}
+.ghead{display:flex;justify-content:space-between;align-items:flex-end;gap:24px;flex-wrap:wrap;min-height:180px}
+.ghead h2{font-family:"Instrument Serif",Georgia,serif;font-weight:400;font-size:56px;margin:10px 0 8px;line-height:1}
+.gnums{display:flex;align-items:flex-end;gap:22px}.gtot{text-align:right}.gtot .big{font-size:92px;line-height:.95;font-weight:400;margin-top:6px}
+.gmini{display:grid;gap:10px}.gmini div{background:var(--chip);border:1px solid var(--line);border-radius:14px;padding:14px 18px;min-width:160px}.gmini b{font-size:20px}.gmini span{color:var(--mut);font-size:12px}
+.gmain{display:grid;grid-template-columns:1fr 1.25fr;gap:20px;margin-top:20px}.gstack{display:grid;gap:14px}
+.gi{display:grid;grid-template-columns:46px 1fr auto;grid-template-rows:auto auto;gap:6px 16px;align-items:center;width:100%;text-align:left;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px 22px;cursor:pointer;color:var(--ink);font:inherit;transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease}
+.gic{grid-row:1/2;width:46px;height:46px;border-radius:12px;display:grid;place-items:center;color:var(--c);background:color-mix(in srgb,var(--c) 18%,transparent)}
+.gtx b{display:block;font-size:16px}.gtx small{color:var(--mut);font-size:13px}
+.gn{font-size:40px;line-height:1;color:var(--c)}
+.gbar{grid-column:2/4;height:7px;border-radius:6px;background:var(--gt);overflow:hidden}.gbar i{display:block;height:100%;background:var(--c);border-radius:6px;transition:width .4s ease}
+.gi:hover,.gi:focus-visible,.gi.on{transform:translateY(-3px);border-color:var(--c);box-shadow:0 12px 30px -16px var(--c)}
+.svl{font:500 10px "JetBrains Mono",monospace;letter-spacing:.1em;fill:var(--mut)}.svn{font:400 22px "Instrument Serif",Georgia,serif;fill:var(--ink)}
+.vx circle{transition:r .15s}.vx:hover circle{r:11}
+.chip.cl{cursor:pointer;font:inherit;font-size:14px;color:var(--ink)}.chip.cl:hover,.chip.cl:focus-visible{border-color:var(--acc);color:#6f8cff}
+@media(max-width:900px){.gmain{grid-template-columns:1fr}.gtot{text-align:left}.gtot .big{font-size:64px}}
+@media(prefers-reduced-motion:reduce){.gi:hover{transform:none}}
+
+.rg{fill:none;stroke:var(--gl);stroke-width:1.3}
+.ra{stroke:var(--gl);stroke-width:1.2;stroke-dasharray:4 4}
+.rd{fill:#ff8a4c;fill-opacity:.22;stroke:#ff8a4c;stroke-width:2.6;stroke-linejoin:round;filter:drop-shadow(0 0 7px rgba(255,138,76,.45))}
+:root[data-theme=light] .rd{fill:#e0743a;fill-opacity:.15;stroke:#d9622b;stroke-width:2;filter:none}
+.vx circle{stroke:var(--panel)}

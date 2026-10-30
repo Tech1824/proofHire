@@ -26,22 +26,11 @@ const sec=(l,r="")=>`<div class="sec"><span>${l}</span><em>${r}</em></div>`;
 const foot=()=>`<div class="ft"><div><b>↳ THE SIGNAL IS IN THE EXPLANATION</b>Every recommendation stays connected to what a candidate actually explained.</div><a href="shortlist.html">View shortlist →</a></div>`;
 const sel=()=>{const id=+new URLSearchParams(location.search).get("id")||D.sel;return D.apps.find(a=>a.id==id)||D.apps[0]};
 const openC=id=>{D.sel=id;save();location.href="candidate.html?id="+id},openR=id=>{D.sel=id;save();location.href="ai-report.html?id="+id};
-function setSt(id,s){
-  const app = D.apps.find(a=>a.id==id || a.candidate_id==id);
-  if (app) app.status = s;
-  save();
-  toast("Status: "+s);
-  fetch("/api/company/candidates/"+id+"/status", {
-    method: "POST",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({ status: s })
-  }).catch(() => {});
-  render();
-}
+function setSt(id,s){D.apps.find(a=>a.id==id).status=s;save();toast("Status: "+s);render()}
 function logout(){D.user=null;save();go("login")}
 
 const NAV=[["WORKSPACE",[["dashboard","▦","Dashboard"],["company-profile","+","Company profile"],["jobs","☷","Jobs"],["applicants","◉","Applicants"],["candidate","⌘","Candidate profile"]]],
-           ["ASSESSMENT",[["assessments","≡","Assessments"],["ai-report","◉","AI report"],["compare","⌘","Compare"],["shortlist","☷","Shortlist"]]]];
+           ["ASSESSMENT",[["assessments","≡","Assessments"],["ai-report","◉","AI report"],["compare","⌘","Compare"],["shortlist","☷","Shortlist"],["graph","⌘","Knowledge graph"]]]];
 const LOGO='<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="ProofHire logo"><defs><linearGradient id="phb" x1="0" y1="100" x2="100" y2="0" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#4f5bff"/><stop offset=".5" stop-color="#ff3d9a"/><stop offset="1" stop-color="#ff8a1e"/></linearGradient><linearGradient id="phl" x1="43" y1="69" x2="75" y2="32" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#a63fe0"/><stop offset="1" stop-color="#ff3d9a"/></linearGradient></defs><rect x="1.5" y="1.5" width="97" height="97" rx="25" fill="#06070a" stroke="url(#phb)" stroke-width="3"/><circle cx="74.6" cy="31.9" r="14.5" fill="none" stroke="#ff8a1e" stroke-opacity=".3" stroke-width="2.5"/><line x1="25.4" y1="51.3" x2="43.4" y2="69.4" stroke="#6a5ae6" stroke-width="5"/><line x1="43.4" y1="69.4" x2="74.6" y2="31.9" stroke="url(#phl)" stroke-width="6.5"/><circle cx="25.4" cy="51.3" r="8" fill="#06070a" stroke="#4f5bff" stroke-width="3"/><circle cx="43.4" cy="69.4" r="8" fill="#06070a" stroke="#b23cd6" stroke-width="3"/><circle cx="74.6" cy="31.9" r="9" fill="#ff8a1e"/></svg>';
 let CUR,PAGE;
 function shell(){
@@ -55,74 +44,21 @@ function shell(){
    <span class="pill">● Demo</span><button class="ib" onclick="D.theme=D.theme==='dark'?'light':'dark';document.documentElement.dataset.theme=D.theme;save()" aria-label="Toggle theme">☀</button><a class="btn" href="applicants.html">Add candidate ↗</a>`;
 }
 function render(){shell();$("#v").innerHTML=CUR();}
-async function syncBackend(){
-  try {
-    const [coRes, jobRes, candRes] = await Promise.all([
-      fetch("/api/company").catch(()=>null),
-      fetch("/api/jobs").catch(()=>null),
-      fetch("/api/candidates").catch(()=>null)
-    ]);
-    if (coRes && coRes.ok) {
-      const co = await coRes.json();
-      if (co) D.company = { ...D.company, ...co };
-    }
-    if (jobRes && jobRes.ok) {
-      const jData = await jobRes.json();
-      const rawJobs = jData.jobs || jData;
-      if (Array.isArray(rawJobs) && rawJobs.length > 0) {
-        D.jobs = rawJobs.map((j, idx) => ({
-          id: j.job_id || (idx + 1),
-          job_id: j.job_id,
-          title: j.title,
-          co: j.company || D.company.name,
-          track: j.seniority ? (j.seniority.charAt(0).toUpperCase() + j.seniority.slice(1)) : "Junior",
-          desc: j.description || "",
-          skills: Array.isArray(j.required_skills) ? j.required_skills.join(", ") : (j.required_skills || ""),
-          status: j.status || "Open",
-          task: j.title + " Task",
-          min: 45
-        }));
-      }
-    }
-    if (candRes && candRes.ok) {
-      const rawCands = await candRes.json();
-      if (Array.isArray(rawCands) && rawCands.length > 0) {
-        D.apps = rawCands.map((c, idx) => ({
-          id: c.candidate_id || (idx + 1),
-          candidate_id: c.candidate_id,
-          name: c.name || "Candidate",
-          email: c.email || "applicant@example.com",
-          github: (c.github_url || "").replace("https://github.com/", "") || "dev",
-          job: D.jobs[0] ? D.jobs[0].id : 1,
-          exp: 2,
-          status: c.status || "Reviewed",
-          score: c.overall_score || c.score || 0,
-          conf: c.confidence || 0.8,
-          rec: c.recommendation || "Needs Review",
-          skills: (c.graph_summary && c.graph_summary.skills) || ["python"],
-          dims: c.dims || c.skill_profile || { Understanding: 70, Reasoning: 70 },
-          summary: c.summary || "Candidate profile active.",
-          turns: c.evidence || []
-        }));
-      }
-    }
-    save();
-  } catch(e) {
-    console.warn("Backend sync notice:", e);
-  }
-}
-function boot(page,fn){
-  PAGE=page;
-  CUR=fn;
-  if(!D.user&&page!=="login"){
-    D.user={name:"Recruiter",email:"hiring@finleaf.com",role:"recruiter"};
-    save();
-  }
-  render();
-  syncBackend().then(()=>{ render(); });
-}
+function boot(page,fn){PAGE=page;CUR=fn;if(!D.user&&page!=="login"){location.replace("login.html");return}render()}
 
 /* Clickable cards: any element with data-open="c:ID | r:ID | role:ID | page-name" */
 function nav(s){const[k,v]=s.split(":");if(k==="c")openC(+v);else if(k==="r")openR(+v);else if(k==="role"){D.jobId=+v;save();go("applicants")}else go(k)}
 document.addEventListener("click",e=>{const el=e.target.closest("[data-open]");if(!el||e.target.closest("button,select,a,input,textarea,label"))return;nav(el.dataset.open)});
 document.addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.matches("[data-open]"))nav(e.target.dataset.open)});
+
+/* Knowledge-graph numbers, derived from the portal data (jobs, candidates, skills, experience, projects). */
+function gdata(){
+ const open=D.jobs.filter(j=>j.status==="Open"),sk={};
+ D.apps.forEach(a=>a.skills.forEach(s=>{s=s.trim().toLowerCase();sk[s]=(sk[s]||0)+1}));
+ D.jobs.forEach(j=>j.skills.split(",").forEach(s=>{s=s.trim().toLowerCase();if(s&&s!=="—")sk[s]=sk[s]||0}));
+ const exp=D.apps.filter(a=>a.exp>0).map(a=>({a,n:Math.ceil(a.exp/2)})),
+  proj=D.apps.filter(a=>a.score).map(a=>({a,t:(D.assess.find(x=>x.job==a.job)||{}).title||"Assessment task"}));
+ const c={joblead:open.length,candidate:D.apps.length,skill:Object.keys(sk).length,experience:exp.reduce((s,e)=>s+e.n,0),project:proj.length};
+ c.total=c.joblead+c.candidate+c.skill+c.experience+c.project;
+ return{c,open,sk,exp,proj};
+}

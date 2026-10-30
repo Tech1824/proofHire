@@ -97,3 +97,35 @@ def get_graph_view(candidate_id: str):
         raise HTTPException(status_code=404, detail=f"Graph for {candidate_id} not found")
         
     return view
+
+
+@router.put("/{candidate_id}")
+def update_candidate_details(candidate_id: str, payload: dict):
+    from db import crud
+    cand = crud.get_candidate(candidate_id)
+    if not cand:
+        raise HTTPException(status_code=404, detail="Candidate not found")
+    crud.update_candidate(candidate_id, payload)
+    return crud.get_candidate(candidate_id)
+
+@router.post("/{candidate_id}/resync")
+def resync_candidate_github(candidate_id: str, background_tasks: BackgroundTasks, payload: dict = None):
+    from db import crud
+    cand = crud.get_candidate(candidate_id)
+    if not cand:
+        raise HTTPException(status_code=404, detail="Candidate not found")
+    cand_dict = dict(cand)
+    if payload:
+        if payload.get("github_token"):
+            cand_dict["github_token"] = payload.get("github_token")
+        if payload.get("github_url"):
+            cand_dict["github_url"] = payload.get("github_url")
+            crud.update_candidate(candidate_id, {"github_url": payload.get("github_url")})
+            
+    crud.update_candidate(candidate_id, {"graph_status": "processing"})
+    background_tasks.add_task(process_candidate_bg, candidate_id, cand_dict)
+    return {
+        "status": "processing",
+        "candidate_id": candidate_id,
+        "message": "Re-fetching repositories from GitHub and rebuilding knowledge graph."
+    }
