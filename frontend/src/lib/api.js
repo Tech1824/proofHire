@@ -71,9 +71,21 @@ export function listJobs() {
   return usesMocks() ? mock({ jobs }) : request('/jobs');
 }
 
-// Retrieves one job.
-export function getJob(jobId) {
-  return usesMocks() ? mock(jobs.find((job) => job.job_id === jobId) ?? jobExample) : request(`/jobs/${jobId}`);
+// Retrieves one job with auto-recovery.
+export async function getJob(jobId) {
+  if (usesMocks()) return mock(jobs.find((job) => job.job_id === jobId) ?? jobExample);
+  try {
+    return await request('/jobs/' + jobId);
+  } catch (err) {
+    try {
+      const all = await request('/jobs');
+      if (all && all.jobs && all.jobs.length > 0) {
+        localStorage.setItem('proofhire-job', all.jobs[0].job_id);
+        return all.jobs[0];
+      }
+    } catch (_) {}
+    throw err;
+  }
 }
 
 // Creates a candidate and builds a lightweight demo graph summary.

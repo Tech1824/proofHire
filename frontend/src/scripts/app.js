@@ -234,6 +234,10 @@ async function renderRoute() {
   try {
     if (!state.health) state.health = await API.getHealth();
     if (!state.jobs.length) state.jobs = (await API.listJobs()).jobs;
+    if (!state.selectedJobId || !state.jobs.some(j => j.job_id === state.selectedJobId)) {
+      state.selectedJobId = state.jobs[0]?.job_id || 'job_1';
+      localStorage.setItem('proofhire-job', state.selectedJobId);
+    }
     if (state.route === 'jobs') await renderJobs();
     if (state.route === 'candidate') renderCandidate();
     if (state.route === 'task') renderTask();
@@ -581,7 +585,7 @@ function renderCandidate() {
 
 // Draws the active task
 function renderTask() {
-  const job = state.jobs.find((item) => item.job_id === state.selectedJobId) ?? state.jobs[0];
+  const job = state.jobs.find((item) => item.job_id === state.selectedJobId) ?? state.jobs[0] ?? { job_id: 'job_1', title: 'Senior Distributed Systems Engineer', company: 'FinLeaf Infrastructure', required_skills: [] };
   const task = state.task;
   shell(`${heading('03 / PRACTICAL ASSESSMENT', 'Task desk<span class="heading-dot">.</span>', 'A company-specific exercise that leads into a conversation about the candidate’s own solution.', `<button class="button button-outline" id="generate-task">↻ Generate task</button>`)}
     <div class="task-layout"><section class="task-brief panel"><div class="panel-topline"><span>ASSESSMENT BRIEF</span><span class="live-tag"><i class="status-dot online"></i> ${escapeHTML(job.company)}</span></div><div class="job-select-line"><label for="job-select">ROLE</label><select id="job-select">${state.jobs.map((item) => `<option value="${escapeHTML(item.job_id)}" ${item.job_id === job.job_id ? 'selected' : ''}>${escapeHTML(item.title)} — ${escapeHTML(item.company)}</option>`).join('')}</select></div>
@@ -862,9 +866,10 @@ async function sendAnswer(event) {
 
 // Loads and draws candidate's personal evaluation and the recruiter comparative shortlist.
 async function renderShortlist() {
+  const fallbackJob = state.jobs.find(j => j.job_id === state.selectedJobId) || state.jobs[0] || { job_id: 'job_1', title: 'Senior Distributed Systems Engineer', company: 'FinLeaf Infrastructure' };
   const [job, list, myEval] = await Promise.all([
-    API.getJob(state.selectedJobId),
-    API.getShortlist(state.selectedJobId),
+    API.getJob(state.selectedJobId).catch(() => fallbackJob),
+    API.getShortlist(state.selectedJobId).catch(() => ({ job_id: state.selectedJobId, candidates: [] })),
     state.candidateId ? API.getCandidateEvaluation(state.candidateId, state.selectedJobId).catch(() => null) : Promise.resolve(null)
   ]);
 
@@ -1169,7 +1174,7 @@ async function renderGraph() {
   const candidateId = state.candidateId;
   if (!candidateId) {
     shell(`${heading('06 / KNOWLEDGE GRAPH', 'Evidence Graph<span class="heading-dot">.</span>', 'Visualizing the candidate’s project architecture and profile claims.')}
-      <div class="empty-state">No candidate profile loaded. Go to <a href="#candidate">Candidate Intake</a> first.</div>`);
+      <div class="empty-state">No candidate profile loaded. Go to <a href="#candidate">Candidate Sign In & Profile</a> to select or create a profile.</div>`);
     return;
   }
   const [candidate, graph] = await Promise.all([API.getCandidate(candidateId), API.getCandidateGraph(candidateId)]);

@@ -31,6 +31,11 @@ def get_job(job_id: str):
     else:
         from db import crud
         job = crud.get_job(job_id)
+        if not job:
+            # Fallback to the primary active job to prevent stale localStorage IDs from breaking views
+            all_jobs = crud.list_jobs()
+            if all_jobs:
+                job = all_jobs[0]
         
     if not job:
         raise HTTPException(status_code=404, detail=f"Job {job_id} does not exist")
