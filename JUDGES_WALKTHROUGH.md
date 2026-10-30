@@ -135,3 +135,4 @@ If judges previously said *"I'm waiting too long"* or *"Is this broken?"*, here 
 - [x] Evasion detection verified (`dk` -> Score 0, flag: evasive)
 - [x] Socratic AST code citations verified
 - [x] Real-time recruiter synchronization verified
+
