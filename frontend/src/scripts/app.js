@@ -24,7 +24,7 @@ function getRoutes() {
     ['candidate', '02', state.candidateId ? 'Profile' : 'Sign In'], 
     ['task', '03', 'Task'],
     ['depth', '04', 'Depth check'], 
-    ['shortlist', '05', state.candidateId ? 'My Results' : 'Shortlist'], 
+    ['shortlist', '05', state.candidateId ? 'My Results' : 'Results'], 
     ['graph', '06', 'Graph']
   ];
 }
@@ -106,16 +106,16 @@ function shell(content) {
   const currentRoutes = getRoutes();
   const pageLabel = currentRoutes.find(([key]) => key === active)?.[2] ?? 'Jobs';
   const selectedJob = state.jobs.find((job) => job.job_id === state.selectedJobId);
-  const workspaceRoutes = currentRoutes.filter(([key]) => ['jobs', 'candidate', 'shortlist'].includes(key));
-  const assessmentRoutes = currentRoutes.filter(([key]) => ['task', 'depth', 'graph'].includes(key));
-  const renderNavItem = ([key, number, label]) => `<a href="#${key}" class="nav-link ${active === key ? 'active' : ''}" title="${label}" data-tooltip="${label}"><span class="nav-icon" aria-hidden="true">${({ jobs: '▦', candidate: '👤', task: '≡', depth: '◉', shortlist: '★', graph: '⌘' })[key] || '●'}</span><span class="nav-label">${label}</span></a>`;
+  const applicationRoutes = currentRoutes.filter(([key]) => ['jobs', 'candidate'].includes(key));
+  const assessmentRoutes = currentRoutes.filter(([key]) => ['task', 'depth', 'shortlist', 'graph'].includes(key));
+  const renderNavItem = ([key, number, label]) => `<a href="#${key}" class="nav-link ${active === key ? 'active' : ''}" title="${label}" data-tooltip="${label}"><span class="nav-icon" aria-hidden="true">${({ jobs: '▦', candidate: '👤', task: '≡', depth: '◉', shortlist: '📊', graph: '🕸' })[key] || '●'}</span><span class="nav-label">${label}</span></a>`;
   
   const action = ({ 
     jobs: ['#candidate', state.candidateId ? 'My Profile' : 'Sign In / Apply'], 
     candidate: ['#task', 'Coding Task'], 
     task: ['#depth', 'Depth Check'], 
     depth: ['#shortlist', 'My Results'], 
-    shortlist: ['#graph', 'Explore Graph'], 
+    shortlist: ['#graph', 'Explore Knowledge Graph'], 
     graph: ['#shortlist', 'My Results'] 
   })[active] || ['#jobs', 'View Roles'];
 
@@ -139,8 +139,8 @@ function shell(content) {
       <aside class="sidebar" aria-label="Workspace navigation">
         <div class="sidebar-brand-row"><a class="brand" href="#jobs" aria-label="ProofHire home"><img class="brand-symbol" src="/proofhire-logo.svg" alt="" aria-hidden="true"><span class="brand-name">PROOFHIRE</span></a><button class="sidebar-toggle" id="sidebar-toggle" type="button" aria-label="Collapse navigation" title="Collapse navigation">‹</button></div>
         <nav class="sidebar-nav" aria-label="Main navigation">
-          <div class="nav-group"><span class="nav-group-label">Candidate Desk</span>${workspaceRoutes.map(renderNavItem).join('')}</div>
-          <div class="nav-group"><span class="nav-group-label">Assessment</span>${assessmentRoutes.map(renderNavItem).join('')}</div>
+          <div class="nav-group"><span class="nav-group-label">Application</span>${applicationRoutes.map(renderNavItem).join('')}</div>
+          <div class="nav-group"><span class="nav-group-label">Assessment &amp; Results</span>${assessmentRoutes.map(renderNavItem).join('')}</div>
         </nav>
         <div class="sidebar-bottom"><span class="sidebar-system-label">SYSTEM MODE</span><button class="mode-switch" id="mode-switch" type="button" title="Switch between local mock data and the API"><i class="switch-dot"></i><span>${API.usesMocks() ? 'Demo mode' : 'Live API'}</span></button></div>
       </aside>
@@ -596,39 +596,87 @@ async function renderTask() {
     }
   }
   const task = state.task;
-  shell(`${heading('03 / PRACTICAL ASSESSMENT', 'Task desk<span class="heading-dot">.</span>', 'A company-specific exercise that leads into a conversation about the candidate’s own solution.', `<button class="button button-outline" id="generate-task">↻ Generate task</button>`)}
-    <div class="task-layout"><section class="task-brief panel"><div class="panel-topline"><span>ASSESSMENT BRIEF</span><span class="live-tag"><i class="status-dot online"></i> ${escapeHTML(job.company)}</span></div><div class="job-select-line"><label for="job-select">ROLE</label><select id="job-select">${state.jobs.map((item) => `<option value="${escapeHTML(item.job_id)}" ${item.job_id === job.job_id ? 'selected' : ''}>${escapeHTML(item.title)} — ${escapeHTML(item.company)}</option>`).join('')}</select></div>
-      ${task ? `<div class="task-heading"><div class="eyebrow">${escapeHTML(task.language)} / ${task.time_limit_min} MIN</div><h2>${escapeHTML(task.title)}</h2><p>${escapeHTML(task.brief)}</p></div><div class="requirements-title">REQUIREMENTS</div><ul class="requirement-list">${task.requirements.map((item, index) => `<li><span>0${index + 1}</span>${escapeHTML(item)}</li>`).join('')}</ul>` : '<div class="empty-state compact">Generate the role-specific task to load its brief.</div>'}
-      <div class="rubric-strip"><span>RUBRIC</span><b>${task ? task.rubric.map((row) => escapeHTML(row.skill)).join(' · ') : 'Awaiting task'}</b></div></section>
-      <section class="submission-panel panel"><div class="panel-topline"><span>SUBMISSION CONSOLE</span><span class="metric-meta">NO CODE EXECUTION</span></div><label class="code-label">SOLUTION SOURCE</label><textarea id="submission-code" class="code-input submission-code" spellcheck="false" placeholder="Paste the candidate's solution here...">${escapeHTML(task?.starter_code ?? '')}</textarea><label class="notes-label">CANDIDATE NOTES <span>OPTIONAL</span></label><textarea id="submission-notes" rows="3" placeholder="Approach, trade-offs, assumptions..." class="notes-input"></textarea><div class="submit-row"><span class="form-hint">${state.candidateId ? `PROFILE ${escapeHTML(state.candidateId)}` : 'No candidate profile found.'}</span><button class="button button-primary" id="submit-solution" ${task && state.candidateId ? '' : 'disabled'}>Save submission <span>↗</span></button></div><div id="submission-result"></div></section></div>`);
-  document.querySelector('#job-select').addEventListener('change', (event) => { state.selectedJobId = event.target.value; localStorage.setItem('proofhire-job', state.selectedJobId); state.task = null; renderTask(); });
-  document.querySelector('#generate-task').addEventListener('click', async () => {
-    const button = document.querySelector('#generate-task');
-    button.disabled = true;
-    button.textContent = 'Generating...';
-    showGlobalLoader('Generating Role-Specific Task...');
-    try { state.task = await API.generateTask(state.selectedJobId); renderTask(); }
-    catch (error) { showError(error); }
-    finally { hideGlobalLoader(); }
+  shell(`${heading('03 / PRACTICAL ASSESSMENT', 'Technical Challenge<span class="heading-dot">.</span>', 'Solve the role-specific problem. Your submitted implementation will form the basis of the AI depth check interview.', `<button class="button button-quiet" id="reset-code-btn" type="button" style="font-size: 11px;">↺ Reset starter template</button>`)}
+    <div class="task-layout">
+      <section class="task-brief panel">
+        <div class="panel-topline">
+          <span>ASSESSMENT BRIEF</span>
+          <span class="live-tag"><i class="status-dot online"></i> ${escapeHTML(job.company)}</span>
+        </div>
+        <div style="margin-bottom: 14px; padding: 8px 12px; background: rgba(255,255,255,0.03); border-radius: 6px; border: 1px solid var(--border); font-size: 12px; color: var(--muted); display: flex; justify-content: space-between; align-items: center;">
+          <span>Target Position: <strong style="color: var(--text);">${escapeHTML(job.title)}</strong></span>
+          <span style="font-size: 11px; color: var(--primary); font-family: monospace;">${escapeHTML(job.job_id)}</span>
+        </div>
+        ${task ? `
+          <div class="task-heading">
+            <div class="eyebrow">${escapeHTML(task.language)} / ${task.time_limit_min} MIN</div>
+            <h2>${escapeHTML(task.title)}</h2>
+            <p>${escapeHTML(task.brief)}</p>
+          </div>
+          <div class="requirements-title">REQUIREMENTS</div>
+          <ul class="requirement-list">
+            ${task.requirements.map((item, index) => `<li><span>0${index + 1}</span>${escapeHTML(item)}</li>`).join('')}
+          </ul>` : `
+          <div class="empty-state compact">Task is loading...</div>
+        `}
+        <div class="rubric-strip">
+          <span>RUBRIC</span>
+          <b>${task ? task.rubric.map((row) => escapeHTML(row.skill)).join(' · ') : 'Awaiting task'}</b>
+        </div>
+      </section>
+
+      <section class="submission-panel panel">
+        <div class="panel-topline">
+          <span>SUBMISSION CONSOLE</span>
+          <span class="metric-meta">STATIC ANALYSIS ONLY</span>
+        </div>
+        <label class="code-label">YOUR CODE SOLUTION</label>
+        <textarea id="submission-code" class="code-input submission-code" spellcheck="false" placeholder="Write or paste your implementation here...">${escapeHTML(task?.starter_code ?? '')}</textarea>
+        <label class="notes-label">YOUR DESIGN APPROACH &amp; TRADE-OFFS <span>OPTIONAL</span></label>
+        <textarea id="submission-notes" rows="3" placeholder="Explain your algorithmic strategy, trade-offs, and edge case assumptions..." class="notes-input"></textarea>
+        <div class="submit-row">
+          <span class="form-hint">${state.candidateId ? `CANDIDATE: ${escapeHTML(state.candidate?.name || state.candidateId)}` : '⚠️ Please sign in to link your submission.'}</span>
+          <button class="button button-primary" id="submit-solution" ${task && state.candidateId ? '' : 'disabled'}>Submit solution &amp; proceed <span>↗</span></button>
+        </div>
+        <div id="submission-result"></div>
+      </section>
+    </div>`
+  );
+
+  document.querySelector('#reset-code-btn')?.addEventListener('click', () => {
+    const editor = document.querySelector('#submission-code');
+    if (editor && task?.starter_code) {
+      editor.value = task.starter_code;
+    }
   });
-  document.querySelector('#submit-solution').addEventListener('click', async () => {
+
+  document.querySelector('#submit-solution')?.addEventListener('click', async () => {
     if (!state.task) return;
     const button = document.querySelector('#submit-solution');
     button.disabled = true;
     button.textContent = 'Saving...';
-    showGlobalLoader('Indexing Submission Code...');
+    showGlobalLoader('Indexing Submission Code & Updating Knowledge Graph...');
     try {
-      const result = await API.createSubmission({ candidate_id: state.candidateId, task_id: state.task.task_id, files: [{ path: state.task.language === 'python' ? 'limiter.py' : 'menu.js', content: document.querySelector('#submission-code').value }], notes: document.querySelector('#submission-notes').value });
+      const result = await API.createSubmission({
+        candidate_id: state.candidateId,
+        task_id: state.task.task_id,
+        files: [{ path: state.task.language === 'python' ? 'limiter.py' : 'menu.js', content: document.querySelector('#submission-code').value }],
+        notes: document.querySelector('#submission-notes').value
+      });
       state.submissionId = result.submission_id;
       localStorage.setItem('proofhire-sub', state.submissionId);
-      // Clear any old depth session tied to a previous submission
       state.sessionId = null;
       localStorage.removeItem('proofhire-session');
       state.answerResult = null;
       state.chatHistory = [];
-      document.querySelector('#submission-result').innerHTML = `<div class="result-callout"><i class="status-dot online"></i><strong>SUBMISSION SAVED</strong><span>${result.stats.files} file · ${result.stats.functions} functions indexed</span><a href="#depth">Start depth check →</a></div>`;
-    } catch (error) { document.querySelector('#submission-result').innerHTML = `<p class="inline-error">${escapeHTML(error.message)}</p>`; }
-    finally { button.disabled = false; button.innerHTML = 'Save submission <span>↗</span>'; hideGlobalLoader(); }
+      document.querySelector('#submission-result').innerHTML = `<div class="result-callout"><i class="status-dot online"></i><strong>SUBMISSION SAVED</strong><span>${result.stats.files} file · ${result.stats.functions} functions indexed</span><a href="#depth" style="margin-left: 8px;">Proceed to Depth Check →</a></div>`;
+    } catch (error) {
+      document.querySelector('#submission-result').innerHTML = `<p class="inline-error">${escapeHTML(error.message)}</p>`;
+    } finally {
+      button.disabled = false;
+      button.innerHTML = 'Submit solution &amp; proceed <span>↗</span>';
+      hideGlobalLoader();
+    }
   });
 }
 
@@ -1255,12 +1303,9 @@ async function renderShortlist() {
     
     return `<article class="candidate-row" data-candidate-id="${escapeHTML(candidate.candidate_id)}"><div class="rank-cell"><span>RANK</span><strong>#${candidate.rank || '-'}</strong></div><div class="candidate-overview"><div class="candidate-name-row"><h2>${escapeHTML(candidate.name)}</h2><span class="recommendation rec-${escapeHTML(candidate.recommendation || 'reviewed')}">${escapeHTML((candidate.recommendation || 'reviewed').replaceAll('_', ' '))}</span></div><div class="score-track"><i style="width:${candidate.overall_score || 0}%"></i></div><div class="candidate-meta"><span>${candidate.overall_score || 0}<small> / 100</small></span><span>${Math.round((candidate.confidence || 0.8) * 100)}% confidence</span><span>${escapeHTML(candidate.candidate_id)}</span></div>
   
-  <div class="pipeline-actions" style="margin: 10px 0; display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
-    <span style="font-size: 11px; color: var(--muted); font-weight: 600;">STAGE:</span>
+  <div class="pipeline-actions" style="margin: 8px 0; display: flex; gap: 8px; align-items: center;">
+    <span style="font-size: 11px; color: var(--muted); font-weight: 600;">APPLICATION STATUS:</span>
     <span class="stage-badge" style="padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; background: var(--raised); border: 1px solid var(--border); color: var(--verified);">${escapeHTML(candidate.status || 'Reviewed')}</span>
-    <button class="button button-quiet status-btn" style="padding: 3px 8px; font-size: 11px;" data-cand="${escapeHTML(candidate.candidate_id)}" data-status="Shortlisted">★ Shortlist</button>
-    <button class="button button-quiet status-btn" style="padding: 3px 8px; font-size: 11px;" data-cand="${escapeHTML(candidate.candidate_id)}" data-status="Interview">📅 Interview</button>
-    <button class="button button-quiet status-btn" style="padding: 3px 8px; font-size: 11px;" data-cand="${escapeHTML(candidate.candidate_id)}" data-status="Rejected">✕ Reject</button>
   </div>
 
   <p class="candidate-summary">${escapeHTML(candidate.summary || 'Candidate assessment record active.')}</p><div class="strength-concerns"><div><span class="list-label">STRENGTH SIGNAL</span><p>${escapeHTML(strengths[0] ?? 'Consistently grounded code explanations.')}</p></div><div><span class="list-label">OPEN QUESTION</span><p>${escapeHTML(concerns[0] ?? 'No critical flags raised.')}</p></div></div><details class="evidence-details"><summary><span>Evidence Trail & Transparent Scorecard</span><span>${evList.length} SKILLS VERIFIED <b>＋</b></span></summary><div class="evidence-list">${evList.map((item) => `
@@ -1287,11 +1332,8 @@ async function renderShortlist() {
       ${item.disputed ? `<div style="margin: 8px 0; padding: 6px 10px; background: rgba(255, 138, 30, 0.15); border: 1px solid #ff8a1e; border-radius: 6px; font-size: 11px; color: #ff8a1e;">⚠️ <strong>Candidate Contested Evaluation:</strong> “${escapeHTML(item.dispute_reason || '')}”</div>` : ''}
       <div style="margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
         <span class="audit-status" style="font-size: 11px; color: var(--muted);">
-          Human Review: ${item.recruiter_confirmed ? '<strong style="color: var(--verified);">✔ Recruiter Confirmed</strong>' : '<span style="color: var(--amber);">Pending Recruiter Review</span>'}
+          Recruiter Audit: ${item.recruiter_confirmed ? '<strong style="color: var(--verified);">✔ Confirmed by Hiring Team</strong>' : '<span style="color: var(--amber);">Pending Recruiter Review</span>'}
         </span>
-        <button class="button button-quiet confirm-btn" style="padding: 4px 10px; font-size: 11px;" data-sess="${escapeHTML(candidate.session_id)}" data-turn="${item.turn_number}">
-          ${item.recruiter_confirmed ? '✔ Confirmed' : 'Confirm Evaluation ✔'}
-        </button>
       </div>
     </div>`).join('')}</div></details></div><div class="candidate-profile"><span class="metric-label">SKILL PROFILE</span>${Object.entries(skillProf).map(([skill, value]) => `<div class="profile-row"><span>${escapeHTML(skill)}</span><b>${Number(value).toFixed(1)}</b></div>`).join('')}</div></article>`;
   });
@@ -1312,7 +1354,14 @@ async function renderShortlist() {
       </div>
     </details>` : '';
 
-  shell(`${heading(state.candidateId ? '05 / RESULTS' : '05 / EVIDENCE REVIEW', state.candidateId ? 'My Results<span class="heading-dot">.</span>' : 'Shortlist<span class="heading-dot">.</span>', `${escapeHTML(job.title)} / ${escapeHTML(job.company)} · Ranked by evidence, not resume polish.`, '<span class="review-stamp"><i class="status-dot online"></i> HUMAN REVIEW</span>')}
+  const guestNotice = !state.candidateId ? `
+    <div style="margin-bottom: 20px; padding: 14px 18px; background: var(--raised); border: 1px solid var(--border); border-radius: 8px; font-size: 13px; display: flex; justify-content: space-between; align-items: center;">
+      <span>💡 <strong>Previewing Requisition Results:</strong> Sign in with your candidate account to access your personal scorecard, verified evidence trail, and dispute reporting.</span>
+      <a href="#candidate" class="button button-primary" style="padding: 4px 12px; font-size: 11px;">Sign In ↗</a>
+    </div>` : '';
+
+  shell(`${heading('05 / RESULTS & EVALUATION', state.candidateId ? 'My Results<span class="heading-dot">.</span>' : 'Assessment Results<span class="heading-dot">.</span>', `${escapeHTML(job.title)} / ${escapeHTML(job.company)} · Ranked by verified evidence, not resume polish.`, '<span class="review-stamp"><i class="status-dot online"></i> HUMAN REVIEW</span>')}
+    ${guestNotice}
     ${myScorecardHtml}
     ${recruiterNotice}
     <details class="all-applicants-details" ${state.candidateId ? '' : 'open'} style="margin-top: 16px;">
@@ -1390,51 +1439,6 @@ async function renderShortlist() {
   document.querySelector('#cmp-1')?.addEventListener('change', renderCompareMatrix);
   document.querySelector('#cmp-2')?.addEventListener('change', renderCompareMatrix);
   renderCompareMatrix();
-
-  // Pipeline Status Buttons Handler
-  app.querySelectorAll('.status-btn').forEach((btn) => {
-    btn.addEventListener('click', async (e) => {
-      e.preventDefault();
-      const candId = btn.dataset.cand;
-      const newStatus = btn.dataset.status;
-      btn.disabled = true;
-      try {
-        await API.updateCandidateStatus(candId, newStatus);
-        const card = btn.closest('.candidate-row');
-        const badge = card ? card.querySelector('.stage-badge') : null;
-        if (badge) {
-          badge.textContent = newStatus;
-          badge.style.color = newStatus === 'Rejected' ? '#ef4444' : newStatus === 'Shortlisted' ? 'var(--verified)' : 'var(--primary)';
-        }
-      } catch (err) {
-        alert('Failed to update stage: ' + err.message);
-      } finally {
-        btn.disabled = false;
-      }
-    });
-  });
-
-  // Human Review Confirm Handler
-  app.querySelectorAll('.confirm-btn').forEach((button) => {
-    button.addEventListener('click', async () => {
-      button.disabled = true;
-      const session = button.dataset.sess;
-      const turn = Number(button.dataset.turn);
-      try {
-        await API.confirmEvidence(session, turn, true);
-        button.textContent = '✔ Confirmed';
-        button.classList.add('confirmed');
-        const card = button.closest('.evidence-card');
-        const statusSpan = card ? card.querySelector('.audit-status') : null;
-        if (statusSpan) {
-          statusSpan.innerHTML = 'Human Review: <strong style="color: var(--verified);">✔ Recruiter Confirmed</strong>';
-        }
-      } catch (error) {
-        showError(error);
-        button.disabled = false;
-      }
-    });
-  });
 }
 
 // Loads a candidate's node-link data and renders it with Cytoscape.

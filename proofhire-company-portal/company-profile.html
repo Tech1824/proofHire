@@ -11,7 +11,27 @@
 <div class="toast hide" id="toast" role="status"></div>
 <script src="js/portal.js"></script>
 <script>
-function saveCo(){Object.assign(D.company,{name:$("#c_n").value,email:$("#c_e").value,website:$("#c_w").value,industry:$("#c_i").value,size:$("#c_s").value,location:$("#c_l").value,about:$("#c_a").value});save();toast("Profile saved")}
+async function saveCo(){
+  const updated = {
+    name: $("#c_n").value,
+    email: $("#c_e").value,
+    website: $("#c_w").value,
+    industry: $("#c_i").value,
+    size: $("#c_s").value,
+    location: $("#c_l").value,
+    about: $("#c_a").value
+  };
+  Object.assign(D.company, updated);
+  save();
+  toast("Profile saved");
+  try {
+    await fetch(`${API_BASE}/company`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(updated)
+    });
+  } catch(e) {}
+}
 boot("company-profile",()=>{const c=D.company;return `<div class="page">`+head("02","Company profile","Candidates see this before they start an assessment.")+sec("Company details")+
 `<div class="cg"><div class="pn"><span class="k">Identity</span><label for="c_n">Company name</label><input id="c_n" value="${esc(c.name)}"><label for="c_i">Industry</label><input id="c_i" value="${esc(c.industry)}"><label for="c_s">Size</label><select id="c_s">${["1–10","11–50","51–200","201–1000","1000+"].map(o=>`<option ${o===c.size?"selected":""}>${o}</option>`).join("")}</select></div>
 <div class="pn"><span class="k">Contact</span><label for="c_e">Contact email</label><input id="c_e" value="${esc(c.email)}"><label for="c_w">Website</label><input id="c_w" value="${esc(c.website)}"><label for="c_l">Location</label><input id="c_l" value="${esc(c.location)}"></div>

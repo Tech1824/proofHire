@@ -51,6 +51,7 @@ def get_recruiter_dashboard():
             "shortlisted_count": len(shortlisted)
         },
         "jobs": jobs,
+        "applicants": candidates,
         "recent_applicants": candidates[-5:]
     }
 

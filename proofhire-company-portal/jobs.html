@@ -11,7 +11,48 @@
 <div class="toast hide" id="toast" role="status"></div>
 <script src="js/portal.js"></script>
 <script>
-function addJob(){const t=$("#j_t").value.trim();if(!t){toast("Enter a job title");return}D.jobs.push({id:Date.now(),title:t,co:D.company.name,track:$("#j_c").value,desc:$("#j_d").value,skills:$("#j_s").value||"—",status:"Open",task:"Not set",min:45});save();toast("Job published");render()}
+async function addJob(){
+  const t=$("#j_t").value.trim();
+  if(!t){toast("Enter a job title");return}
+  const skillsStr=$("#j_s").value||"python, rest api, sql";
+  const newJob = {
+    title: t,
+    company: D.company.name,
+    seniority: $("#j_c").value || "Junior",
+    description: $("#j_d").value || "Core engineering role with distributed systems and APIs.",
+    required_skills: skillsStr.split(",").map(s=>s.trim()).filter(Boolean),
+    status: "Open"
+  };
+  try {
+    const res = await fetch(`${API_BASE}/jobs`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(newJob)
+    });
+    if (res.ok) {
+      const created = await res.json();
+      D.jobs.push({
+        id: created.job_id,
+        title: created.title,
+        co: created.company,
+        track: created.seniority,
+        desc: created.description,
+        skills: skillsStr,
+        status: "Open",
+        task: "Practical Code + Depth Assessment",
+        min: 45
+      });
+      save();
+      toast("Job published to backend and candidate portal!");
+      render();
+      return;
+    }
+  } catch(e) {}
+  D.jobs.push({id:"job_"+Date.now(),title:t,co:D.company.name,track:$("#j_c").value,desc:$("#j_d").value,skills:skillsStr,status:"Open",task:"Practical Code + Depth Assessment",min:45});
+  save();
+  toast("Job published locally");
+  render();
+}
 function delJob(id){if(confirm("Delete this job?")){D.jobs=D.jobs.filter(j=>j.id!=id);if(D.jobId==id)D.jobId=D.jobs[0]?.id;save();render()}}
 function flip(i){D.jobs[i].status=D.jobs[i].status==="Open"?"Closed":"Open";save();render()}
 function openRole(id){D.jobId=id;save();go("applicants")}

@@ -260,8 +260,14 @@ export function resyncCandidateGithub(candidateId, payload = {}) {
 }
 
 // Returns the evidence-ranked shortlist for one job.
-export function getShortlist(jobId) {
-  if (!usesMocks()) return request(`/shortlist/${jobId}`);
+export async function getShortlist(jobId) {
+  if (!usesMocks()) {
+    try {
+      return await request(`/shortlist/${jobId}`);
+    } catch (err) {
+      return { job_id: jobId, candidates: [] };
+    }
+  }
   if (jobId !== 'job_1') return mock({ ...shortlistExample, job_id: jobId, candidates: [] });
   const weak = {
     ...shortlistExample.candidates[0], rank: 2, candidate_id: 'cand_2', name: 'Ravi Kumar', overall_score: 39, confidence: 0.62,
