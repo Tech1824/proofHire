@@ -961,17 +961,104 @@ h2, .job-main h2, .task-heading h2 { font-size: 22px; font-weight: 600; }
 @keyframes loader-spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
 /* Ensure full visibility for Task section role selector and code submission across all themes */
-.job-select-line select {
-  background: var(--raised) !important;
-  color: var(--text) !important;
-  border: 1px solid var(--border) !important;
+:root, :root[data-theme="dark"], :root[data-theme="light"] {
+  --task-code-bg-dark: #0b101b;
+  --task-code-fg-dark: #f1f5f9;
+  --task-code-bg-light: #ffffff;
+  --task-code-fg-light: #0f172a;
+  --task-select-bg-dark: #111a2e;
+  --task-select-fg-dark: #f8fafc;
+  --task-select-bg-light: #ffffff;
+  --task-select-fg-light: #0f172a;
 }
-.job-select-line option {
-  background: var(--card) !important;
-  color: var(--text) !important;
+
+/* Base select and textarea defaults */
+.job-select-line select, #job-select, #role-switcher, .role-switcher select {
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  padding: 6px 10px !important;
+  border-radius: 6px !important;
+  outline: none !important;
+  cursor: pointer !important;
 }
-.submission-code, textarea.code-input, .code-input {
-  background: var(--raised) !important;
-  color: var(--text) !important;
-  caret-color: var(--text) !important;
+
+.submission-code, textarea.code-input, #submission-code {
+  font-family: 'JetBrains Mono', ui-monospace, monospace !important;
+  font-size: 13px !important;
+  line-height: 1.6 !important;
+  padding: 14px !important;
+  border-radius: 8px !important;
 }
+
+/* Dark Theme Specificity Overrides */
+:root[data-theme="dark"] .job-select-line select,
+:root[data-theme="dark"] #job-select,
+:root[data-theme="dark"] #role-switcher,
+:root[data-theme="dark"] .role-switcher select {
+  color-scheme: dark !important;
+  background-color: #111a2e !important;
+  color: #f8fafc !important;
+  border: 1px solid #243049 !important;
+}
+
+:root[data-theme="dark"] select option,
+:root[data-theme="dark"] #job-select option,
+:root[data-theme="dark"] #role-switcher option,
+:root[data-theme="dark"] .job-select-line option,
+:root[data-theme="dark"] .role-switcher option {
+  background-color: #111a2e !important;
+  color: #f8fafc !important;
+}
+
+:root[data-theme="dark"] #submission-code,
+:root[data-theme="dark"] .submission-code,
+:root[data-theme="dark"] textarea.code-input,
+:root[data-theme="dark"] .code-input {
+  color-scheme: dark !important;
+  background-color: #0b101b !important;
+  color: #f1f5f9 !important;
+  caret-color: #38bdf8 !important;
+  border: 1px solid #243049 !important;
+}
+
+:root[data-theme="dark"] #submission-code::placeholder,
+:root[data-theme="dark"] .submission-code::placeholder {
+  color: #64748b !important;
+}
+
+/* Light Theme Specificity Overrides */
+:root[data-theme="light"] .job-select-line select,
+:root[data-theme="light"] #job-select,
+:root[data-theme="light"] #role-switcher,
+:root[data-theme="light"] .role-switcher select {
+  color-scheme: light !important;
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border: 1px solid #cbd5e1 !important;
+}
+
+:root[data-theme="light"] select option,
+:root[data-theme="light"] #job-select option,
+:root[data-theme="light"] #role-switcher option,
+:root[data-theme="light"] .job-select-line option,
+:root[data-theme="light"] .role-switcher option {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+}
+
+:root[data-theme="light"] #submission-code,
+:root[data-theme="light"] .submission-code,
+:root[data-theme="light"] textarea.code-input,
+:root[data-theme="light"] .code-input {
+  color-scheme: light !important;
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  caret-color: #4338ca !important;
+  border: 1px solid #cbd5e1 !important;
+}
+
+:root[data-theme="light"] #submission-code::placeholder,
+:root[data-theme="light"] .submission-code::placeholder {
+  color: #94a3b8 !important;
+}
+
