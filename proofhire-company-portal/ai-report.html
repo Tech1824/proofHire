@@ -13,7 +13,7 @@
 <script>
 boot("ai-report",()=>{const a=sel();return `<div class="page">`+head("07","AI evaluation report",`${esc(a.name)} · ${esc(jt(a.job))}`,`<div style="text-align:right"><div class="big">${a.score}</div><span class="tag">${a.rec}</span><div class="lead" style="font-size:14px;margin-top:6px">Confidence ${Math.round(a.conf*100)}%</div></div>`)+sec("Summary")+
 `<div class="pn"><p class="lead">${esc(a.summary)}</p></div>`+sec("Skill dimensions")+`<div class="cards">${Object.entries(a.dims).map(([k,v])=>`<div class="sc" style="--c:#2f5bff;cursor:default"><span>${k}</span><b>${v}</b>${bar(v)}</div>`).join("")}</div>`+sec("Question by question",`${a.turns.length} answered`)+
-(a.turns.map((t,i)=>`<section class="r"><div class="no">Q${i+1}</div><div><h3 style="font-size:22px">${esc(t.q)}</h3><p>${esc(t.a)}</p><div class="bq">Evidence: “${esc(t.ev)}”</div></div><div class="as"><small>Score</small><b>${t.s} / 5</b>${bar(t.s*20)}</div></section>`).join("")||`<div class="pn"><p class="lead">No answers recorded.</p></div>`)+foot()+`</div>`});
+(a.turns.map((t,i)=>`<section class="r"><div class="no">Q${i+1}</div><div><h3 style="font-size:22px">${esc(t.q)}</h3><p>${esc(t.a)}</p><div class="bq">Evidence: “${esc(t.ev)}”</div>${t.disputed?`<div style="margin-top:8px;padding:6px 10px;background:rgba(255,138,30,0.15);border:1px solid #ff8a1e;border-radius:6px;font-size:12px;color:#ff8a1e">⚠️ <b>Candidate Contested Evaluation:</b> "${esc(t.dispute_reason||'Candidate reported an evaluation issue')}"</div>`:''}</div><div class="as"><small>Score</small><b>${t.s} / 5</b>${bar(t.s*20)}</div></section>`).join("")||`<div class="pn"><p class="lead">No answers recorded.</p></div>`)+foot()+`</div>`});
 </script>
 </body>
 </html>

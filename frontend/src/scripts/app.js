@@ -12,6 +12,7 @@ const state = {
   submissionId: localStorage.getItem('proofhire-sub') || null, 
   sessionId: localStorage.getItem('proofhire-session') || null, 
   turn: null, answerResult: null, chatHistory: [],
+  showDepthHistory: false,
   candidate: JSON.parse(localStorage.getItem('proofhire-cand-data')) || null, 
   user: JSON.parse(localStorage.getItem('proofhire-user')) || (localStorage.getItem('proofhire-cand') ? { id: localStorage.getItem('proofhire-cand'), name: 'Arjun Mehta', role: 'candidate' } : null),
   error: ''
@@ -641,19 +642,20 @@ async function renderDepth() {
       sess.turns.forEach(t => {
          state.chatHistory.push({
            kind: 'question',
-           turn: { turn_number: t.turn_number, text: t.text, code_snippet: t.code_snippet, expects: t.expects, node_ref: t.node_ref, type: t.type, level: t.level }
+           turn: { turn_number: t.turn_number, text: t.text, code_snippet: t.code_snippet, expects: t.expects, node_ref: t.node_ref, type: t.type, level: t.level, phase_label: t.phase_label }
          });
          if (t.answer_text) {
            state.chatHistory.push({
              kind: 'answer',
+             questionTurn: { turn_number: t.turn_number, text: t.text, code_snippet: t.code_snippet, expects: t.expects, node_ref: t.node_ref, phase_label: t.phase_label },
              answer: t.answer_text,
              evaluation: t.evaluation
            });
            score = Math.round((score * (t.turn_number - 1) + t.evaluation.score * 20) / t.turn_number);
            state.answerResult = {
-             status: sess.status === 'done' || t.turn_number >= 5 ? 'done' : 'in_progress',
+             status: sess.status === 'done' || t.turn_number >= (sess.max_turns || 6) ? 'done' : 'in_progress',
              evaluation: t.evaluation,
-             running: { score_100: score, confidence: 0.92, dimensions: t.evaluation.dimensions },
+             running: { score_100: score, confidence: 0.92, dimensions: t.evaluation.dimensions || {} },
              meta: t.meta || { context_tokens: 300, full_context_tokens: 1800 },
              next: null
            };
@@ -678,12 +680,107 @@ async function renderDepth() {
   const turn = state.turn;
   const result = state.answerResult;
   const isDone = result?.status === 'done' || (!turn && session);
+  const completedAnswers = state.chatHistory.filter(e => e.kind === 'answer');
+
   shell(`${heading('04 / TECHNICAL CONVERSATION', 'Depth check<span class="heading-dot">.</span>', 'Questions follow the candidate’s own work. Scores stay attached to exact answer evidence.', session ? `<button class="button button-quiet" id="end-session">Finish session</button>` : '')}
-    <div class="depth-layout"><section class="chat-panel panel"><div class="panel-topline"><span><i class="status-dot ${session ? 'online' : 'offline'}"></i> ${session ? `SESSION ${escapeHTML(session.slice(-8))}` : 'SESSION NOT STARTED'}</span><span>${turn ? `<span class="badge" style="margin-right: 8px; font-size: 10px; padding: 2px 8px;">${escapeHTML(turn.phase_label ?? (turn.turn_number <= 3 ? 'PHASE 1: PROVENANCE' : 'PHASE 2: CODE VERIFICATION'))}</span>TURN ${turn.turn_number} / 6` : 'WAITING'}</span></div>
-      <div class="chat-scroll" id="chat-scroll">${session ? `<div class="chat-message system-message"><span class="message-stamp">PROOFHIRE / INTERVIEWER</span><p class="typewriter">${escapeHTML(turn?.text ?? (result?.status === 'done' ? 'Depth check complete. Your answers are ready for recruiter review.' : 'Session complete.'))}</p>${turn?.code_snippet ? `<pre class="snippet"><span>${escapeHTML(turn.code_snippet.path)}:${turn.code_snippet.start_line}</span><code>${escapeHTML(turn.code_snippet.code)}</code></pre>` : ''}</div>${result ? `<div class="chat-message answer-message"><span class="message-stamp">CANDIDATE / TURN ${result.evaluation.turn_number}</span><p>${escapeHTML(result.evaluation.evidence_quote || 'No answer provided.')}</p><span class="answer-score">SCORE ${result.evaluation.score}/5 · ${escapeHTML(result.evaluation.flags.join(', ') || 'NO FLAGS')}</span></div><div class="chat-message system-message follow-up"><span class="message-stamp">PROOFHIRE / NEXT</span><p class="typewriter">${escapeHTML(result.next?.text ?? 'Depth check complete. The evidence is ready for recruiter review.')}</p></div>` : ''}` : '<div class="chat-empty"><div class="terminal-prompt">$ depth-check --start</div><h2>Ready to test understanding.</h2><p>Start with the submitted solution, then follow the evidence one answer at a time.</p><button class="button button-primary" id="start-session">Start depth check <span>↗</span></button></div>'}</div>
-      ${session && !isDone ? `<form id="answer-form" class="answer-form"><label for="candidate-answer">${turn?.expects === 'code' ? 'CODE RESPONSE' : 'YOUR RESPONSE'}</label>${turn?.expects === 'code' ? '<textarea id="candidate-answer" name="answer" class="code-input" rows="4" placeholder="Write or paste a small code change..."></textarea>' : '<textarea id="candidate-answer" name="answer" rows="3" placeholder="Explain your reasoning, referring to the submitted code..."></textarea>'}<div class="answer-controls"><span class="form-hint">ENTER TO SEND · SHIFT+ENTER FOR NEW LINE</span><button class="button button-primary" type="submit">Send answer <span>↗</span></button></div></form><div class="voice-controls" style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border-color);"><button class="button button-outline" id="start-voice-call" type="button">🎙️ Start Voice-to-Voice Call (Alpha)</button><div id="voice-status" style="margin-top: 8px; font-size: 12px; font-family: monospace; color: var(--accent-color);"></div></div>` : session ? `<div class="session-complete"><i class="status-dot online"></i> <strong>SESSION COMPLETE</strong> · EVIDENCE SAVED<div style="margin-top: 14px; display: flex; gap: 10px; align-items: center;"><a href="#shortlist" class="button button-primary">Review in Shortlist →</a><button class="button button-quiet" id="restart-depth" type="button">Start new session ↻</button></div></div>` : ''}</section>
-    <aside class="evidence-panel panel"><div class="panel-topline"><span>LIVE EVIDENCE</span><span class="evidence-lock">● VERIFIED QUOTE</span></div>${result ? `<div class="score-overview"><div><span class="metric-label">RUNNING SCORE</span><div class="score-number">${result.running.score_100}<small>/100</small></div></div><div class="confidence-block"><span class="metric-label">CONFIDENCE</span><strong>${Math.round(result.running.confidence * 100)}<small>%</small></strong></div></div><div class="ascii-bar" aria-label="Score ${result.running.score_100} out of 100">[${'█'.repeat(Math.round(result.running.score_100 / 10))}${'░'.repeat(10 - Math.round(result.running.score_100 / 10))}] ${result.running.score_100}</div><div class="evidence-quote"><div class="quote-head"><span>ANSWER ${String(result.evaluation.turn_number).padStart(2, '0')} / EVIDENCE</span><span>SCORE ${result.evaluation.score}/5</span></div><blockquote>“${escapeHTML(result.evaluation.evidence_quote || 'No evidence quote available.') }”</blockquote><p>${escapeHTML(result.evaluation.reasoning)}</p></div><div class="dimension-list">${Object.entries(result.running.dimensions).map(([name, score]) => `<div class="dimension-row"><span>${escapeHTML(name)}</span><div class="dimension-track"><i style="width:${Math.min(100, Number(score) * 20)}%"></i></div><b>${Number(score).toFixed(1)}</b></div>`).join('')}</div><div class="token-meter"><div class="token-head"><span>TOKEN SAVINGS</span><b>${Math.max(0, Math.round((1 - result.meta.context_tokens / result.meta.full_context_tokens) * 100))}% less context</b></div><div class="token-comparison"><div><span>GRAPH CONTEXT</span><b>${result.meta.context_tokens.toLocaleString()} <small>tokens</small></b></div><div><span>FULL PROJECT</span><b>${result.meta.full_context_tokens.toLocaleString()} <small>tokens</small></b></div></div><div class="token-track"><i style="width:${Math.max(4, result.meta.context_tokens / result.meta.full_context_tokens * 100)}%"></i></div></div>${result.evaluation.flags.length ? `<div class="flag-row">${result.evaluation.flags.map((flag) => `<span class="flag-tag">${escapeHTML(flag)}</span>`).join('')}</div>` : '<div class="clean-eval">NO RISK FLAGS</div>'}` : '<div class="evidence-empty"><div class="evidence-mark">[ ]</div><h3>Evidence will appear here.</h3><p>Each answer is evaluated on its own. Scores are calculated separately from the model response.</p><div class="empty-meter"><span></span></div></div>'}<div class="evidence-footer"><span>LLM IS NOT THE HIRING DECISION</span><span>HUMAN REVIEW REQUIRED</span></div></aside></div>`);
-  if (session) document.querySelector('#chat-scroll').innerHTML = chatTranscript();
+    <div class="depth-layout">
+      <section class="chat-panel panel">
+        <div class="panel-topline">
+          <span><i class="status-dot ${session ? 'online' : 'offline'}"></i> ${session ? `SESSION ${escapeHTML(session.slice(-8))}` : 'SESSION NOT STARTED'}</span>
+          <div style="display:flex; align-items:center; gap:8px;">
+            ${completedAnswers.length > 0 ? `
+              <button class="button ${state.showDepthHistory ? 'button-primary' : 'button-quiet'}" id="toggle-depth-history" style="font-size: 11px; padding: 2px 10px; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px;">
+                ${state.showDepthHistory ? '💬 Active Interview' : `📜 Turn History & Audit (${completedAnswers.length})`}
+              </button>
+            ` : ''}
+            <span>${turn ? `<span class="badge" style="margin-right: 8px; font-size: 10px; padding: 2px 8px;">${escapeHTML(turn.phase_label ?? (turn.turn_number <= 3 ? 'PHASE 1: PROVENANCE' : 'PHASE 2: CODE VERIFICATION'))}</span>TURN ${turn.turn_number} / 6` : 'WAITING'}</span>
+          </div>
+        </div>
+
+        ${state.showDepthHistory ? renderDepthHistoryView(completedAnswers) : `
+          <div class="chat-scroll" id="chat-scroll">${session ? `<div class="chat-message system-message"><span class="message-stamp">PROOFHIRE / INTERVIEWER</span><p class="typewriter">${escapeHTML(turn?.text ?? (result?.status === 'done' ? 'Depth check complete. Your answers are ready for recruiter review.' : 'Session complete.'))}</p>${turn?.code_snippet ? `<pre class="snippet"><span>${escapeHTML(turn.code_snippet.path)}:${turn.code_snippet.start_line}</span><code>${escapeHTML(turn.code_snippet.code)}</code></pre>` : ''}</div>${result ? `<div class="chat-message answer-message"><span class="message-stamp">CANDIDATE / TURN ${result.evaluation.turn_number}</span><p>${escapeHTML(result.evaluation.evidence_quote || 'No answer provided.')}</p><span class="answer-score">SCORE ${result.evaluation.score}/5 · ${escapeHTML(result.evaluation.flags.join(', ') || 'NO FLAGS')}</span></div><div class="chat-message system-message follow-up"><span class="message-stamp">PROOFHIRE / NEXT</span><p class="typewriter">${escapeHTML(result.next?.text ?? 'Depth check complete. The evidence is ready for recruiter review.')}</p></div>` : ''}` : '<div class="chat-empty"><div class="terminal-prompt">$ depth-check --start</div><h2>Ready to test understanding.</h2><p>Start with the submitted solution, then follow the evidence one answer at a time.</p><button class="button button-primary" id="start-session">Start depth check <span>↗</span></button></div>'}</div>
+          ${session && !isDone ? `<form id="answer-form" class="answer-form"><label for="candidate-answer">${turn?.expects === 'code' ? 'CODE RESPONSE' : 'YOUR RESPONSE'}</label>${turn?.expects === 'code' ? '<textarea id="candidate-answer" name="answer" class="code-input" rows="4" placeholder="Write or paste a small code change..."></textarea>' : '<textarea id="candidate-answer" name="answer" rows="3" placeholder="Explain your reasoning, referring to the submitted code..."></textarea>'}<div class="answer-controls"><span class="form-hint">ENTER TO SEND · SHIFT+ENTER FOR NEW LINE</span><button class="button button-primary" type="submit">Send answer <span>↗</span></button></div></form><div class="voice-controls" style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border-color);"><button class="button button-outline" id="start-voice-call" type="button">🎙️ Start Voice-to-Voice Call (Alpha)</button><div id="voice-status" style="margin-top: 8px; font-size: 12px; font-family: monospace; color: var(--accent-color);"></div></div>` : session ? `<div class="session-complete"><i class="status-dot online"></i> <strong>SESSION COMPLETE</strong> · EVIDENCE SAVED<div style="margin-top: 14px; display: flex; gap: 10px; align-items: center;"><a href="#shortlist" class="button button-primary">Review in Shortlist →</a><button class="button button-quiet" id="restart-depth" type="button">Start new session ↻</button></div></div>` : ''}
+        `}
+      </section>
+
+      <aside class="evidence-panel panel"><div class="panel-topline"><span>LIVE EVIDENCE</span><span class="evidence-lock">● VERIFIED QUOTE</span></div>${result ? `<div class="score-overview"><div><span class="metric-label">RUNNING SCORE</span><div class="score-number">${result.running.score_100}<small>/100</small></div></div><div class="confidence-block"><span class="metric-label">CONFIDENCE</span><strong>${Math.round(result.running.confidence * 100)}<small>%</small></strong></div></div><div class="ascii-bar" aria-label="Score ${result.running.score_100} out of 100">[${'█'.repeat(Math.round(result.running.score_100 / 10))}${'░'.repeat(10 - Math.round(result.running.score_100 / 10))}] ${result.running.score_100}</div><div class="evidence-quote"><div class="quote-head"><span>ANSWER ${String(result.evaluation.turn_number).padStart(2, '0')} / EVIDENCE</span><span>SCORE ${result.evaluation.score}/5</span></div><blockquote>“${escapeHTML(result.evaluation.evidence_quote || 'No evidence quote available.') }”</blockquote><p>${escapeHTML(result.evaluation.reasoning)}</p></div><div class="dimension-list">${Object.entries(result.running.dimensions).map(([name, score]) => `<div class="dimension-row"><span>${escapeHTML(name)}</span><div class="dimension-track"><i style="width:${Math.min(100, Number(score) * 20)}%"></i></div><b>${Number(score).toFixed(1)}</b></div>`).join('')}</div><div class="token-meter"><div class="token-head"><span>TOKEN SAVINGS</span><b>${Math.max(0, Math.round((1 - result.meta.context_tokens / result.meta.full_context_tokens) * 100))}% less context</b></div><div class="token-comparison"><div><span>GRAPH CONTEXT</span><b>${result.meta.context_tokens.toLocaleString()} <small>tokens</small></b></div><div><span>FULL PROJECT</span><b>${result.meta.full_context_tokens.toLocaleString()} <small>tokens</small></b></div></div><div class="token-track"><i style="width:${Math.max(4, result.meta.context_tokens / result.meta.full_context_tokens * 100)}%"></i></div></div>${result.evaluation.flags.length ? `<div class="flag-row">${result.evaluation.flags.map((flag) => `<span class="flag-tag">${escapeHTML(flag)}</span>`).join('')}</div>` : '<div class="clean-eval">NO RISK FLAGS</div>'}` : '<div class="evidence-empty"><div class="evidence-mark">[ ]</div><h3>Evidence will appear here.</h3><p>Each answer is evaluated on its own. Scores are calculated separately from the model response.</p><div class="empty-meter"><span></span></div></div>'}<div class="evidence-footer"><span>LLM IS NOT THE HIRING DECISION</span><span>HUMAN REVIEW REQUIRED</span></div></aside>
+    </div>`
+  );
+
+  if (session && !state.showDepthHistory) {
+    const chatScrollEl = document.querySelector('#chat-scroll');
+    if (chatScrollEl) chatScrollEl.innerHTML = chatTranscript();
+  }
+
+  // Bind Depth History toggling
+  document.querySelector('#toggle-depth-history')?.addEventListener('click', () => {
+    state.showDepthHistory = !state.showDepthHistory;
+    renderDepth();
+  });
+  document.querySelector('#close-depth-history')?.addEventListener('click', () => {
+    state.showDepthHistory = false;
+    renderDepth();
+  });
+  document.querySelector('#return-to-interview')?.addEventListener('click', () => {
+    state.showDepthHistory = false;
+    renderDepth();
+  });
+
+  // Bind Dispute handlers (works in both History View and Chat Scroll)
+  document.querySelectorAll('.open-dispute-trigger').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const turnNum = e.currentTarget.dataset.turn;
+      const box = document.querySelector(`#dispute-box-${turnNum}`);
+      if (box) {
+        box.style.display = box.style.display === 'none' ? 'block' : 'none';
+        const input = box.querySelector('.dispute-reason-input');
+        if (input && box.style.display === 'block') input.focus();
+      }
+    });
+  });
+
+  document.querySelectorAll('.cancel-dispute-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const turnNum = e.currentTarget.dataset.turn;
+      const box = document.querySelector(`#dispute-box-${turnNum}`);
+      if (box) box.style.display = 'none';
+    });
+  });
+
+  document.querySelectorAll('.submit-dispute-btn').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      const turnNum = parseInt(e.currentTarget.dataset.turn, 10);
+      const input = document.querySelector(`#dispute-reason-${turnNum}`);
+      const reason = input ? input.value.trim() : '';
+      if (!reason) {
+        if (input) input.focus();
+        showError("Please explain why you believe this evaluation was inaccurate.");
+        return;
+      }
+      e.currentTarget.disabled = true;
+      e.currentTarget.textContent = 'Submitting...';
+      try {
+        await API.reportEvaluationIssue(state.sessionId, turnNum, reason);
+        const item = state.chatHistory.find(x => x.kind === 'answer' && x.evaluation?.turn_number === turnNum);
+        if (item && item.evaluation) {
+          item.evaluation.disputed = true;
+          item.evaluation.dispute_reason = reason;
+          if (!item.evaluation.flags) item.evaluation.flags = [];
+          if (!item.evaluation.flags.includes('candidate_disputed')) item.evaluation.flags.push('candidate_disputed');
+        }
+        if (state.answerResult?.evaluation?.turn_number === turnNum) {
+          state.answerResult.evaluation.disputed = true;
+          state.answerResult.evaluation.dispute_reason = reason;
+        }
+        await renderDepth();
+      } catch (err) {
+        showError(err);
+        e.currentTarget.disabled = false;
+        e.currentTarget.textContent = 'Submit Report ↗';
+      }
+    });
+  });
+
   document.querySelector('#start-session')?.addEventListener('click', () => beginDepth(state.submissionId));
   document.querySelector('#restart-depth')?.addEventListener('click', async () => {
     state.sessionId = null;
@@ -691,13 +788,19 @@ async function renderDepth() {
     state.answerResult = null;
     state.chatHistory = [];
     state.turn = null;
+    state.showDepthHistory = false;
     if (state.submissionId) {
       await beginDepth(state.submissionId);
     } else {
       await renderDepth();
     }
   });
-  document.querySelector('#end-session')?.addEventListener('click', async () => { await API.finishDepth(state.sessionId); state.answerResult = { ...(state.answerResult ?? {}), status: 'done', next: null }; state.turn = null; renderDepth(); });
+  document.querySelector('#end-session')?.addEventListener('click', async () => {
+    await API.finishDepth(state.sessionId);
+    state.answerResult = { ...(state.answerResult ?? {}), status: 'done', next: null };
+    state.turn = null;
+    renderDepth();
+  });
   document.querySelector('#answer-form')?.addEventListener('submit', sendAnswer);
   document.querySelector('#start-voice-call')?.addEventListener('click', startVoiceCall);
   const confidenceLabel = document.querySelector('.confidence-block .metric-label');
@@ -827,8 +930,161 @@ function chatTranscript() {
       return `<div class="chat-message system-message"><span class="message-stamp">PROOFHIRE / TURN ${entry.turn.turn_number}</span><p class="typewriter">${escapeHTML(entry.turn.text)}</p>${snippet ? `<pre class="snippet"><span>${escapeHTML(snippet.path)}:${snippet.start_line}</span><code>${escapeHTML(snippet.code)}</code></pre>` : ''}</div>`;
     }
     const evaluation = entry.evaluation;
-    return `<div class="chat-message answer-message"><span class="message-stamp">CANDIDATE / TURN ${evaluation.turn_number}</span><p>${escapeHTML(entry.answer)}</p><span class="answer-score">SCORE ${evaluation.score}/5 · ${escapeHTML(evaluation.flags.join(', ') || 'NO FLAGS')}</span></div>`;
+    if (!evaluation) return '';
+    const isDisputed = evaluation.disputed || (evaluation.flags && evaluation.flags.includes('candidate_disputed'));
+    const scoreColor = evaluation.score >= 4 ? 'var(--verified)' : evaluation.score >= 2 ? 'var(--amber)' : 'var(--risk)';
+    return `
+      <div class="chat-message answer-message" data-turn="${evaluation.turn_number}">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+          <span class="message-stamp">CANDIDATE / TURN ${evaluation.turn_number}</span>
+          <span class="answer-score" style="margin: 0; font-weight: 700; color: ${scoreColor};">SCORE ${evaluation.score}/5</span>
+        </div>
+        <p style="margin: 6px 0 10px;">${escapeHTML(entry.answer)}</p>
+
+        <div class="eval-audit-box" style="margin-top: 10px; padding: 10px 12px; background: rgba(0, 0, 0, 0.45); border: 1px solid var(--border); border-radius: 8px;">
+          <div style="font-size: 10px; font-weight: 700; color: var(--amber); margin-bottom: 4px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 4px;">
+            <span>WHERE YOU WENT WRONG / RUBRIC ANALYSIS</span>
+            <div style="display: flex; gap: 4px; align-items: center;">
+              ${(evaluation.flags || []).map(f => `<span class="flag-tag" style="font-size: 9px; padding: 1px 6px;">${escapeHTML(f)}</span>`).join('')}
+            </div>
+          </div>
+          <p style="margin: 0 0 6px; font-size: 11px; line-height: 1.6; color: var(--text);">${escapeHTML(evaluation.reasoning || 'Evaluated against question constraints and code context.')}</p>
+
+          ${evaluation.dimensions && Object.keys(evaluation.dimensions).length ? `
+            <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 6px; font-size: 10px; color: var(--muted); border-top: 1px dashed rgba(255,255,255,0.08); padding-top: 6px;">
+              ${Object.entries(evaluation.dimensions).map(([d, val]) => `<span>${escapeHTML(d)}: <b style="color:var(--text);">${val}/5</b></span>`).join('')}
+            </div>
+          ` : ''}
+
+          ${isDisputed ? `
+            <div style="margin-top: 6px; padding: 6px 10px; background: rgba(255, 138, 30, 0.12); border: 1px solid #ff8a1e; border-radius: 6px; font-size: 11px; color: #ff8a1e;">
+              <strong>⚠️ Evaluation Issue Reported:</strong> “${escapeHTML(evaluation.dispute_reason || 'Candidate contested this evaluation.')}”
+              <div style="font-size: 10px; color: var(--muted); margin-top: 2px;">This turn has been flagged for human recruiter audit.</div>
+            </div>
+          ` : `
+            <div style="display: flex; justify-content: flex-end; margin-top: 6px;">
+              <button class="button button-quiet button-sm open-dispute-trigger" data-turn="${evaluation.turn_number}" style="font-size: 10px; padding: 2px 8px; border: 1px solid var(--border); color: var(--muted);">
+                🚩 Report Evaluation Issue
+              </button>
+            </div>
+            <div class="dispute-box" id="dispute-box-${evaluation.turn_number}" style="display: none; margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.1);">
+              <label style="font-size: 10px; color: var(--amber); display: block; margin-bottom: 4px;">CONTEST THIS EVALUATION</label>
+              <textarea class="code-input dispute-reason-input" id="dispute-reason-${evaluation.turn_number}" rows="2" style="width: 100%; font-size: 11px; padding: 6px; border-radius: 4px; margin-bottom: 6px;" placeholder="Explain why this score or reasoning is inaccurate..."></textarea>
+              <div style="display: flex; gap: 6px; justify-content: flex-end;">
+                <button class="button button-quiet button-sm cancel-dispute-btn" data-turn="${evaluation.turn_number}" style="font-size: 10px; padding: 2px 8px;">Cancel</button>
+                <button class="button button-primary button-sm submit-dispute-btn" data-turn="${evaluation.turn_number}" style="font-size: 10px; padding: 2px 8px;">Submit Report ↗</button>
+              </div>
+            </div>
+          `}
+        </div>
+      </div>
+    `;
   }).join('');
+}
+
+// Draws full turn-by-turn audit history so candidate can review where they went wrong and dispute
+function renderDepthHistoryView(completedAnswers) {
+  if (!completedAnswers || completedAnswers.length === 0) {
+    return `
+      <div style="padding: 32px 20px; text-align: center; color: var(--muted);">
+        <div style="font-size: 28px; margin-bottom: 8px;">📜</div>
+        <h3 style="color: var(--text); margin-bottom: 6px;">No Evaluation History Yet</h3>
+        <p style="font-size: 12px; margin-bottom: 16px;">Complete at least one depth check question to review where you went wrong and audit your scores.</p>
+        <button class="button button-primary button-sm" id="close-depth-history">Return to Active Interview</button>
+      </div>
+    `;
+  }
+
+  return `
+    <div class="depth-history-container" style="padding: 16px; overflow-y: auto; max-height: calc(100vh - 250px);">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--border);">
+        <div>
+          <div style="font-size: 10px; color: var(--primary); font-weight: 700; letter-spacing: 0.05em;">DEPTH CHECK AUDIT LEDGER</div>
+          <h3 style="margin: 2px 0 4px; font-size: 18px; color: var(--text);">Turn History &amp; Evaluator Rubric</h3>
+          <p style="margin: 0; font-size: 12px; color: var(--muted);">See where marks were deducted, review AI evaluator reasoning, and contest inaccurate evaluations.</p>
+        </div>
+        <button class="button button-quiet button-sm" id="close-depth-history">← Return to Session</button>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 16px;">
+        ${completedAnswers.map(entry => {
+          const evalItem = entry.evaluation || {};
+          const turnNum = evalItem.turn_number || '?';
+          const qTurn = entry.questionTurn || {};
+          const isDisputed = evalItem.disputed || (evalItem.flags && evalItem.flags.includes('candidate_disputed'));
+          const scoreColor = evalItem.score >= 4 ? 'var(--verified)' : evalItem.score >= 2 ? 'var(--amber)' : 'var(--risk)';
+
+          return `
+            <div class="history-turn-card" style="border: 1px solid var(--border); border-radius: 8px; background: var(--card); padding: 16px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span style="font-size: 12px; font-weight: 700; color: var(--text);">TURN ${turnNum} OF 6</span>
+                  <span style="font-size: 10px; padding: 2px 6px; border-radius: 4px; background: rgba(255,255,255,0.06); color: var(--muted);">
+                    ${escapeHTML(qTurn.phase_label ?? (turnNum <= 3 ? 'PHASE 1: PROVENANCE' : 'PHASE 2: CODE VERIFICATION'))}
+                  </span>
+                </div>
+                <div style="display: flex; gap: 6px; align-items: center;">
+                  <span style="font-size: 12px; font-weight: 700; color: ${scoreColor}; padding: 2px 8px; background: rgba(255,255,255,0.05); border-radius: 4px; border: 1px solid var(--border);">
+                    SCORE ${evalItem.score}/5
+                  </span>
+                  ${(evalItem.flags || []).map(f => `<span class="flag-tag" style="font-size: 9px; padding: 1px 6px;">${escapeHTML(f)}</span>`).join('')}
+                </div>
+              </div>
+
+              ${qTurn.text ? `
+                <div style="margin: 10px 0; font-size: 12px; color: var(--muted); background: var(--raised); padding: 10px 12px; border-radius: 6px;">
+                  <strong style="color: var(--primary); display: block; margin-bottom: 4px;">Interviewer Question:</strong>
+                  <div style="color: var(--text);">${escapeHTML(qTurn.text)}</div>
+                  ${qTurn.code_snippet ? `<pre class="snippet" style="margin-top: 8px;"><span>${escapeHTML(qTurn.code_snippet.path)}:${qTurn.code_snippet.start_line}</span><code>${escapeHTML(qTurn.code_snippet.code)}</code></pre>` : ''}
+                </div>
+              ` : ''}
+
+              <div style="margin: 10px 0; font-size: 12px;">
+                <strong style="color: var(--link); display: block; margin-bottom: 4px;">Your Submitted Answer:</strong>
+                <p style="margin: 0; padding: 8px 12px; background: rgba(59, 130, 246, 0.05); border-left: 2px solid var(--link); border-radius: 0 4px 4px 0; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text); white-space: pre-wrap;">${escapeHTML(entry.answer || evalItem.evidence_quote || 'No answer recorded.')}</p>
+              </div>
+
+              <div style="margin-top: 12px; padding: 12px 14px; background: rgba(0, 0, 0, 0.4); border-radius: 6px; border: 1px solid rgba(255,255,255,0.06);">
+                <div style="font-size: 10px; font-weight: 700; color: var(--amber); margin-bottom: 6px; letter-spacing: 0.04em;">EVALUATOR RUBRIC ANALYSIS / WHERE YOU WENT WRONG</div>
+                <p style="margin: 0 0 10px; font-size: 11px; line-height: 1.6; color: var(--text);">${escapeHTML(evalItem.reasoning || 'Assessed against technical criteria.')}</p>
+
+                ${evalItem.dimensions && Object.keys(evalItem.dimensions).length ? `
+                  <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 8px; font-size: 10px; color: var(--muted); border-top: 1px dashed rgba(255,255,255,0.08); padding-top: 6px;">
+                    ${Object.entries(evalItem.dimensions).map(([d, val]) => `<span>${escapeHTML(d)}: <b style="color:var(--text);">${val}/5</b></span>`).join('')}
+                  </div>
+                ` : ''}
+
+                ${isDisputed ? `
+                  <div style="margin-top: 8px; padding: 8px 12px; background: rgba(255, 138, 30, 0.12); border: 1px solid #ff8a1e; border-radius: 6px; font-size: 11px; color: #ff8a1e;">
+                    <strong>⚠️ Evaluation Issue Reported:</strong> “${escapeHTML(evalItem.dispute_reason || '')}”
+                    <div style="font-size: 10px; color: var(--muted); margin-top: 4px;">This turn has been flagged for human recruiter audit.</div>
+                  </div>
+                ` : `
+                  <div style="display: flex; justify-content: flex-end; margin-top: 8px;">
+                    <button class="button button-quiet button-sm open-dispute-trigger" data-turn="${turnNum}" style="font-size: 10px; padding: 3px 10px; border: 1px solid var(--border); color: var(--muted);">
+                      🚩 Report Evaluation Issue
+                    </button>
+                  </div>
+                  <div class="dispute-box" id="dispute-box-${turnNum}" style="display: none; margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.1);">
+                    <label style="font-size: 10px; color: var(--amber); display: block; margin-bottom: 4px;">CONTEST THIS EVALUATION</label>
+                    <textarea class="code-input dispute-reason-input" id="dispute-reason-${turnNum}" rows="2" style="width: 100%; font-size: 11px; padding: 6px; border-radius: 4px; margin-bottom: 6px;" placeholder="Explain why you believe this score or reasoning was inaccurate..."></textarea>
+                    <div style="display: flex; gap: 6px; justify-content: flex-end;">
+                      <button class="button button-quiet button-sm cancel-dispute-btn" data-turn="${turnNum}" style="font-size: 10px; padding: 2px 8px;">Cancel</button>
+                      <button class="button button-primary button-sm submit-dispute-btn" data-turn="${turnNum}" style="font-size: 10px; padding: 2px 8px;">Submit Report ↗</button>
+                    </div>
+                  </div>
+                `}
+              </div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+
+      <div style="margin-top: 20px; text-align: center;">
+        <button class="button button-primary button-sm" id="return-to-interview" style="font-size: 11px;">← Return to Live Assessment</button>
+      </div>
+    </div>
+  `;
 }
 
 // Starts a new session and displays its first question.
@@ -840,6 +1096,7 @@ async function beginDepth(submissionId) {
     state.chatHistory = [];
     state.answerResult = null;
     state.turn = null;
+    state.showDepthHistory = false;
     const started = await API.startDepth(submissionId);
     state.sessionId = started.session_id;
     localStorage.setItem('proofhire-session', state.sessionId);
@@ -862,8 +1119,9 @@ async function sendAnswer(event) {
   button.textContent = 'Evaluating...';
   showGlobalLoader('Evaluating Answer & Verifying Evidence...');
   try {
+    const currentQTurn = state.turn;
     state.answerResult = await API.submitDepthAnswer(state.sessionId, answer, state.turn?.expects === 'code' ? answer : null);
-    state.chatHistory.push({ kind: 'answer', answer, evaluation: state.answerResult.evaluation });
+    state.chatHistory.push({ kind: 'answer', questionTurn: currentQTurn, answer, evaluation: state.answerResult.evaluation });
     state.turn = state.answerResult.next;
     if (state.turn) state.chatHistory.push({ kind: 'question', turn: state.turn });
     if (state.answerResult.status === 'done') await API.finishDepth(state.sessionId);
@@ -952,6 +1210,7 @@ async function renderShortlist() {
                 <div style="margin: 6px 0; font-size: 12px;"><b style="color: var(--primary);">Interviewer Question:</b> ${escapeHTML(item.question || 'Grounded question')}</div>
                 <div style="margin: 6px 0; font-size: 12px;"><b style="color: var(--link);">Your Answer Quote:</b> <blockquote style="margin: 4px 0; padding: 6px 10px; border-left: 2px solid var(--link); font-style: italic; font-size: 11px; background: rgba(59, 130, 246, 0.05);">“${escapeHTML(item.quote || item.candidate_answer)}”</blockquote></div>
                 <div style="font-size: 11px; color: var(--muted); margin-top: 6px;"><b>Rubric Analysis:</b> ${escapeHTML(item.reasoning || 'Evaluated against verified criteria.')}</div>
+                ${item.disputed ? `<div style="margin-top: 6px; padding: 6px 10px; background: rgba(255, 138, 30, 0.12); border: 1px solid #ff8a1e; border-radius: 6px; font-size: 11px; color: #ff8a1e;">⚠️ <strong>Candidate Contested:</strong> “${escapeHTML(item.dispute_reason || '')}” <span style="font-size: 10px; opacity: 0.8;">(Flagged for audit)</span></div>` : ''}
                 <div style="margin-top: 6px; font-size: 11px; color: var(--verified); font-weight: 600;">${item.recruiter_confirmed ? '✔ Recruiter Confirmed' : 'Pending Confirmation'}</div>
               </div>
             `).join('')}
@@ -1025,6 +1284,7 @@ async function renderShortlist() {
         <b>Evaluator Reasoning:</b> ${escapeHTML(item.reasoning || 'Evaluated against technical rubric.')}
         ${item.quote ? `<blockquote style="margin: 6px 0 0 0; padding: 6px 10px; border-left: 2px solid var(--verified); font-style: italic; font-size: 11px; color: var(--verified);">“${escapeHTML(item.quote)}”</blockquote>` : ''}
       </div>
+      ${item.disputed ? `<div style="margin: 8px 0; padding: 6px 10px; background: rgba(255, 138, 30, 0.15); border: 1px solid #ff8a1e; border-radius: 6px; font-size: 11px; color: #ff8a1e;">⚠️ <strong>Candidate Contested Evaluation:</strong> “${escapeHTML(item.dispute_reason || '')}”</div>` : ''}
       <div style="margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
         <span class="audit-status" style="font-size: 11px; color: var(--muted);">
           Human Review: ${item.recruiter_confirmed ? '<strong style="color: var(--verified);">✔ Recruiter Confirmed</strong>' : '<span style="color: var(--amber);">Pending Recruiter Review</span>'}

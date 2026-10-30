@@ -210,6 +210,25 @@ export function confirmEvidence(sessionId, turnNumber, confirmed = true) {
   return mock({ status: 'ok', confirmed });
 }
 
+export function reportEvaluationIssue(sessionId, turnNumber, reason) {
+  if (!usesMocks()) {
+    return request('/depth/report-issue', {
+      method: 'POST',
+      body: JSON.stringify({ session_id: sessionId, turn_number: turnNumber, reason })
+    });
+  }
+  const session = sessionState.get(sessionId);
+  if (session && session.turns) {
+    const t = session.turns.find(turnItem => turnItem.turn?.turn_number === turnNumber || turnItem.evaluation?.turn_number === turnNumber);
+    if (t && t.evaluation) {
+      t.evaluation.disputed = true;
+      t.evaluation.dispute_reason = reason;
+      t.evaluation.flags = [...(t.evaluation.flags || []), 'candidate_disputed'];
+    }
+  }
+  return mock({ status: 'ok', session_id: sessionId, turn_number: turnNumber, disputed: true, dispute_reason: reason });
+}
+
 export function updateCandidateStatus(candidateId, status) {
   if (!usesMocks()) {
     return request(`/candidates/${candidateId}/status`, {

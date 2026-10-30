@@ -115,6 +115,73 @@ class FinishDepthRequest(BaseModel):
 def finish_depth_body(req: FinishDepthRequest):
     return finish_depth(req.session_id)
 
+class ReportIssueRequest(BaseModel):
+    session_id: str
+    turn_number: int
+    reason: str
+
+@router.post("/report-issue")
+def report_evaluation_issue(req: ReportIssueRequest):
+    if is_fake():
+        sess = fake_db.get_session(req.session_id)
+        if not sess:
+            raise HTTPException(status_code=404, detail="Session not found")
+        return {"status": "ok", "session_id": req.session_id, "turn_number": req.turn_number, "disputed": True, "dispute_reason": req.reason}
+
+    from db import crud
+    from db.models import QaTurn, Profile, now_iso
+    from sqlmodel import select
+
+    with crud.Session(crud.engine) as session:
+        turn = session.exec(
+            select(QaTurn).where(
+                QaTurn.session_id == req.session_id,
+                QaTurn.turn_number == req.turn_number
+            )
+        ).first()
+        if not turn:
+            raise HTTPException(status_code=404, detail="Turn not found")
+
+        eval_copy = dict(turn.evaluation or {})
+        eval_copy["disputed"] = True
+        eval_copy["dispute_reason"] = req.reason
+        eval_copy["disputed_at"] = now_iso()
+        flags = list(eval_copy.get("flags", []))
+        if "candidate_disputed" not in flags:
+            flags.append("candidate_disputed")
+        eval_copy["flags"] = flags
+        turn.evaluation = eval_copy
+        session.add(turn)
+
+        prof = session.get(Profile, req.session_id)
+        if prof and prof.evidence:
+            ev_list = []
+            for ev in prof.evidence:
+                if ev.get("turn_number") == req.turn_number:
+                    ev_copy = dict(ev)
+                    ev_copy["disputed"] = True
+                    ev_copy["dispute_reason"] = req.reason
+                    ev_copy["disputed_at"] = now_iso()
+                    ev_flags = list(ev_copy.get("flags", []))
+                    if "candidate_disputed" not in ev_flags:
+                        ev_flags.append("candidate_disputed")
+                    ev_copy["flags"] = ev_flags
+                    ev_list.append(ev_copy)
+                else:
+                    ev_list.append(ev)
+            prof.evidence = ev_list
+            session.add(prof)
+
+        session.commit()
+
+    return {
+        "status": "ok",
+        "session_id": req.session_id,
+        "turn_number": req.turn_number,
+        "disputed": True,
+        "dispute_reason": req.reason
+    }
+
 
 class SaveDraftRequest(BaseModel):
     draft_text: Optional[str] = None

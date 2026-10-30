@@ -32,9 +32,9 @@ def compute_profile(session: dict) -> dict:
         }
 
     # Aggregate dimensions and confidences
-    dim_scores = {"understanding": [], "reasoning": [], "debugging": [], "modification": [], "communication": []}
+    dim_scores = {"understanding": [], "reasoning": [], "debugging": [], "modification": [], "communication": [], "ownership": []}
     confidences = []
-    ownership_score = 5.0
+    ownership_samples = []
     
     evidence_list = []
 
@@ -48,11 +48,28 @@ def compute_profile(session: dict) -> dict:
         flags = eval_dict.get("flags", [])
         turn_score = eval_dict.get("score", 0)
         
+        # Evidence-grounded ownership calculation
+        explicit_ownership = eval_dict.get("dimensions", {}).get("ownership")
+        if explicit_ownership is not None:
+            turn_ownership = float(explicit_ownership)
+        else:
+            if "dont_know" in flags or "evasive" in flags or "contradicts_claim" in flags or turn_score == 0:
+                turn_ownership = 0.0
+            elif turn_score == 1:
+                turn_ownership = 1.0
+            elif turn_score == 2:
+                turn_ownership = 2.5
+            elif turn_score == 3:
+                turn_ownership = 3.5
+            elif turn_score == 4:
+                turn_ownership = 4.5
+            else:
+                turn_ownership = 5.0
+
         if "contradicts_claim" in flags:
-            ownership_score = max(0.0, ownership_score - 2.0)
-        elif turn_score <= 1:
-            # If they can't answer basic questions about their own code, they lose ownership credit
-            ownership_score = max(0.0, ownership_score - 1.0)
+            turn_ownership = max(0.0, turn_ownership - 2.0)
+
+        ownership_samples.append(turn_ownership)
             
         for d, s in eval_dict.get("dimensions", {}).items():
             if d in dim_scores:
@@ -92,14 +109,19 @@ def compute_profile(session: dict) -> dict:
             "evidence_quote": eval_dict.get("evidence_quote", ""),
             "source_file_path": eval_dict.get("source_file_path"),
             "source_lines": eval_dict.get("source_lines"),
-            "recruiter_confirmed": eval_dict.get("recruiter_confirmed", False)
+            "recruiter_confirmed": eval_dict.get("recruiter_confirmed", False),
+            "disputed": eval_dict.get("disputed", False),
+            "dispute_reason": eval_dict.get("dispute_reason"),
+            "disputed_at": eval_dict.get("disputed_at"),
+            "flags": flags
         })
 
     # Averages
+    ownership_score = round(sum(ownership_samples) / len(ownership_samples), 1) if ownership_samples else 0.0
     skill_profile = {"ownership": ownership_score}
     for d, scores in dim_scores.items():
-        if scores:
-            skill_profile[d] = sum(scores) / len(scores)
+        if scores and d != "ownership":
+            skill_profile[d] = round(sum(scores) / len(scores), 1)
 
     # Weights
     raw_weights = {
