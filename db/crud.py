@@ -174,8 +174,24 @@ def update_candidate_status(candidate_id: str, status: str) -> bool:
 def create_candidate(data: dict) -> dict:
     with Session(engine) as session:
         projects_data = data.pop("projects", [])
-        candidate = Candidate(**data)
-        session.add(candidate)
+        email = data.get("email", "").strip().lower()
+
+        # Check if candidate with this email already exists (Upsert pattern to prevent duplicate users)
+        existing = None
+        if email:
+            existing = session.exec(select(Candidate).where(Candidate.email == email)).first()
+
+        if existing:
+            candidate = existing
+            for k, v in data.items():
+                if hasattr(candidate, k) and k != "candidate_id":
+                    setattr(candidate, k, v)
+            session.add(candidate)
+        else:
+            data["email"] = email
+            candidate = Candidate(**data)
+            session.add(candidate)
+        
         session.flush()
         
         for p_data in projects_data:
