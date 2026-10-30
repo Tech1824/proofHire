@@ -548,11 +548,61 @@ async function sendAnswer(event) {
 // Loads and draws candidates with expandable evidence on the shortlist.
 async function renderShortlist() {
   const [job, list] = await Promise.all([API.getJob(state.selectedJobId), API.getShortlist(state.selectedJobId)]);
-  const cards = list.candidates.map((candidate) => `<article class="candidate-row"><div class="rank-cell"><span>RANK</span><strong>#${candidate.rank}</strong></div><div class="candidate-overview"><div class="candidate-name-row"><h2>${escapeHTML(candidate.name)}</h2><span class="recommendation rec-${escapeHTML(candidate.recommendation)}">${escapeHTML(candidate.recommendation.replaceAll('_', ' '))}</span></div><div class="score-track"><i style="width:${candidate.overall_score}%"></i></div><div class="candidate-meta"><span>${candidate.overall_score}<small> / 100</small></span><span>${Math.round(candidate.confidence * 100)}% confidence</span><span>${escapeHTML(candidate.candidate_id)}</span></div><p class="candidate-summary">${escapeHTML(candidate.summary)}</p><div class="strength-concerns"><div><span class="list-label">STRENGTH SIGNAL</span><p>${escapeHTML(candidate.strengths[0] ?? 'No strengths recorded')}</p></div><div><span class="list-label">OPEN QUESTION</span><p>${escapeHTML(candidate.concerns[0] ?? 'No concerns recorded')}</p></div></div><details class="evidence-details"><summary><span>Evidence quotes</span><span>${candidate.evidence.length} VERIFIED <b>＋</b></span></summary><div class="evidence-list">${candidate.evidence.map((item) => `<blockquote><p>“${escapeHTML(item.quote)}”</p>${item.source_file_path ? `<div style="font-size: 11px; margin-top: 8px; color: #10b981; font-family: monospace;">↳ Verified in: ${escapeHTML(item.source_file_path)}${item.source_lines ? ` (lines ${escapeHTML(item.source_lines)})` : ''}</div>` : ''}<footer><span>${escapeHTML(item.claim)}</span><span>TURN ${String(item.turn_number).padStart(2, '0')} · ${item.score}/5</span></footer></blockquote>`).join('')}</div></details></div><div class="candidate-profile"><span class="metric-label">SKILL PROFILE</span>${Object.entries(candidate.skill_profile).map(([skill, value]) => `<div class="profile-row"><span>${escapeHTML(skill)}</span><b>${Number(value).toFixed(1)}</b></div>`).join('')}</div></article>`);
+  const cards = list.candidates.map((candidate) => `<article class="candidate-row"><div class="rank-cell"><span>RANK</span><strong>#${candidate.rank}</strong></div><div class="candidate-overview"><div class="candidate-name-row"><h2>${escapeHTML(candidate.name)}</h2><span class="recommendation rec-${escapeHTML(candidate.recommendation)}">${escapeHTML(candidate.recommendation.replaceAll('_', ' '))}</span></div><div class="score-track"><i style="width:${candidate.overall_score}%"></i></div><div class="candidate-meta"><span>${candidate.overall_score}<small> / 100</small></span><span>${Math.round(candidate.confidence * 100)}% confidence</span><span>${escapeHTML(candidate.candidate_id)}</span></div><p class="candidate-summary">${escapeHTML(candidate.summary)}</p><div class="strength-concerns"><div><span class="list-label">STRENGTH SIGNAL</span><p>${escapeHTML(candidate.strengths[0] ?? 'No strengths recorded')}</p></div><div><span class="list-label">OPEN QUESTION</span><p>${escapeHTML(candidate.concerns[0] ?? 'No concerns recorded')}</p></div></div><details class="evidence-details"><summary><span>Evidence Trail & Transparent Scorecard</span><span>${candidate.evidence.length} SKILLS VERIFIED <b>＋</b></span></summary><div class="evidence-list">${candidate.evidence.map((item) => `
+    <div class="evidence-card" style="margin-bottom: 14px; padding: 14px; border: 1px solid var(--border); border-radius: 8px; background: var(--raised);">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+        <strong style="color: var(--primary); font-size: 13px;">${escapeHTML(item.skill_name || 'Technical Skill')}</strong>
+        <span style="font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 4px; background: var(--verified-bg); color: var(--verified);">TURN ${String(item.turn_number).padStart(2, '0')} · SCORE: ${item.score}/5</span>
+      </div>
+      <div style="font-size: 11px; margin-bottom: 8px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 14px;">
+        <span>📍 <b>Identified in:</b> <code style="font-size: 11px; color: var(--text);">${escapeHTML(item.where_identified || item.source_file_path || 'Submission Code')}</code></span>
+        <span>📂 <b>Project/Task:</b> <strong style="color: var(--text);">${escapeHTML(item.project_or_task || 'Task Challenge')}</strong></span>
+      </div>
+      <div style="margin: 8px 0; padding: 8px 10px; border-left: 3px solid var(--primary); background: rgba(61, 90, 254, 0.05); font-size: 12px; border-radius: 0 4px 4px 0;">
+        <b style="color: var(--primary);">Question Asked:</b> ${escapeHTML(item.question || 'Grounded technical question')}
+      </div>
+      <div style="margin: 8px 0; padding: 8px 10px; border-left: 3px solid var(--link); background: rgba(59, 130, 246, 0.05); font-size: 12px; border-radius: 0 4px 4px 0;">
+        <b style="color: var(--link);">Candidate Answer:</b>
+        <p style="margin: 4px 0 0 0; white-space: pre-wrap; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text);">${escapeHTML(item.candidate_answer || item.quote)}</p>
+      </div>
+      <div style="margin: 8px 0; font-size: 12px; color: var(--text);">
+        <b>Evaluator Reasoning:</b> ${escapeHTML(item.reasoning || 'Evaluated against technical rubric.')}
+        ${item.quote ? `<blockquote style="margin: 6px 0 0 0; padding: 6px 10px; border-left: 2px solid var(--verified); font-style: italic; font-size: 11px; color: var(--verified);">“${escapeHTML(item.quote)}”</blockquote>` : ''}
+      </div>
+      <div style="margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
+        <span class="audit-status" style="font-size: 11px; color: var(--muted);">
+          Human Review: ${item.recruiter_confirmed ? '<strong style="color: var(--verified);">✔ Recruiter Confirmed</strong>' : '<span style="color: var(--amber);">Pending Recruiter Review</span>'}
+        </span>
+        <button class="button button-quiet confirm-btn" style="padding: 4px 10px; font-size: 11px;" data-sess="${escapeHTML(candidate.session_id)}" data-turn="${item.turn_number}">
+          ${item.recruiter_confirmed ? '✔ Confirmed' : 'Confirm Evaluation ✔'}
+        </button>
+      </div>
+    </div>`).join('')}</div></details></div><div class="candidate-profile"><span class="metric-label">SKILL PROFILE</span>${Object.entries(candidate.skill_profile).map(([skill, value]) => `<div class="profile-row"><span>${escapeHTML(skill)}</span><b>${Number(value).toFixed(1)}</b></div>`).join('')}</div></article>`);
   shell(`${heading('05 / EVIDENCE REVIEW', 'Shortlist<span class="heading-dot">.</span>', `${escapeHTML(job.title)} / ${escapeHTML(job.company)} · Ranked by evidence, not resume polish.`, '<span class="review-stamp"><i class="status-dot online"></i> HUMAN REVIEW</span>')}
     <div class="section-rail"><span>RANKED CANDIDATES</span><span>UPDATED ${new Date(list.generated_at).toLocaleDateString('en-US', { month: 'short', day: '2-digit' }).toUpperCase()}</span></div>
     <section class="shortlist-list">${cards.length ? cards.join('') : '<div class="empty-state">No completed depth checks yet. Finish a session to include a candidate here.</div>'}</section>
     <div class="shortlist-footnote"><span>↳</span><p>Scores are computed from individual answer evaluations. Every claim above links to a candidate quote. Final hiring decisions remain human.</p></div>`);
+  // Interactive Recruiter Confirmation Handlers
+  app.querySelectorAll('.confirm-btn').forEach((btn) => {
+    btn.addEventListener('click', async (e) => {
+      e.preventDefault();
+      const sess = btn.dataset.sess;
+      const turn = parseInt(btn.dataset.turn, 10);
+      btn.disabled = true;
+      btn.textContent = 'Saving...';
+      try {
+        await API.confirmEvidence(sess, turn, true);
+        btn.textContent = '✔ Confirmed';
+        btn.style.color = 'var(--verified)';
+        const card = btn.closest('.evidence-card');
+        const auditStatus = card ? card.querySelector('.audit-status') : null;
+        if (auditStatus) auditStatus.innerHTML = '<strong style="color: var(--verified);">✔ Recruiter Confirmed</strong>';
+      } catch (err) {
+        btn.disabled = false;
+        btn.textContent = 'Retry Confirm';
+      }
+    });
+  });
 }
 
 // Loads a candidate's node-link data and renders it with Cytoscape.

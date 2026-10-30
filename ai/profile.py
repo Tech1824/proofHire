@@ -58,15 +58,42 @@ def compute_profile(session: dict) -> dict:
             if d in dim_scores:
                 dim_scores[d].append(s)
                 
-        if eval_dict.get("evidence_quote"):
-            evidence_list.append({
-                "claim": f"Performance on turn {t.get('turn_number', '?')}",
-                "quote": eval_dict.get("evidence_quote"),
-                "turn_number": t.get("turn_number"),
-                "score": eval_dict.get("score", 0),
-                "source_file_path": eval_dict.get("source_file_path"),
-                "source_lines": eval_dict.get("source_lines")
-            })
+        node_ref = t.get("node_ref", "")
+        # Determine project or task and origin
+        if "solution" in node_ref or "limiter" in node_ref or t.get("phase") == "task_validation":
+            project_or_task = "Task Submission: Solution"
+            identified_in = eval_dict.get("source_file_path") or "solution.py"
+        elif "::" in node_ref:
+            parts = node_ref.split("::")
+            project_or_task = parts[0].replace("func:", "").replace("class:", "").replace("file:", "")
+            identified_in = f"Candidate Repo: {project_or_task}"
+        else:
+            project_or_task = node_ref.replace("project:", "").replace("file:", "") or "Candidate Portfolio"
+            identified_in = eval_dict.get("source_file_path") or node_ref
+            
+        if eval_dict.get("source_lines"):
+            identified_in = f"{identified_in} (lines {eval_dict.get('source_lines')})"
+
+        ans_text = t.get("answer_text") or ""
+        if t.get("answer_code"):
+            ans_text = f"{ans_text}\nCode:\n{t.get('answer_code')}".strip()
+
+        evidence_list.append({
+            "claim": f"Performance on turn {t.get('turn_number', '?')}",
+            "turn_number": t.get("turn_number"),
+            "skill_name": ", ".join(eval_dict.get("dimensions", {}).keys()).title() or "Core Technical Problem Solving",
+            "where_identified": identified_in,
+            "project_or_task": project_or_task,
+            "question": t.get("question_text", "Technical evaluation question"),
+            "candidate_answer": ans_text,
+            "score": eval_dict.get("score", 0),
+            "reasoning": eval_dict.get("reasoning", "Assessed against technical implementation requirements."),
+            "quote": eval_dict.get("evidence_quote", ""),
+            "evidence_quote": eval_dict.get("evidence_quote", ""),
+            "source_file_path": eval_dict.get("source_file_path"),
+            "source_lines": eval_dict.get("source_lines"),
+            "recruiter_confirmed": eval_dict.get("recruiter_confirmed", False)
+        })
 
     # Averages
     skill_profile = {"ownership": ownership_score}
@@ -114,14 +141,14 @@ def compute_profile(session: dict) -> dict:
     else:
         recommendation = "no"
 
-    # Best 3, worst 1
-    evidence_list.sort(key=lambda x: x["score"], reverse=True)
-    best_3 = evidence_list[:3]
-    worst_1 = [evidence_list[-1]] if evidence_list and evidence_list[-1]["score"] <= 2 else []
+    # Best 3, worst 1 for high-level strengths and concerns
+    sorted_ev = sorted(evidence_list, key=lambda x: x["score"], reverse=True)
+    best_3 = sorted_ev[:3]
+    worst_1 = [sorted_ev[-1]] if sorted_ev and sorted_ev[-1]["score"] <= 2 else []
     
-    final_evidence = best_3 + worst_1
-    strengths = [e["quote"] for e in best_3]
-    concerns = [e["quote"] for e in worst_1]
+    final_evidence = evidence_list  # Retain complete 6-point evidence trail for every tested skill
+    strengths = [e.get("quote", "") for e in best_3 if e.get("quote")]
+    concerns = [e.get("quote", "") for e in worst_1 if e.get("quote")]
 
     profile = {
         "overall_score": overall_score,

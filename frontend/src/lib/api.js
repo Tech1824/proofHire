@@ -183,6 +183,16 @@ export function finishDepth(sessionId) {
   return mock({ status: 'done' });
 }
 
+export function confirmEvidence(sessionId, turnNumber, confirmed = true) {
+  if (!usesMocks()) {
+    return request('/shortlist/confirm', {
+      method: 'POST',
+      body: JSON.stringify({ session_id: sessionId, turn_number: turnNumber, confirmed })
+    });
+  }
+  return mock({ status: 'ok', confirmed });
+}
+
 // Returns the evidence-ranked shortlist for one job.
 export function getShortlist(jobId) {
   if (!usesMocks()) return request(`/shortlist/${jobId}`);
