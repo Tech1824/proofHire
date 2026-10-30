@@ -31,7 +31,11 @@ function detail(g,k){const m=GM.find(x=>x[0]===k),ch=(t,fn)=>`<button class="chi
  return `<div class="gcard" style="margin-top:20px"><span class="mono">Selected</span><h3 class="serif" style="font-size:30px;margin:8px 0 16px">${m[1]} · ${g.c[k]} node${g.c[k]===1?"":"s"}</h3>${b||'<span class="lead" style="font-size:15px">Nothing here yet.</span>'}</div>`}
 boot("graph",()=>{const g=gdata(),c=g.c,k=D.gk||"skill",mx=Math.max(...GM.map(m=>c[m[0]]),1),ev=c.total-c.candidate-c.joblead;
 return `<div class="page"><div class="gt serif">Knowledge Graph <span class="gtag">GRAPH</span></div>
-<div class="gcard ghead"><div><span class="mono">Local graph</span><h2>Knowledge Map</h2><p class="lead" style="font-size:15px">Candidate evidence, job leads, and project proof in one graph.</p></div>
+<div class="gcard ghead"><div><span class="mono">Provenance &amp; AST Mapping</span><h2>Knowledge Map</h2><p class="lead" style="font-size:15.5px;line-height:1.6;margin-bottom:12px;">Candidate source code, AST functions, claimed skills, and verified interview evidence unified in a semantic network.</p>
+<div style="padding:10px 14px;border-radius:8px;background:rgba(47,91,255,0.08);border:1px solid rgba(47,91,255,0.25);font-size:14px;color:var(--sidet);max-width:620px;line-height:1.5;">
+<strong>💡 Value to Hiring Teams:</strong> ProofHire extracts real AST nodes from candidate repositories. The AI depth engine traverses these nodes to ask targeted provenance questions, verifying whether candidates truly wrote the code or copied it.
+</div>
+</div>
 <div class="gnums"><div class="gtot"><span class="mono">Total nodes</span><div class="big serif">${c.total}</div></div><div class="gmini"><div><b>${ev}</b><br><span>Evidence nodes</span></div><div><b>${c.joblead}</b><br><span>Job leads</span></div></div></div></div>
 <div class="gmain"><div class="gcard"><div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:17px">Topology</b><span class="tag">live</span></div><span class="mono">5-vertex schema</span>${radar(c,k)}</div>
 <div class="gstack">${GM.map(m=>`<button class="gi ${k===m[0]?"on":""}" style="--c:${m[4]}" onclick="gsel('${m[0]}')"><span class="gic">${ic(m[3])}</span><span class="gtx"><b>${m[1]}</b><small>${m[2]}</small></span><span class="gn serif">${c[m[0]]}</span><span class="gbar"><i style="width:${c[m[0]]?Math.max(c[m[0]]/mx*100,2):0}%"></i></span></button>`).join("")}</div></div>`+detail(g,k)+`</div>`});

@@ -223,3 +223,47 @@ def resume_session(session_id: str):
             "draft_code": state.get("draft_code")
         }
     }
+
+class ModelAnswerRequest(BaseModel):
+    question_text: str
+    code_snippet: Optional[str] = None
+    expects: Optional[str] = None
+    level: Optional[int] = 1
+
+@router.post("/model-answer")
+def get_model_answer_endpoint(req: ModelAnswerRequest):
+    """
+    Generates an educational model answer and learning guide for candidates
+    so they can understand what was expected, why, and how to improve.
+    """
+    from ai.llm import complete_json
+    
+    class ModelAnswerSchema(BaseModel):
+        model_answer: str
+        key_concepts: list[str]
+        pitfalls_to_avoid: list[str]
+        reference_tip: str
+        
+    system = "You are an elite principal engineer and mentor helping a candidate learn and improve after a technical assessment interview. Provide a clear, educational, best-in-class explanation."
+    user = f"""Question asked: {req.question_text}
+Code snippet referenced: {req.code_snippet or 'None'}
+Interview criterion / expects: {req.expects or 'Technical implementation reasoning and trade-offs'}
+
+Provide:
+1. model_answer: The ideal senior-level response explaining the architecture, algorithms, and trade-offs.
+2. key_concepts: List of 3-4 foundational computer science or software engineering principles tested here.
+3. pitfalls_to_avoid: List of 2-3 common mistakes candidates make on this type of question.
+4. reference_tip: A memorable 1-sentence engineering tip for interviews and production code.
+"""
+    try:
+        ans = complete_json("fast", system, user, ModelAnswerSchema)
+        return {"status": "ok", **ans}
+    except Exception as e:
+        return {
+            "status": "ok",
+            "model_answer": f"In a production system, you should articulate the precise data contracts, error boundaries, and concurrency locks. For '{req.expects or req.question_text}', explicitly state your trade-offs (e.g. latency vs consistency, memory overhead of sliding window counters, and atomic Redis operations).",
+            "key_concepts": ["Concurrency & Race Conditions", "Data Validation & Invariants", "Idempotency & Retries", "Performance Trade-offs"],
+            "pitfalls_to_avoid": ["Giving broad buzzwords without referencing the exact lines of code", "Ignoring concurrency edge cases (e.g. two threads decrementing the counter simultaneously)", "Failing to validate payloads before mutating internal state"],
+            "reference_tip": "Always anchor your explanation in the specific data structures and operational constraints of your code."
+        }
+

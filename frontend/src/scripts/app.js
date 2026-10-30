@@ -150,8 +150,7 @@ function shell(content) {
         <label class="role-switcher"><span>Role</span><select id="role-switcher" aria-label="Selected role">${state.jobs.map((job) => `<option value="${escapeHTML(job.job_id)}" ${job.job_id === state.selectedJobId ? 'selected' : ''}>${escapeHTML(job.title)}</option>`).join('')}</select></label>
         <div class="topbar-right">
           ${authWidget}
-          ${recruiterWidget}
-          <span class="mode-badge ${API.usesMocks() ? 'demo' : 'live'}"><i class="status-dot ${API.usesMocks() ? 'caution' : 'verified'}"></i>${API.usesMocks() ? 'Demo' : 'Live'}</span>
+                    <span class="mode-badge ${API.usesMocks() ? 'demo' : 'live'}"><i class="status-dot ${API.usesMocks() ? 'caution' : 'verified'}"></i>${API.usesMocks() ? 'Demo' : 'Live'}</span>
           <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Switch to ${document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'} theme" title="Switch to ${document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'} theme">${document.documentElement.dataset.theme === 'dark' ? '☀' : '☾'}</button>
           <a class="button button-primary topbar-action" href="${action[0]}">${action[1]} <span aria-hidden="true">↗</span></a>
         </div>
@@ -281,8 +280,9 @@ function renderCandidate() {
     // Candidate Desk Onboarding & Demo Sign In
     shell(`${heading('02 / CANDIDATE DESK', 'Candidate Sign In & Registration<span class="heading-dot">.</span>', 'ProofHire verifies candidate capability through real project code and work-linked depth checks. Choose a demo profile or register to begin.')}
       <div class="auth-tabs-nav">
-        <button class="auth-tab-btn active" id="tab-demo-btn" type="button">⚡ 1-Click Demo Profiles</button>
-        <button class="auth-tab-btn" id="tab-reg-btn" type="button">＋ Create Candidate Profile</button>
+        <button class="auth-tab-btn active" id="tab-demo-btn" type="button">⚡ 1-Click Candidate Profiles</button>
+        <button class="auth-tab-btn" id="tab-reg-btn" type="button">👤 Candidate Sign In & Register</button>
+        <button class="auth-tab-btn" id="tab-recruiter-btn" type="button">🏢 Recruiter & Hiring Portal</button>
       </div>
 
       <div id="pane-demo">
@@ -373,7 +373,28 @@ function renderCandidate() {
           <div class="mini-stat"><span>DATA HANDLING</span><b>LOCAL FIRST</b></div>
         </aside>
         </div>
-      </div>`);
+      </div>
+      <div id="pane-recruiter" style="display: none; padding: 24px; border: 1px solid var(--border); border-radius: 12px; background: var(--card); margin-top: 16px;">
+        <div style="max-width: 680px;">
+          <span style="font-size: 14px; color: var(--primary); font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;">HIRING MANAGERS &amp; RECRUITERS</span>
+          <h2 style="font-size: 24px; margin: 6px 0 10px; color: var(--text);">ProofHire Talent Acquisition Portal</h2>
+          <p style="font-size: 15px; color: var(--muted); line-height: 1.6; margin-bottom: 20px;">
+            Access the live hiring pipeline to review candidate code submissions, inspect verified Knowledge Graphs, audit AI depth-check evidence quotes, and manage role requisitions.
+          </p>
+          <div style="display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 24px;">
+            <a href="http://localhost:8000/portal/dashboard.html" target="_blank" class="button button-primary" style="font-size: 15.5px; padding: 10px 22px; display: inline-flex; align-items: center; gap: 8px;">
+              ⚡ Launch Recruiter Dashboard (FinLeaf Hiring Lead) ↗
+            </a>
+            <a href="http://localhost:8000/portal/login.html" target="_blank" class="button button-outline" style="font-size: 15px; padding: 10px 18px;">
+              🔐 Recruiter Sign In Page ↗
+            </a>
+          </div>
+          <div style="padding: 14px 18px; border-radius: 8px; background: var(--raised); border: 1px solid var(--border); font-size: 14.5px; color: var(--muted);">
+            💡 <strong>Recruiter Role Separation:</strong> The Candidate Desk is reserved strictly for engineering applicants. To audit evaluations, adjust job roles, or manage shortlists, use the dedicated Recruiter Portal above.
+          </div>
+        </div>
+      </div>
+`);
 
     const tabDemo = document.querySelector('#tab-demo-btn');
     const tabReg = document.querySelector('#tab-reg-btn');
@@ -383,9 +404,19 @@ function renderCandidate() {
       tabDemo.classList.add('active'); tabReg.classList.remove('active');
       paneDemo.style.display = 'block'; paneReg.style.display = 'none';
     });
+    const tabRecruiter = document.querySelector('#tab-recruiter-btn');
+    const paneRecruiter = document.querySelector('#pane-recruiter');
+    tabDemo?.addEventListener('click', () => {
+      tabDemo.classList.add('active'); tabReg.classList.remove('active'); tabRecruiter?.classList.remove('active');
+      paneDemo.style.display = 'block'; paneReg.style.display = 'none'; if (paneRecruiter) paneRecruiter.style.display = 'none';
+    });
     tabReg?.addEventListener('click', () => {
-      tabReg.classList.add('active'); tabDemo.classList.remove('active');
-      paneReg.style.display = 'block'; paneDemo.style.display = 'none';
+      tabReg.classList.add('active'); tabDemo.classList.remove('active'); tabRecruiter?.classList.remove('active');
+      paneReg.style.display = 'block'; paneDemo.style.display = 'none'; if (paneRecruiter) paneRecruiter.style.display = 'none';
+    });
+    tabRecruiter?.addEventListener('click', () => {
+      tabRecruiter.classList.add('active'); tabDemo.classList.remove('active'); tabReg.classList.remove('active');
+      if (paneRecruiter) paneRecruiter.style.display = 'block'; paneDemo.style.display = 'none'; paneReg.style.display = 'none';
     });
 
     document.querySelectorAll('.demo-login-btn').forEach(btn => {
@@ -655,9 +686,9 @@ async function renderTask() {
           <span class="metric-meta">STATIC ANALYSIS ONLY</span>
         </div>
         <label class="code-label">YOUR CODE SOLUTION</label>
-        <textarea id="submission-code" class="code-input submission-code" spellcheck="false" placeholder="Write or paste your implementation here...">${escapeHTML(task?.starter_code ?? '')}</textarea>
+        <textarea id="submission-code" class="code-input submission-code" spellcheck="false" placeholder="Write or paste your implementation here...">${escapeHTML(localStorage.getItem(`proofhire-draft-code-${state.selectedJobId}`) ?? (task?.starter_code ?? ''))}</textarea>
         <label class="notes-label">YOUR DESIGN APPROACH &amp; TRADE-OFFS <span>OPTIONAL</span></label>
-        <textarea id="submission-notes" rows="3" placeholder="Explain your algorithmic strategy, trade-offs, and edge case assumptions..." class="notes-input"></textarea>
+        <textarea id="submission-notes" rows="3" placeholder="Explain your algorithmic strategy, trade-offs, and edge case assumptions..." class="notes-input">${escapeHTML(localStorage.getItem(`proofhire-draft-notes-${state.selectedJobId}`) ?? '')}</textarea>
         <div class="submit-row">
           <span class="form-hint">${state.candidateId ? `CANDIDATE: ${escapeHTML(state.candidate?.name || state.candidateId)}` : '⚠️ Please sign in to link your submission.'}</span>
           <button class="button button-primary" id="submit-solution" ${task && state.candidateId ? '' : 'disabled'}>Submit assessment &amp; proceed <span>↗</span></button>
@@ -683,6 +714,13 @@ async function renderTask() {
       e.target.value = e.target.value.substring(0, start) + '    ' + e.target.value.substring(end);
       e.target.selectionStart = e.target.selectionEnd = start + 4;
     }
+  });
+
+  document.querySelector('#submission-code')?.addEventListener('input', (e) => {
+    localStorage.setItem(`proofhire-draft-code-${state.selectedJobId}`, e.target.value);
+  });
+  document.querySelector('#submission-notes')?.addEventListener('input', (e) => {
+    localStorage.setItem(`proofhire-draft-notes-${state.selectedJobId}`, e.target.value);
   });
 
   document.querySelector('#submit-solution')?.addEventListener('click', async () => {
@@ -826,6 +864,62 @@ async function renderDepth() {
     renderDepth();
   });
 
+
+  // Bind Model Answer & Learn Handler
+  document.querySelectorAll('.learn-answer-btn').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      const turnNum = e.currentTarget.dataset.turn;
+      const box = document.querySelector(`#learn-box-${turnNum}`);
+      const content = document.querySelector(`#learn-content-${turnNum}`);
+      if (!box) return;
+      if (box.style.display === 'block') {
+        box.style.display = 'none';
+        return;
+      }
+      box.style.display = 'block';
+      if (content && content.dataset.loaded === 'true') return;
+
+      const qText = e.currentTarget.dataset.q;
+      const snippet = e.currentTarget.dataset.snippet;
+      const expects = e.currentTarget.dataset.expects;
+      try {
+        const res = await API.getModelAnswer({ question_text: qText, code_snippet: snippet, expects: expects });
+        if (content) {
+          content.dataset.loaded = 'true';
+          content.innerHTML = `
+            <div style="margin-bottom: 12px;">
+              <strong style="color: var(--text); font-size: 14.5px; display: block; margin-bottom: 4px;">Ideal Senior Engineering Response:</strong>
+              <p style="margin: 0; font-size: 14.5px; line-height: 1.6; color: var(--text); white-space: pre-wrap;">${escapeHTML(res.model_answer)}</p>
+            </div>
+            ${res.key_concepts && res.key_concepts.length ? `
+              <div style="margin-bottom: 10px;">
+                <strong style="color: var(--verified); font-size: 14px; display: block; margin-bottom: 4px;">Key Computer Science Principles:</strong>
+                <ul style="margin: 0; padding-left: 20px; font-size: 14px; color: var(--muted);">
+                  ${res.key_concepts.map(c => `<li>${escapeHTML(c)}</li>`).join('')}
+                </ul>
+              </div>
+            ` : ''}
+            ${res.pitfalls_to_avoid && res.pitfalls_to_avoid.length ? `
+              <div style="margin-bottom: 10px;">
+                <strong style="color: var(--amber); font-size: 14px; display: block; margin-bottom: 4px;">Common Interview Pitfalls:</strong>
+                <ul style="margin: 0; padding-left: 20px; font-size: 14px; color: var(--muted);">
+                  ${res.pitfalls_to_avoid.map(p => `<li>${escapeHTML(p)}</li>`).join('')}
+                </ul>
+              </div>
+            ` : ''}
+            ${res.reference_tip ? `
+              <div style="margin-top: 8px; padding-top: 8px; border-top: 1px dashed rgba(255,255,255,0.1); font-size: 14px; color: var(--primary);">
+                💡 <strong>Principal Engineer Tip:</strong> ${escapeHTML(res.reference_tip)}
+              </div>
+            ` : ''}
+          `;
+        }
+      } catch (err) {
+        if (content) content.innerHTML = `<span style="color: #ef4444; font-size: 14px;">Could not load model answer: ${escapeHTML(err.message)}</span>`;
+      }
+    });
+  });
+
   // Bind Dispute handlers (works in both History View and Chat Scroll)
   document.querySelectorAll('.open-dispute-trigger').forEach(btn => {
     btn.addEventListener('click', (e) => {
@@ -902,11 +996,31 @@ async function renderDepth() {
       await renderDepth();
     }
   });
-  document.querySelector('#end-session')?.addEventListener('click', async () => {
-    await API.finishDepth(state.sessionId);
-    state.answerResult = { ...(state.answerResult ?? {}), status: 'done', next: null };
-    state.turn = null;
-    renderDepth();
+  document.querySelector('#end-session')?.addEventListener('click', async (e) => {
+    const btn = e.currentTarget;
+    btn.disabled = true;
+    btn.innerHTML = '<span>⏳ Finalizing session & calculating scores...</span>';
+    try {
+      await API.finishDepth(state.sessionId);
+      if (state.candidateId) {
+        try {
+          const evalRes = await API.getCandidateEvaluation(state.candidateId, state.selectedJobId);
+          if (evalRes && evalRes.candidate) {
+            state.candidate = evalRes.candidate;
+            localStorage.setItem('proofhire-cand-data', JSON.stringify(evalRes.candidate));
+          }
+        } catch (e) {
+          console.warn("Could not refresh candidate evaluation immediately", e);
+        }
+      }
+      state.answerResult = { ...(state.answerResult ?? {}), status: 'done', next: null };
+      state.turn = null;
+      await renderDepth();
+    } catch (err) {
+      btn.disabled = false;
+      btn.textContent = 'Finish session';
+      showError(err);
+    }
   });
   document.querySelector('#answer-form')?.addEventListener('submit', sendAnswer);
   document.querySelector('#candidate-answer')?.addEventListener('keydown', (e) => {
@@ -1173,10 +1287,19 @@ function renderDepthHistoryView(completedAnswers) {
                     <div style="font-size: 14px; color: var(--muted); margin-top: 4px;">This turn has been flagged for human recruiter audit.</div>
                   </div>
                 ` : `
-                  <div style="display: flex; justify-content: flex-end; margin-top: 8px;">
+                  <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 8px; flex-wrap: wrap;">
+                    <button class="button button-outline button-sm learn-answer-btn" data-turn="${turnNum}" data-q="${escapeHTML(qTurn.text || '')}" data-snippet="${escapeHTML(qTurn.code_snippet?.code || '')}" data-expects="${escapeHTML(qTurn.expects || '')}" style="font-size: 14px; padding: 3px 10px; border-color: var(--primary); color: var(--primary);">
+                      💡 View Model Answer &amp; Learn
+                    </button>
                     <button class="button button-quiet button-sm open-dispute-trigger" data-turn="${turnNum}" style="font-size: 14px; padding: 3px 10px; border: 1px solid var(--border); color: var(--muted);">
                       🚩 Report Evaluation Issue
                     </button>
+                  </div>
+                  <div class="learn-answer-box" id="learn-box-${turnNum}" style="display: none; margin-top: 12px; padding: 14px; border-radius: 8px; background: rgba(59, 130, 246, 0.08); border: 1px solid var(--primary);">
+                    <div style="font-size: 14px; font-weight: 700; color: var(--primary); margin-bottom: 8px; letter-spacing: 0.04em;">🌟 SENIOR MODEL ANSWER &amp; KEY CONCEPTS</div>
+                    <div class="learn-content" id="learn-content-${turnNum}">
+                      <span style="font-size: 14.5px; color: var(--muted);">Generating model answer and learning concepts...</span>
+                    </div>
                   </div>
                   <div class="dispute-box" id="dispute-box-${turnNum}" style="display: none; margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.1);">
                     <label style="font-size: 14px; color: var(--amber); display: block; margin-bottom: 4px;">CONTEST THIS EVALUATION</label>
@@ -1351,16 +1474,7 @@ async function renderShortlist() {
     `;
   }
 
-  // Recruiter Portal Link Box
-  const recruiterNotice = `
-    <div style="margin: 20px 0; padding: 16px 20px; border: 1px dashed var(--border); border-radius: 10px; background: var(--raised); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
-      <div>
-        <strong style="color: var(--primary); font-size: 15px;">🏢 Hiring Managers & Recruiters</strong>
-        <p style="margin: 4px 0 0 0; font-size: 15px; color: var(--muted);">Manage job requisitions, view company applicant pipelines, update candidate stages, and run side-by-side matrices in the dedicated portal.</p>
-      </div>
-      <a href="http://localhost:8000/portal/dashboard.html" target="_blank" class="button button-primary" style="font-size: 15px; padding: 6px 14px;">Open Recruiter Portal ↗</a>
-    </div>
-  `;
+  const recruiterNotice = '';
 
   // Candidate cards for all candidates view
   const cards = candidatesList.map((candidate) => {
@@ -1431,7 +1545,7 @@ async function renderShortlist() {
   shell(`${heading('05 / RESULTS & EVALUATION', state.candidateId ? 'My Results<span class="heading-dot">.</span>' : 'Assessment Results<span class="heading-dot">.</span>', `${escapeHTML(job.title)} / ${escapeHTML(job.company)} · Ranked by verified evidence, not resume polish.`, '<span class="review-stamp"><i class="status-dot online"></i> HUMAN REVIEW</span>')}
     ${guestNotice}
     ${myScorecardHtml}
-    ${recruiterNotice}
+    
     <details class="all-applicants-details" ${state.candidateId ? '' : 'open'} style="margin-top: 16px;">
       <summary style="cursor: pointer; font-size: 14px; font-weight: 600; color: var(--link); padding: 10px 0;">
         <span>All Requisition Applicants & Comparative Pipeline (${candidatesList.length} Candidates)</span>
@@ -1582,7 +1696,16 @@ async function renderGraph() {
     ...graph.nodes.map((node) => ({ data: { id: node.id, label: node.label, type: node.type, weight: node.weight, color: colorMap[node.type] ?? (darkTheme ? '#94a3b8' : '#64748b') } })),
     ...graph.edges.map((edge, index) => ({ data: { id: `edge-${index}`, source: edge.source, target: edge.target, label: edge.type } }))
   ];
-  cytoscape({ container: document.querySelector('#graph-canvas'), elements, layout: { name: 'cose', animate: true, animationDuration: 600, padding: 64, nodeRepulsion: 15000, idealEdgeLength: 175 }, style: [
+  if (window._currentCy) {
+    try { window._currentCy.destroy(); } catch (e) {}
+    window._currentCy = null;
+  }
+  const cyContainer = document.querySelector('#graph-canvas');
+  if (!cyContainer) return;
+  window._currentCy = cytoscape({
+    container: cyContainer,
+    elements,
+    layout: { name: 'cose', animate: false, padding: 64, nodeRepulsion: 15000, idealEdgeLength: 175 }, style: [
     { selector: 'node', style: { 'background-color': 'data(color)', label: 'data(label)', color: '#090e0b', 'font-family': 'Manrope, Inter, sans-serif', 'font-size': 14, 'font-weight': 700, 'text-wrap': 'wrap', 'text-max-width': 180, width: 'label', height: 'label', shape: 'round-rectangle', padding: '14px', 'border-width': 3, 'border-color': darkTheme ? '#111a2e' : '#ffffff', 'text-valign': 'center', 'text-halign': 'center', 'text-outline-width': 0 } },
     { selector: 'edge', style: { label: 'data(label)', color: darkTheme ? '#cbd5e1' : '#334155', 'font-family': 'Inter, sans-serif', 'font-size': 12, 'font-weight': 500, 'text-background-color': darkTheme ? '#111a2e' : '#ffffff', 'text-background-opacity': 0.96, 'text-background-padding': 4, 'text-border-width': 1, 'text-border-color': darkTheme ? '#243049' : '#e2e8f0', 'text-border-opacity': 1, width: 2.5, 'line-color': darkTheme ? '#64748b' : '#94a3b8', 'target-arrow-color': darkTheme ? '#94a3b8' : '#64748b', 'target-arrow-shape': 'triangle', 'arrow-scale': 1.4, 'curve-style': 'bezier', opacity: 0.95 } },
     { selector: 'node:selected', style: { 'border-color': darkTheme ? '#818cf8' : '#4338ca', 'border-width': 4, 'overlay-opacity': 0.1, 'overlay-color': darkTheme ? '#818cf8' : '#4338ca' } }

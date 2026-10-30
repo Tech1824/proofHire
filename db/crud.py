@@ -101,6 +101,8 @@ def create_user(data: dict) -> dict:
         return u.model_dump()
 
 # Candidate List & Status
+RUBRIC_DIMENSIONS = {"ownership", "understanding", "reasoning", "debugging", "modification", "communication"}
+
 def list_candidates(company_id: Optional[str] = None) -> list[dict]:
     with Session(engine) as session:
         query = select(Candidate)
@@ -110,7 +112,11 @@ def list_candidates(company_id: Optional[str] = None) -> list[dict]:
         result = []
         for c in cands:
             cd = c.model_dump()
-            prof = session.exec(select(Profile).where(Profile.candidate_id == c.candidate_id)).first()
+            prof = session.exec(
+                select(Profile)
+                .where(Profile.candidate_id == c.candidate_id)
+                .order_by(Profile.overall_score.desc(), Profile.session_id.desc())
+            ).first()
             if prof:
                 cd["job_id"] = prof.job_id or cd.get("job_id") or "job_1"
                 cd["overall_score"] = prof.overall_score
@@ -138,6 +144,19 @@ def list_candidates(company_id: Optional[str] = None) -> list[dict]:
                 cd["dims"] = {}
                 cd["summary"] = "Assessment not started."
                 cd["evidence"] = []
+
+            # Extract clean technical skills (strictly filtering out rubric/behavioral terms like ownership)
+            tech_skills = []
+            if c.graph_summary and isinstance(c.graph_summary, dict):
+                tech_skills.extend([s for s in c.graph_summary.get("skills", []) if s.lower() not in RUBRIC_DIMENSIONS])
+            if not tech_skills:
+                job_skills_map = {
+                    "job_1": ["python", "fastapi", "redis", "concurrency", "distributed systems"],
+                    "job_2": ["react", "typescript", "tailwind", "node.js", "rest api"],
+                    "job_3": ["python", "fastapi", "postgresql", "docker", "microservices"]
+                }
+                tech_skills = job_skills_map.get(cd.get("job_id"), ["python", "redis", "fastapi"])
+            cd["skills"] = [s for s in tech_skills if s.lower() not in RUBRIC_DIMENSIONS]
             result.append(cd)
         return result
 
@@ -339,13 +358,30 @@ def set_session_status(session_id: str, status: str) -> None:
 
 def save_profile(session_id: str, candidate_id: str, job_id: str, profile: dict) -> None:
     with Session(engine) as session:
-        p = Profile(
-            session_id=session_id,
-            candidate_id=candidate_id,
-            job_id=job_id,
-            **profile
-        )
-        session.add(p)
+        existing = session.get(Profile, session_id)
+        if not existing:
+            p = Profile(
+                session_id=session_id,
+                candidate_id=candidate_id,
+                job_id=job_id,
+                **profile
+            )
+            session.add(p)
+        else:
+            for k, v in profile.items():
+                setattr(existing, k, v)
+            existing.job_id = job_id
+            session.add(existing)
+
+        # Synchronize candidate row directly so scores and status are immediately in sync across both portals
+        cand = session.get(Candidate, candidate_id)
+        if cand:
+            cand.proof_score = profile.get("overall_score", cand.proof_score)
+            cand.readiness_rating = profile.get("recommendation", cand.readiness_rating)
+            if cand.status in [None, "New", "Invited", "In Progress", ""]:
+                cand.status = "Assessed"
+            session.add(cand)
+
         session.commit()
 
 def get_profile(session_id: str) -> dict | None:

@@ -73,9 +73,10 @@ def process_candidate_bg(candidate_id: str, cand_dict: dict):
     from ai.profile_merger import merge_profile
     
     try:
+        li_text = cand_dict.get("resume_text") or cand_dict.get("linkedin_text") or ""
         with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
             future_gh = executor.submit(fetch_github_profile, cand_dict.get("github_url"), None, cand_dict.get("github_token"))
-            future_li = executor.submit(extract_linkedin_claims, cand_dict.get("linkedin_text"))
+            future_li = executor.submit(extract_linkedin_claims, li_text)
             
             gh_data = future_gh.result()
             li_data = future_li.result()
@@ -143,7 +144,24 @@ def get_graph_view(candidate_id: str):
     if not view:
         return {"nodes": [], "edges": []}
         
-    return view
+    cleaned_nodes = []
+    for n in view.get("nodes", []):
+        cleaned_nodes.append({
+            "id": str(n.get("id")),
+            "type": str(n.get("type", "concept")),
+            "label": str(n.get("label", n.get("id"))),
+            "weight": float(n.get("weight") or 1.0)
+        })
+
+    cleaned_edges = []
+    for e in view.get("edges", []):
+        cleaned_edges.append({
+            "source": str(e.get("source")),
+            "target": str(e.get("target")),
+            "type": str(e.get("type", "relates"))
+        })
+        
+    return {"nodes": cleaned_nodes, "edges": cleaned_edges}
 
 
 @router.put("/{candidate_id}")
@@ -185,10 +203,13 @@ def get_candidate_evaluation(candidate_id: str, job_id: str = "job_1"):
         if not cand:
             raise HTTPException(status_code=404, detail="Candidate not found")
             
-        profile = session.exec(select(Profile).where(
-            Profile.candidate_id == candidate_id,
-            Profile.job_id == job_id
-        )).first()
+        profile = session.exec(
+            select(Profile)
+            .where(Profile.candidate_id == candidate_id)
+            .order_by(Profile.overall_score.desc(), Profile.session_id.desc())
+        ).first()
+        
+        target_job = profile.job_id if profile and profile.job_id else job_id
         
         sub = session.exec(select(Submission).where(
             Submission.candidate_id == candidate_id
@@ -199,7 +220,7 @@ def get_candidate_evaluation(candidate_id: str, job_id: str = "job_1"):
         if sub:
             ds = session.exec(select(DepthSession).where(
                 DepthSession.submission_id == sub.submission_id
-            )).first()
+            ).order_by(DepthSession.created_at.desc())).first()
             if ds:
                 sess_data = ds.model_dump()
                 turns = session.exec(select(QaTurn).where(
@@ -210,14 +231,20 @@ def get_candidate_evaluation(candidate_id: str, job_id: str = "job_1"):
                 
         prof_dict = profile.model_dump() if profile else None
         
-        # Calculate rank across job
+        # Calculate rank across target job pipeline
         rank = None
         if prof_dict:
-            all_profs = session.exec(select(Profile).where(Profile.job_id == job_id).order_by(Profile.overall_score.desc())).all()
+            all_profs = session.exec(
+                select(Profile)
+                .where(Profile.job_id == target_job)
+                .order_by(Profile.overall_score.desc())
+            ).all()
             for i, p in enumerate(all_profs):
                 if p.candidate_id == candidate_id:
                     rank = i + 1
                     break
+            if rank is None:
+                rank = 1
                     
         return {
             "candidate": cand.model_dump(),

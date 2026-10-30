@@ -262,13 +262,14 @@ async function syncWithBackend() {
         task: "Distributed Practical Code + Depth Check",
         min: 45
       }));
-      if (!D.jobs.some(j => String(j.id) === String(D.jobId))) {
-        D.jobId = D.jobs[0].id;
+      if (D.jobId !== "all" && !D.jobs.some(j => String(j.id) === String(D.jobId))) {
+        D.jobId = "all";
       }
     }
 
     const rawCandidates = data.applicants || data.recent_applicants || [];
     if (rawCandidates.length > 0) {
+      const RUBRIC_WORDS = new Set(["ownership", "understanding", "reasoning", "debugging", "modification", "communication"]);
       const mergedApps = rawCandidates.map(c => {
         const skillProfile = c.skill_profile || {};
         const dims = c.dims || {
@@ -285,6 +286,13 @@ async function syncWithBackend() {
           disputed: ev.disputed || false,
           dispute_reason: ev.dispute_reason || ""
         }));
+        
+        let rawSkills = Array.isArray(c.skills) ? c.skills : (c.skills ? String(c.skills).split(",") : []);
+        let cleanSkills = rawSkills.map(s => String(s).trim()).filter(s => s && !RUBRIC_WORDS.has(s.toLowerCase()));
+        if (!cleanSkills.length) {
+          cleanSkills = ["python", "redis", "fastapi"];
+        }
+
         return {
           id: c.candidate_id,
           name: c.name || "Candidate",
@@ -296,7 +304,7 @@ async function syncWithBackend() {
           score: c.overall_score || c.score || 0,
           conf: c.confidence || 0,
           rec: c.recommendation || (c.overall_score >= 80 ? "Strong hire" : c.overall_score >= 60 ? "Hire" : "Needs more evidence"),
-          skills: c.skills || (skillProfile ? Object.keys(skillProfile) : ["python", "redis"]),
+          skills: cleanSkills,
           dims: dims,
           summary: c.summary || "Assessment on file with verified code reasoning.",
           turns: turns
@@ -312,8 +320,16 @@ async function syncWithBackend() {
       D.apps = mergedApps;
     }
 
-    save();
-    render();
+    const nextDigest = JSON.stringify({
+      appsCount: D.apps.length,
+      scores: D.apps.map(a => `${a.id}:${a.score}:${a.status}`).join(","),
+      jobId: D.jobId
+    });
+    if (window._lastPortalDigest !== nextDigest) {
+      window._lastPortalDigest = nextDigest;
+      save();
+      render();
+    }
   } catch (err) {
     // Keep local cache
   }

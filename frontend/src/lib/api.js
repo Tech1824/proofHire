@@ -200,6 +200,22 @@ export function finishDepth(sessionId) {
   return mock({ status: 'done' });
 }
 
+export function getModelAnswer(payload) {
+  if (!usesMocks()) {
+    return request('/depth/model-answer', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+  }
+  return mock({
+    status: 'ok',
+    model_answer: 'Senior engineers ground responses in exact code invariants and concurrency boundaries.',
+    key_concepts: ['Data contracts', 'Invariants', 'Concurrency'],
+    pitfalls_to_avoid: ['Generic buzzwords', 'Ignoring error paths'],
+    reference_tip: 'Always state the algorithmic complexity and trade-offs.'
+  });
+}
+
 export function confirmEvidence(sessionId, turnNumber, confirmed = true) {
   if (!usesMocks()) {
     return request('/shortlist/confirm', {

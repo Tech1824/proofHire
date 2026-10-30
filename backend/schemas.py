@@ -70,12 +70,12 @@ class GraphNode(BaseModel):
     id: str
     type: str
     label: str
-    weight: float
+    weight: Optional[float] = 1.0
 
 class GraphEdge(BaseModel):
     source: str
     target: str
-    type: str
+    type: Optional[str] = "relates"
 
 class GraphViewResponse(BaseModel):
     nodes: List[GraphNode]
