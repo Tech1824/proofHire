@@ -82,17 +82,12 @@ def pick_next(state: dict, g, job: dict, task_eval: dict | None = None) -> dict:
     else:
         q_type = "question"
 
-    # Surgical probe hint from heavy model evaluation if in phase 2
+    # Surgical probe hint distilled and compressed from heavy model evaluation if in phase 2
     probe_hint = None
     if phase == "task_validation" and task_eval:
-        probes = task_eval.get("surgical_probes", [])
-        vulns = task_eval.get("edge_case_vulnerabilities", [])
-        if current_turn == 4 and probes:
-            probe_hint = probes[0]
-        elif current_turn == 5 and vulns:
-            probe_hint = f"Focus on this detected vulnerability: {vulns[0]}"
-        elif len(probes) > 1:
-            probe_hint = probes[1]
+        from ai.evaluator import compress_task_eval_for_turn
+        compressed = compress_task_eval_for_turn(task_eval, current_turn)
+        probe_hint = compressed.get("probe_hint")
 
     return {
         "node_ref": best_node,

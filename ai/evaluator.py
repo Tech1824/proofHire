@@ -41,6 +41,77 @@ Your objectives:
 
 Return valid JSON matching the schema strictly."""
 
+def compress_code_context(code: str, max_chars: int = 3500) -> str:
+    """
+    Intelligently compresses long code submissions to prevent context overflow
+    while preserving top-level definitions, imports, and critical blocks.
+    """
+    if not code or len(code) <= max_chars:
+        return code
+    
+    # Split by lines
+    lines = code.splitlines()
+    if len(lines) <= 80:
+        return code[:max_chars]
+        
+    head = lines[:50]
+    tail = lines[-30:]
+    omitted = len(lines) - 80
+    
+    compressed = "\n".join(head) + f"\n\n    # ... [COMPRESSED {omitted} lines of implementation details to conserve context] ...\n\n" + "\n".join(tail)
+    return compressed[:max_chars]
+
+def compress_task_eval_for_turn(task_eval: Optional[dict], current_turn: int) -> dict:
+    """
+    Wraps and distills heavy model evaluation (typically 1000-2000 tokens)
+    into an ultra-lean, turn-specific surgical directive (< 40 tokens)
+    to prevent context overflow in the interactive Depth Check.
+    """
+    if not task_eval:
+        return {"probe_hint": None, "focus_type": "standard"}
+        
+    probes = task_eval.get("surgical_probes", [])
+    vulns = task_eval.get("edge_case_vulnerabilities", [])
+    missing = task_eval.get("missing_requirements", [])
+    approach = task_eval.get("algorithmic_approach", "Custom")
+    
+    # Turn 4: Focus on high-level algorithmic paradigm & primary probe
+    if current_turn == 4:
+        hint = probes[0] if probes else f"Probe their {approach} implementation strategy and memory trade-offs."
+        return {
+            "probe_hint": hint,
+            "focus_type": "architectural_approach",
+            "summary": f"Approach: {approach}"
+        }
+        
+    # Turn 5: Focus on the single highest-severity edge-case vulnerability
+    elif current_turn == 5:
+        hint = f"Focus on vulnerability: {vulns[0]}" if vulns else (probes[1] if len(probes) > 1 else None)
+        return {
+            "probe_hint": hint,
+            "focus_type": "edge_case_vulnerability",
+            "summary": vulns[0][:80] if vulns else "Check boundary edge cases"
+        }
+        
+    # Turn 6: Focus on code refactoring / missing requirements
+    elif current_turn >= 6:
+        if missing:
+            hint = f"Ask how they would refactor the code to support: {missing[0]}"
+        elif len(vulns) > 1:
+            hint = f"Ask how to patch this failure mode: {vulns[1]}"
+        elif len(probes) > 2:
+            hint = probes[2]
+        else:
+            hint = "How would you modify this to scale 10x with zero data loss?"
+            
+        return {
+            "probe_hint": hint,
+            "focus_type": "modification_refactor",
+            "summary": "Code refactor"
+        }
+        
+    return {"probe_hint": None, "focus_type": "general"}
+
 def evaluate_task_code(task: dict, submission_code: str, notes: Optional[str] = None) -> dict:
     """Evaluates candidate submitted code using the heavy model tier."""
     if not submission_code or not submission_code.strip():
@@ -68,7 +139,7 @@ CANDIDATE NOTES:
 
 CANDIDATE SUBMITTED CODE:
 ```
-{submission_code[:4000]}
+{compress_code_context(submission_code, 4000)}
 ```
 """
     try:
