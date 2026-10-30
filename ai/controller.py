@@ -11,7 +11,7 @@ def should_stop(state: dict) -> bool:
         return True
         
     confidences = state.get("confidences", [])
-    if turns >= 4 and sum(confidences)/len(confidences) if confidences else 0 >= 0.8:
+    if turns >= 4 and (sum(confidences) / len(confidences) >= 0.8 if confidences else False):
         return True
         
     flags = state.get("last_flags", [])

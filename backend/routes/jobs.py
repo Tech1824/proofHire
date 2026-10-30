@@ -35,3 +35,9 @@ def get_job(job_id: str):
     if not job:
         raise HTTPException(status_code=404, detail=f"Job {job_id} does not exist")
     return job
+
+@router.get("/{job_id}/shortlist")
+def get_job_shortlist(job_id: str):
+    from ai import api as ai_api
+    return ai_api.get_shortlist(job_id)
+

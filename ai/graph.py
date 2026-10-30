@@ -60,15 +60,36 @@ def _parse_python_file(g: nx.DiGraph, file_node_id: str, content: str, filename:
                     g.add_node(skill_id, type="skill", label=skill, size=10)
                     g.add_edge(file_node_id, skill_id, type="uses")
 
-def _parse_js_file(g: nx.DiGraph, file_node_id: str, content: str, filename: str):
-    func_pattern = re.compile(r'(?:function\s+([a-zA-Z0-9_]+)\s*\(|const\s+([a-zA-Z0-9_]+)\s*=\s*(?:function|\([^)]*\)\s*=>))')
-    for match in func_pattern.finditer(content):
-        name = match.group(1) or match.group(2)
+def _parse_generic_file(g: nx.DiGraph, file_node_id: str, content: str, filename: str):
+    # 1. Extract Classes / Structs / Interfaces
+    class_pattern = re.compile(r'(?:class|struct|interface|enum)\s+([a-zA-Z0-9_]+)')
+    for match in class_pattern.finditer(content):
+        name = match.group(1)
         if name:
+            class_id = f"class:{filename}::{name}"
+            g.add_node(class_id, type="class", label=name, code=f"// {name} definition", size=50)
+            g.add_edge(file_node_id, class_id, type="contains")
+
+    # 2. Extract Functions / Methods (Heuristic)
+    # Looks for: optional modifiers, optional return type, name, parens, followed by block/arrow
+    func_pattern = re.compile(r'(?:(?:public|private|protected|static|inline|async|fun|function|def)\s+)*(?:[a-zA-Z0-9_<>\[\]]+\s+)?([a-zA-Z0-9_]+)\s*\([^)]*\)\s*(?:{|throws|:|->|=>)')
+    for match in func_pattern.finditer(content):
+        name = match.group(1)
+        if name and name not in ['if', 'while', 'for', 'switch', 'catch', 'return', 'new', 'elif', 'else']:
             func_id = f"func:{filename}::{name}"
-            # Extracting the whole function in JS is hard with just regex, so we just add the node
-            g.add_node(func_id, type="function", label=name, code=f"// code for {name}", size=100)
+            g.add_node(func_id, type="function", label=name, code=f"// {name} function", size=100)
             g.add_edge(file_node_id, func_id, type="contains")
+
+    # 3. Extract Imports / Dependencies
+    import_pattern = re.compile(r'(?:import|#include|require|using)\s+[\'\"<]?([a-zA-Z0-9_./@-]+)[\'\">]?')
+    for match in import_pattern.finditer(content):
+        lib = match.group(1)
+        if lib and len(lib) > 1:
+            skill = lib.split('/')[-1].split('.')[0]
+            if skill:
+                skill_id = f"skill:{skill}"
+                g.add_node(skill_id, type="skill", label=skill, size=10)
+                g.add_edge(file_node_id, skill_id, type="uses")
 
 def build_from_candidate(candidate: dict, job_skills: list[str] = None) -> nx.DiGraph:
     if job_skills is None:
@@ -111,14 +132,22 @@ def build_from_candidate(candidate: dict, job_skills: list[str] = None) -> nx.Di
             
             if path.endswith(".py"):
                 _parse_python_file(g, file_id, content, path)
-            elif path.endswith(".js") or path.endswith(".jsx") or path.endswith(".ts"):
-                _parse_js_file(g, file_id, content, path)
+            else:
+                _parse_generic_file(g, file_id, content, path)
                 
-    # Calculate PageRank
+    # Calculate PageRank or degree-based importance without requiring numpy
     try:
         pagerank = nx.pagerank(g)
     except Exception:
-        pagerank = {n: 1.0 / len(g.nodes) for n in g.nodes} if len(g.nodes) > 0 else {}
+        # Pure Python centrality fallback (in-degree + out-degree)
+        total = float(len(g.nodes)) if len(g.nodes) > 0 else 1.0
+        in_degrees = dict(g.in_degree()) if hasattr(g, 'in_degree') else {}
+        out_degrees = dict(g.out_degree()) if hasattr(g, 'out_degree') else {}
+        total_deg = sum(in_degrees.values()) + sum(out_degrees.values()) or 1.0
+        pagerank = {
+            n: (in_degrees.get(n, 0) * 2.0 + out_degrees.get(n, 0) * 1.0 + 1.0) / (total_deg + total)
+            for n in g.nodes
+        }
 
     # Weight calculation
     # weight = 0.5*pagerank + 0.3*relevance_to_job_skills + 0.2*size

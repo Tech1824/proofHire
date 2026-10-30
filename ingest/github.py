@@ -20,15 +20,16 @@ def parse_github_username(url: str) -> str | None:
         return match.group(1)
     return None
 
-def _get_headers():
-    token = os.environ.get("GITHUB_TOKEN")
+def _get_headers(token: str = None):
+    if not token:
+        token = os.environ.get("GITHUB_TOKEN")
     if token:
         return {"Authorization": f"token {token}", "Accept": "application/vnd.github.v3+json"}
     return {"Accept": "application/vnd.github.v3+json"}
 
-def _fetch_file_content(repo_full_name, file_path):
+def _fetch_file_content(repo_full_name, file_path, token=None):
     url = f"{GITHUB_API_URL}/repos/{repo_full_name}/contents/{file_path}"
-    resp = requests.get(url, headers=_get_headers(), timeout=10)
+    resp = requests.get(url, headers=_get_headers(token), timeout=10)
     if resp.status_code == 200:
         data = resp.json()
         if "content" in data and data.get("encoding") == "base64":
@@ -43,7 +44,7 @@ def _fetch_file_content(repo_full_name, file_path):
                 return dl_resp.text
     return None
 
-def fetch_github_profile(github_url: str, required_skills: list[str] = None) -> dict:
+def fetch_github_profile(github_url: str, required_skills: list[str] = None, github_token: str = None) -> dict:
     username = parse_github_username(github_url)
     if not username:
         return {"warnings": ["Invalid GitHub URL"], "projects": []}
@@ -52,7 +53,7 @@ def fetch_github_profile(github_url: str, required_skills: list[str] = None) -> 
         if time.time() - _CACHE[username]["timestamp"] < CACHE_TTL:
             return _CACHE[username]["data"]
             
-    headers = _get_headers()
+    headers = _get_headers(github_token)
     warnings = []
     projects = []
     
@@ -115,7 +116,7 @@ def fetch_github_profile(github_url: str, required_skills: list[str] = None) -> 
                 # Fetch README first if exists
                 readme_file = next((f for f in tree_files if f["path"].lower() == "readme.md"), None)
                 if readme_file and readme_file.get("size", 0) < 50000:
-                    content = _fetch_file_content(repo_full_name, readme_file["path"])
+                    content = _fetch_file_content(repo_full_name, readme_file["path"], github_token)
                     if content:
                         proj["files"].append({"path": readme_file["path"], "content": content})
                 
@@ -134,7 +135,7 @@ def fetch_github_profile(github_url: str, required_skills: list[str] = None) -> 
                 code_files = code_files[:8]
                 for cf in code_files:
                     if len(proj["files"]) >= 8: break
-                    content = _fetch_file_content(repo_full_name, cf["path"])
+                    content = _fetch_file_content(repo_full_name, cf["path"], github_token)
                     if content:
                         proj["files"].append({"path": cf["path"], "content": content})
         except Exception as e:

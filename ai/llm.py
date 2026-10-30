@@ -13,18 +13,24 @@ from pydantic import BaseModel, ValidationError
 
 logger = logging.getLogger(__name__)
 
+import os
+from dotenv import load_dotenv
+load_dotenv()
+
+# Ensure both key variables are set for LiteLLM
+if os.environ.get("GEMINI_API_KEY") and not os.environ.get("GOOGLE_API_KEY"):
+    os.environ["GOOGLE_API_KEY"] = os.environ["GEMINI_API_KEY"]
+
+_api_key = os.environ.get("GEMINI_API_KEY")
+
 router = Router(
     model_list=[
-        {"model_name": "fast",  "litellm_params": {
-            "model": "openai/fast", 
-            "api_base": "http://localhost:20128/v1",
-            "api_key": "sk-93129af0244e40fe-daea22-f6de7cbc"
-        }},
-        {"model_name": "smart", "litellm_params": {"model": "gemini/gemini-2.5-pro"}},
-        {"model_name": "local", "litellm_params": {"model": "ollama/qwen2.5:3b", "api_base": "http://localhost:11434"}},
+        {"model_name": "fast",  "litellm_params": {"model": "gemini/gemini-3.5-flash", "api_key": _api_key}},
+        {"model_name": "smart", "litellm_params": {"model": "gemini/gemini-3.5-flash", "api_key": _api_key}},
+        {"model_name": "lite",  "litellm_params": {"model": "gemini/gemini-3.5-flash-lite", "api_key": _api_key}},
     ],
-    fallbacks=[{"smart": ["fast", "local"]}, {"fast": ["local"]}],
-    num_retries=1, timeout=25,
+    fallbacks=[{"smart": ["fast", "lite"]}, {"fast": ["lite"]}],
+    num_retries=1, timeout=30,
 )
 
 def _get_canned_reply(schema: Type[BaseModel]) -> dict:
@@ -112,16 +118,26 @@ def complete_json(alias: str, system: str, user: str, schema: Type[BaseModel], c
                 content = brace_match.group(1)
                 
         parsed = json.loads(content)
+        if isinstance(parsed, list):
+            if len(parsed) > 0 and isinstance(parsed[0], dict):
+                parsed = parsed[0]
+            else:
+                fields = list(schema.model_fields.keys())
+                parsed = {fields[0]: " ".join(str(x) for x in parsed)}
+        elif isinstance(parsed, str):
+            fields = list(schema.model_fields.keys())
+            parsed = {fields[0]: parsed}
+
         # Validate against schema
         validated = schema(**parsed)
         return validated.model_dump()
     
     try:
         result = try_completion(messages)
-    except (json.JSONDecodeError, ValidationError) as e:
+    except (json.JSONDecodeError, ValidationError, TypeError) as e:
         logger.warning(f"Validation failed on first attempt: {e}. Retrying.")
-        # 3. Retry once
-        messages.append({"role": "assistant", "content": "Error: Return valid JSON only matching the schema."})
+        # 3. Retry once with user prompt
+        messages.append({"role": "user", "content": "Error: Return valid JSON dictionary only matching the schema."})
         result = try_completion(messages)
 
     # 4. Save to cache and return

@@ -34,6 +34,7 @@ Response: same fields plus `"job_id": "job_1"`.
 ```json
 { "name": "Asha Rao", "email": "asha@example.com",
   "github_url": "https://github.com/asha-demo",
+  "github_token": "gho_optional_token",
   "linkedin_text": "pasted profile text...",
   "projects": [ { "name": "TaskTracker", "description": "REST API for tasks",
                   "repo_url": null,
@@ -126,6 +127,10 @@ Possible `flags`: `vague`, `off_topic`, `contradicts_claim`, `copied_phrasing`, 
 `recommendation`: `strong_yes`, `yes`, `maybe`, `no`, `needs_more_evidence`.
 Candidates without a finished depth check are not included.
 
+## OAuth
+**GET /api/auth/github/login** -> Redirects to GitHub
+**GET /api/auth/github/callback** -> Returns `{ "access_token": "..." }`
+
 ## Rules for everyone
 - No endpoint may be added without a Changelog line.
 - Extra fields in responses are allowed. Missing or renamed fields are not.
@@ -133,3 +138,4 @@ Candidates without a finished depth check are not included.
 
 ## Changelog
 - v0.1: first frozen version.
+- v0.2: added github_token to candidates and OAuth endpoints.

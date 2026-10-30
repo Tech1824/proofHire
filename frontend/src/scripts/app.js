@@ -20,6 +20,23 @@ const routes = [
   ['depth', '04', 'Depth check'], ['shortlist', '05', 'Shortlist'], ['graph', '06', 'Graph']
 ];
 
+function showGlobalLoader(message = 'Processing...') {
+  let overlay = document.querySelector('.global-loader-overlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.className = 'global-loader-overlay';
+    overlay.innerHTML = `<div class="loader-spinner"></div><div class="loader-message"></div>`;
+    document.body.appendChild(overlay);
+  }
+  overlay.querySelector('.loader-message').textContent = message;
+  overlay.classList.add('active');
+}
+
+function hideGlobalLoader() {
+  const overlay = document.querySelector('.global-loader-overlay');
+  if (overlay) overlay.classList.remove('active');
+}
+
 // Escapes backend text before it is placed into HTML.
 function escapeHTML(value = '') {
   return String(value).replace(/[&<>"']/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character]);
@@ -111,8 +128,17 @@ function showLoading(label = 'Loading workspace') {
 // Renders a useful error state and keeps a retry action available.
 function showError(error) {
   state.error = error?.message ?? String(error);
-  shell(`<section class="page-heading"><div><div class="eyebrow">REQUEST INTERRUPTED</div><h1>Could not load this view</h1></div></section><section class="error-panel"><span class="error-mark">!</span><div><h2>Connection error</h2><p>${escapeHTML(state.error)}</p><button class="button button-quiet" id="retry">↻ Retry</button></div></section>`);
+  const isDoneError = state.error.toLowerCase().includes('already done') || state.error.toLowerCase().includes('completed');
+  shell(`<section class="page-heading"><div><div class="eyebrow">REQUEST INTERRUPTED</div><h1>Could not load this view</h1></div></section><section class="error-panel"><span class="error-mark">!</span><div><h2>Connection error</h2><p>${escapeHTML(state.error)}</p><div style="display: flex; gap: 12px; margin-top: 14px; flex-wrap: wrap;"><button class="button button-quiet" id="retry">↻ Retry</button>${isDoneError ? `<button class="button button-primary" id="reset-session-btn">Start fresh session ↻</button><a class="button button-outline" href="#shortlist">Review Shortlist →</a>` : ''}</div></div></section>`);
   document.querySelector('#retry')?.addEventListener('click', renderRoute);
+  document.querySelector('#reset-session-btn')?.addEventListener('click', () => {
+    state.sessionId = null;
+    localStorage.removeItem('proofhire-session');
+    state.chatHistory = [];
+    state.turn = null;
+    state.answerResult = null;
+    renderRoute();
+  });
 }
 
 // Builds the compact heading used by each workspace view.
@@ -132,7 +158,7 @@ async function renderRoute() {
     if (state.route === 'jobs') await renderJobs();
     if (state.route === 'candidate') renderCandidate();
     if (state.route === 'task') renderTask();
-    if (state.route === 'depth') renderDepth();
+    if (state.route === 'depth') await renderDepth();
     if (state.route === 'shortlist') await renderShortlist();
     if (state.route === 'graph') await renderGraph();
   } catch (error) {
@@ -163,38 +189,78 @@ async function renderJobs() {
 // Draws a candidate profile form and stores submitted project files.
 function renderCandidate() {
   const prior = state.candidate;
+  const urlParams = new URLSearchParams(window.location.search);
+  const githubToken = urlParams.get('github_token') || prior?.github_token || '';
   shell(`${heading('02 / CANDIDATE INTAKE', 'Show us the work<span class="heading-dot">.</span>', 'Add a profile and project context. LinkedIn is pasted as text; nothing is scraped.')}
     <div class="form-layout"><form class="terminal-form" id="candidate-form">
       <div class="form-topline"><span>NEW CANDIDATE RECORD</span><span>01 — 02</span></div>
       <label>FULL NAME<input name="name" required placeholder="Asha Rao" value="${escapeHTML(prior?.name ?? '')}"></label>
-      <div class="form-pair"><label>EMAIL<input name="email" type="email" required placeholder="asha@example.com" value="${escapeHTML(prior?.email ?? '')}"></label><label>GITHUB URL<input name="github_url" type="url" placeholder="https://github.com/username"></label></div>
-      <label>LINKEDIN PROFILE TEXT <span class="label-note">PASTE TEXT ONLY</span><textarea name="linkedin_text" rows="4" placeholder="Paste profile summary or experience here...">${escapeHTML(prior?.linkedin_text ?? '')}</textarea></label>
+      <div class="form-pair"><label>EMAIL<input name="email" type="email" required placeholder="asha@example.com" value="${escapeHTML(prior?.email ?? '')}"></label><label>GITHUB URL <a href="http://localhost:8000/api/auth/github/login" style="font-size: 10px; margin-left: 8px; color: #3b82f6;">[Connect for Higher Limits]</a><input name="github_url" type="url" placeholder="https://github.com/username"><input type="hidden" name="github_token" value="${escapeHTML(githubToken)}"></label></div>
+      ${githubToken ? '<div style="color: #10b981; font-size: 11px; margin-bottom: 12px;">✓ GitHub Account Connected</div>' : ''}
+      <label>LINKEDIN OR RESUME PROFILE <span class="label-note">PASTE TEXT OR UPLOAD FILE</span>
+        <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+          <input type="file" id="resume-upload" accept=".txt,.md,.pdf" style="font-size: 11px;">
+        </div>
+        <textarea name="linkedin_text" id="resume-text" rows="4" placeholder="Paste profile summary or upload a text-based resume file...">${escapeHTML(prior?.linkedin_text ?? '')}</textarea>
+      </label>
       <div class="field-divider"><span>PROJECT CONTEXT</span><span>02 — 02</span></div>
       <div style="color: #64748b; font-size: 11px; padding: 12px 0;">GitHub handles the rest. We will automatically fetch your top public repositories and build the graph.</div>
       <div class="form-actions"><span class="form-hint"><i class="status-dot online"></i> Builds a local knowledge graph</span><button class="button button-primary" type="submit">Build candidate graph <span>↗</span></button></div>
     </form><aside class="side-note"><div class="side-note-index">INTAKE / NOTE 01</div><div class="note-glyph">⌁</div><h3>Work before words.</h3><p>Project code and profile claims become connected evidence for a focused, fair depth check.</p><div class="note-separator"></div><div class="mini-stat"><span>DATA HANDLING</span><b>LOCAL FIRST</b></div><div class="mini-stat"><span>PROFILE SOURCE</span><b>PASTED BY USER</b></div><div id="candidate-result"></div></aside></div>`);
+  document.querySelector('#resume-upload')?.addEventListener('change', (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const text = e.target.result;
+      document.querySelector('#resume-text').value = text;
+    };
+    reader.readAsText(file);
+  });
   document.querySelector('#candidate-form').addEventListener('submit', async (event) => {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
     const button = event.currentTarget.querySelector('[type="submit"]');
     button.disabled = true;
     button.textContent = 'Building graph...';
+    showGlobalLoader('Building Candidate Graph...');
     try {
       const result = await API.createCandidate({
-        name: form.get('name'), email: form.get('email'), github_url: form.get('github_url'), linkedin_text: form.get('linkedin_text'),
+        name: form.get('name'), email: form.get('email'), github_url: form.get('github_url'), github_token: form.get('github_token') || undefined, linkedin_text: form.get('linkedin_text'),
         projects: []
       });
       state.candidateId = result.candidate_id;
       localStorage.setItem('proofhire-cand', state.candidateId);
-      state.candidate = await API.getCandidate(result.candidate_id);
+      
+      let candidate = await API.getCandidate(result.candidate_id);
+      
+      if (candidate.graph_status === 'processing' || candidate.graph_status === 'pending') {
+        document.querySelector('#candidate-result').innerHTML = `<div class="result-callout" style="border-color: #3b82f6;"><i class="status-dot online" style="background: #3b82f6;"></i><strong style="color: #3b82f6;">FETCHING REPOSITORIES & BUILDING GRAPH...</strong><span>This usually takes 15-30 seconds depending on the codebase size. Please wait...</span><div style="margin-top: 12px; height: 4px; width: 100%; background: #1e293b; border-radius: 4px; overflow: hidden;"><div style="height: 100%; width: 50%; background: #3b82f6; animation: progress-indeterminate 1.5s infinite ease-in-out;"></div></div></div>`;
+        while (candidate.graph_status === 'processing' || candidate.graph_status === 'pending') {
+          await new Promise(resolve => setTimeout(resolve, 3000));
+          candidate = await API.getCandidate(result.candidate_id);
+        }
+      }
+      
+      state.candidate = candidate;
       localStorage.setItem('proofhire-cand-data', JSON.stringify(state.candidate));
-      document.querySelector('#candidate-result').innerHTML = `<div class="result-callout"><i class="status-dot online"></i><strong>GRAPH READY</strong><span>${result.graph_summary.nodes} nodes · ${result.graph_summary.edges} edges</span><a href="#graph">Inspect graph →</a></div>`;
+      
+      if (candidate.graph_status === 'failed') {
+          document.querySelector('#candidate-result').innerHTML = `<div class="result-callout" style="border-color: #ef4444;"><strong style="color: #ef4444;">INGESTION FAILED</strong><span>Check backend logs.</span></div>`;
+          button.disabled = false;
+          button.textContent = 'Retry Build';
+      } else {
+          document.querySelector('#candidate-result').innerHTML = `<div class="result-callout"><i class="status-dot online"></i><strong>GRAPH READY</strong><span>${candidate.graph_summary?.nodes ?? '?'} nodes · ${candidate.graph_summary?.edges ?? '?'} edges</span><a href="#graph">Inspect graph →</a></div>`;
+          location.hash = '#graph';
+      }
     } catch (error) {
-      document.querySelector('#candidate-result').innerHTML = `<p class="inline-error">${escapeHTML(error.message)}</p>`;
-    } finally {
+      showError(error);
       button.disabled = false;
-      button.innerHTML = 'Build candidate graph <span>↗</span>';
+      button.textContent = 'Build candidate graph ↗';
+    } finally {
+      hideGlobalLoader();
     }
+
   });
 }
 
@@ -212,41 +278,218 @@ function renderTask() {
     const button = document.querySelector('#generate-task');
     button.disabled = true;
     button.textContent = 'Generating...';
+    showGlobalLoader('Generating Role-Specific Task...');
     try { state.task = await API.generateTask(state.selectedJobId); renderTask(); }
     catch (error) { showError(error); }
+    finally { hideGlobalLoader(); }
   });
   document.querySelector('#submit-solution').addEventListener('click', async () => {
     if (!state.task) return;
     const button = document.querySelector('#submit-solution');
     button.disabled = true;
     button.textContent = 'Saving...';
+    showGlobalLoader('Indexing Submission Code...');
     try {
       const result = await API.createSubmission({ candidate_id: state.candidateId, task_id: state.task.task_id, files: [{ path: state.task.language === 'python' ? 'limiter.py' : 'menu.js', content: document.querySelector('#submission-code').value }], notes: document.querySelector('#submission-notes').value });
       state.submissionId = result.submission_id;
       localStorage.setItem('proofhire-sub', state.submissionId);
+      // Clear any old depth session tied to a previous submission
+      state.sessionId = null;
+      localStorage.removeItem('proofhire-session');
+      state.answerResult = null;
+      state.chatHistory = [];
       document.querySelector('#submission-result').innerHTML = `<div class="result-callout"><i class="status-dot online"></i><strong>SUBMISSION SAVED</strong><span>${result.stats.files} file · ${result.stats.functions} functions indexed</span><a href="#depth">Start depth check →</a></div>`;
     } catch (error) { document.querySelector('#submission-result').innerHTML = `<p class="inline-error">${escapeHTML(error.message)}</p>`; }
-    finally { button.disabled = false; button.innerHTML = 'Save submission <span>↗</span>'; }
+    finally { button.disabled = false; button.innerHTML = 'Save submission <span>↗</span>'; hideGlobalLoader(); }
   });
 }
 
 // Draws the chat and live evidence panel for a depth-check session.
-function renderDepth() {
+async function renderDepth() {
+  if (state.sessionId && state.chatHistory.length === 0) {
+    try {
+      const sess = await API.getDepthSession(state.sessionId);
+      let score = 0;
+      state.chatHistory = [];
+      sess.turns.forEach(t => {
+         state.chatHistory.push({
+           kind: 'question',
+           turn: { turn_number: t.turn_number, text: t.text, code_snippet: t.code_snippet, expects: t.expects, node_ref: t.node_ref, type: t.type, level: t.level }
+         });
+         if (t.answer_text) {
+           state.chatHistory.push({
+             kind: 'answer',
+             answer: t.answer_text,
+             evaluation: t.evaluation
+           });
+           score = Math.round((score * (t.turn_number - 1) + t.evaluation.score * 20) / t.turn_number);
+           state.answerResult = {
+             status: sess.status === 'done' || t.turn_number >= 5 ? 'done' : 'in_progress',
+             evaluation: t.evaluation,
+             running: { score_100: score, confidence: 0.92, dimensions: t.evaluation.dimensions },
+             meta: t.meta || { context_tokens: 300, full_context_tokens: 1800 },
+             next: null
+           };
+         }
+      });
+      if (sess.status === 'done') {
+        state.turn = null;
+        if (!state.answerResult && sess.turns.length > 0) {
+          state.answerResult = { status: 'done', evaluation: sess.turns[sess.turns.length - 1].evaluation || {}, running: { score_100: score, confidence: 0.92, dimensions: {} }, meta: { context_tokens: 300, full_context_tokens: 1800 }, next: null };
+        } else if (state.answerResult) {
+          state.answerResult.status = 'done';
+        }
+      } else {
+        state.turn = sess.turns[sess.turns.length - 1];
+      }
+    } catch (error) {
+      console.error("Failed to load depth session", error);
+    }
+  }
+
   const session = state.sessionId;
   const turn = state.turn;
   const result = state.answerResult;
+  const isDone = result?.status === 'done' || (!turn && session);
   shell(`${heading('04 / TECHNICAL CONVERSATION', 'Depth check<span class="heading-dot">.</span>', 'Questions follow the candidate’s own work. Scores stay attached to exact answer evidence.', session ? `<button class="button button-quiet" id="end-session">Finish session</button>` : '')}
     <div class="depth-layout"><section class="chat-panel panel"><div class="panel-topline"><span><i class="status-dot ${session ? 'online' : 'offline'}"></i> ${session ? `SESSION ${escapeHTML(session.slice(-8))}` : 'SESSION NOT STARTED'}</span><span>${turn ? `TURN ${turn.turn_number} / 6` : 'WAITING'}</span></div>
       <div class="chat-scroll" id="chat-scroll">${session ? `<div class="chat-message system-message"><span class="message-stamp">PROOFHIRE / INTERVIEWER</span><p class="typewriter">${escapeHTML(turn?.text ?? (result?.status === 'done' ? 'Depth check complete. Your answers are ready for recruiter review.' : 'Session complete.'))}</p>${turn?.code_snippet ? `<pre class="snippet"><span>${escapeHTML(turn.code_snippet.path)}:${turn.code_snippet.start_line}</span><code>${escapeHTML(turn.code_snippet.code)}</code></pre>` : ''}</div>${result ? `<div class="chat-message answer-message"><span class="message-stamp">CANDIDATE / TURN ${result.evaluation.turn_number}</span><p>${escapeHTML(result.evaluation.evidence_quote || 'No answer provided.')}</p><span class="answer-score">SCORE ${result.evaluation.score}/5 · ${escapeHTML(result.evaluation.flags.join(', ') || 'NO FLAGS')}</span></div><div class="chat-message system-message follow-up"><span class="message-stamp">PROOFHIRE / NEXT</span><p class="typewriter">${escapeHTML(result.next?.text ?? 'Depth check complete. The evidence is ready for recruiter review.')}</p></div>` : ''}` : '<div class="chat-empty"><div class="terminal-prompt">$ depth-check --start</div><h2>Ready to test understanding.</h2><p>Start with the submitted solution, then follow the evidence one answer at a time.</p><button class="button button-primary" id="start-session">Start depth check <span>↗</span></button></div>'}</div>
-      ${session && result?.status !== 'done' ? `<form id="answer-form" class="answer-form"><label for="candidate-answer">${turn?.expects === 'code' ? 'CODE RESPONSE' : 'YOUR RESPONSE'}</label>${turn?.expects === 'code' ? '<textarea id="candidate-answer" name="answer" class="code-input" rows="4" placeholder="Write or paste a small code change..."></textarea>' : '<textarea id="candidate-answer" name="answer" rows="3" placeholder="Explain your reasoning, referring to the submitted code..."></textarea>'}<div class="answer-controls"><span class="form-hint">ENTER TO SEND · SHIFT+ENTER FOR NEW LINE</span><button class="button button-primary" type="submit">Send answer <span>↗</span></button></div></form>` : session ? '<div class="session-complete"><i class="status-dot online"></i> SESSION COMPLETE · EVIDENCE SAVED</div>' : ''}</section>
+      ${session && !isDone ? `<form id="answer-form" class="answer-form"><label for="candidate-answer">${turn?.expects === 'code' ? 'CODE RESPONSE' : 'YOUR RESPONSE'}</label>${turn?.expects === 'code' ? '<textarea id="candidate-answer" name="answer" class="code-input" rows="4" placeholder="Write or paste a small code change..."></textarea>' : '<textarea id="candidate-answer" name="answer" rows="3" placeholder="Explain your reasoning, referring to the submitted code..."></textarea>'}<div class="answer-controls"><span class="form-hint">ENTER TO SEND · SHIFT+ENTER FOR NEW LINE</span><button class="button button-primary" type="submit">Send answer <span>↗</span></button></div></form><div class="voice-controls" style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border-color);"><button class="button button-outline" id="start-voice-call" type="button">🎙️ Start Voice-to-Voice Call (Alpha)</button><div id="voice-status" style="margin-top: 8px; font-size: 12px; font-family: monospace; color: var(--accent-color);"></div></div>` : session ? `<div class="session-complete"><i class="status-dot online"></i> <strong>SESSION COMPLETE</strong> · EVIDENCE SAVED<div style="margin-top: 14px; display: flex; gap: 10px; align-items: center;"><a href="#shortlist" class="button button-primary">Review in Shortlist →</a><button class="button button-quiet" id="restart-depth" type="button">Start new session ↻</button></div></div>` : ''}</section>
     <aside class="evidence-panel panel"><div class="panel-topline"><span>LIVE EVIDENCE</span><span class="evidence-lock">● VERIFIED QUOTE</span></div>${result ? `<div class="score-overview"><div><span class="metric-label">RUNNING SCORE</span><div class="score-number">${result.running.score_100}<small>/100</small></div></div><div class="confidence-block"><span class="metric-label">CONFIDENCE</span><strong>${Math.round(result.running.confidence * 100)}<small>%</small></strong></div></div><div class="ascii-bar" aria-label="Score ${result.running.score_100} out of 100">[${'█'.repeat(Math.round(result.running.score_100 / 10))}${'░'.repeat(10 - Math.round(result.running.score_100 / 10))}] ${result.running.score_100}</div><div class="evidence-quote"><div class="quote-head"><span>ANSWER ${String(result.evaluation.turn_number).padStart(2, '0')} / EVIDENCE</span><span>SCORE ${result.evaluation.score}/5</span></div><blockquote>“${escapeHTML(result.evaluation.evidence_quote || 'No evidence quote available.') }”</blockquote><p>${escapeHTML(result.evaluation.reasoning)}</p></div><div class="dimension-list">${Object.entries(result.running.dimensions).map(([name, score]) => `<div class="dimension-row"><span>${escapeHTML(name)}</span><div class="dimension-track"><i style="width:${Math.min(100, Number(score) * 20)}%"></i></div><b>${Number(score).toFixed(1)}</b></div>`).join('')}</div><div class="token-meter"><div class="token-head"><span>TOKEN SAVINGS</span><b>${Math.max(0, Math.round((1 - result.meta.context_tokens / result.meta.full_context_tokens) * 100))}% less context</b></div><div class="token-comparison"><div><span>GRAPH CONTEXT</span><b>${result.meta.context_tokens.toLocaleString()} <small>tokens</small></b></div><div><span>FULL PROJECT</span><b>${result.meta.full_context_tokens.toLocaleString()} <small>tokens</small></b></div></div><div class="token-track"><i style="width:${Math.max(4, result.meta.context_tokens / result.meta.full_context_tokens * 100)}%"></i></div></div>${result.evaluation.flags.length ? `<div class="flag-row">${result.evaluation.flags.map((flag) => `<span class="flag-tag">${escapeHTML(flag)}</span>`).join('')}</div>` : '<div class="clean-eval">NO RISK FLAGS</div>'}` : '<div class="evidence-empty"><div class="evidence-mark">[ ]</div><h3>Evidence will appear here.</h3><p>Each answer is evaluated on its own. Scores are calculated separately from the model response.</p><div class="empty-meter"><span></span></div></div>'}<div class="evidence-footer"><span>LLM IS NOT THE HIRING DECISION</span><span>HUMAN REVIEW REQUIRED</span></div></aside></div>`);
   if (session) document.querySelector('#chat-scroll').innerHTML = chatTranscript();
   document.querySelector('#start-session')?.addEventListener('click', () => beginDepth(state.submissionId));
+  document.querySelector('#restart-depth')?.addEventListener('click', async () => {
+    state.sessionId = null;
+    localStorage.removeItem('proofhire-session');
+    state.answerResult = null;
+    state.chatHistory = [];
+    state.turn = null;
+    if (state.submissionId) {
+      await beginDepth(state.submissionId);
+    } else {
+      await renderDepth();
+    }
+  });
   document.querySelector('#end-session')?.addEventListener('click', async () => { await API.finishDepth(state.sessionId); state.answerResult = { ...(state.answerResult ?? {}), status: 'done', next: null }; state.turn = null; renderDepth(); });
   document.querySelector('#answer-form')?.addEventListener('submit', sendAnswer);
+  document.querySelector('#start-voice-call')?.addEventListener('click', startVoiceCall);
   const confidenceLabel = document.querySelector('.confidence-block .metric-label');
   if (confidenceLabel && result) confidenceLabel.textContent = `${result.running.confidence >= 0.8 ? 'High' : result.running.confidence >= 0.55 ? 'Moderate' : 'Low'} confidence`;
   typewriterVisible();
+}
+
+let voiceSocket = null;
+let audioContext = null;
+let audioProcessor = null;
+let mediaStream = null;
+
+async function startVoiceCall() {
+  const btn = document.querySelector('#start-voice-call');
+  const status = document.querySelector('#voice-status');
+  if (voiceSocket) {
+    voiceSocket.close();
+    if (audioContext) audioContext.close();
+    if (mediaStream) mediaStream.getTracks().forEach(t => t.stop());
+    voiceSocket = null;
+    audioContext = null;
+    mediaStream = null;
+    btn.innerHTML = '🎙️ Start Voice-to-Voice Call (Alpha)';
+    status.textContent = 'Call ended.';
+    return;
+  }
+  
+  try {
+    // Create AudioContext immediately inside the user click handler to satisfy browser autoplay policies
+    audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
+    if (audioContext.state === 'suspended') {
+      await audioContext.resume();
+    }
+
+    btn.innerHTML = '🎙️ Connecting...';
+    status.textContent = 'Requesting microphone access...';
+    
+    // Request raw mic access
+    mediaStream = await navigator.mediaDevices.getUserMedia({ audio: { channelCount: 1, sampleRate: 16000 } });
+    
+    status.textContent = 'Connecting to WebSocket...';
+    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    voiceSocket = new WebSocket(`${wsProtocol}//127.0.0.1:8000/api/interview/stream?session_id=${state.sessionId}`);
+    
+    voiceSocket.onopen = async () => {
+      btn.innerHTML = '⏹️ End Voice Call';
+      status.textContent = 'Connected. Listening...';
+      
+      const source = audioContext.createMediaStreamSource(mediaStream);
+      audioProcessor = audioContext.createScriptProcessor(4096, 1, 1);
+      
+      source.connect(audioProcessor);
+      audioProcessor.connect(audioContext.destination);
+      
+      audioProcessor.onaudioprocess = (e) => {
+        if (!voiceSocket || voiceSocket.readyState !== WebSocket.OPEN) return;
+        
+        const float32Data = e.inputBuffer.getChannelData(0);
+        // Convert Float32 to Int16 PCM
+        const int16Data = new Int16Array(float32Data.length);
+        for (let i = 0; i < float32Data.length; i++) {
+          let s = Math.max(-1, Math.min(1, float32Data[i]));
+          int16Data[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+        }
+        
+        // Send raw PCM bytes to backend
+        voiceSocket.send(int16Data.buffer);
+      };
+    };
+    
+    // We need a small queue to play chunks smoothly
+    let nextPlayTime = audioContext.currentTime;
+    
+    voiceSocket.onmessage = (event) => {
+      try {
+        const response = JSON.parse(event.data);
+        if (response.serverContent && response.serverContent.modelTurn) {
+          const parts = response.serverContent.modelTurn.parts;
+          parts.forEach(part => {
+            if (part.inlineData && part.inlineData.data) {
+              const base64 = part.inlineData.data;
+              const binaryString = window.atob(base64);
+              const len = binaryString.length;
+              const bytes = new Uint8Array(len);
+              for (let i = 0; i < len; i++) {
+                bytes[i] = binaryString.charCodeAt(i);
+              }
+              
+              audioContext.decodeAudioData(bytes.buffer).then(audioBuffer => {
+                const source = audioContext.createBufferSource();
+                source.buffer = audioBuffer;
+                source.connect(audioContext.destination);
+                
+                const startTime = Math.max(audioContext.currentTime, nextPlayTime);
+                source.start(startTime);
+                nextPlayTime = startTime + audioBuffer.duration;
+              }).catch(e => {
+                console.error("Audio decode error:", e);
+              });
+            }
+          });
+        }
+      } catch (e) {
+        console.error("Error parsing voice message:", e);
+      }
+    };
+    
+    voiceSocket.onclose = () => {
+      if (audioContext) audioContext.close();
+      if (mediaStream) mediaStream.getTracks().forEach(t => t.stop());
+      voiceSocket = null;
+      btn.innerHTML = '🎙️ Start Voice-to-Voice Call (Alpha)';
+      status.textContent = 'Connection closed.';
+    };
+    
+  } catch (err) {
+    status.textContent = 'Error: ' + err.message;
+    btn.innerHTML = '🎙️ Start Voice-to-Voice Call (Alpha)';
+  }
 }
 
 // Renders every question and answer in the order it happened.
@@ -264,7 +507,12 @@ function chatTranscript() {
 // Starts a new session and displays its first question.
 async function beginDepth(submissionId) {
   if (!submissionId) { showError("No submission found. Please complete the task first."); return; }
+  showGlobalLoader('Initializing Depth Check...');
   try {
+    state.sessionId = null;
+    state.chatHistory = [];
+    state.answerResult = null;
+    state.turn = null;
     const started = await API.startDepth(submissionId);
     state.sessionId = started.session_id;
     localStorage.setItem('proofhire-session', state.sessionId);
@@ -273,6 +521,7 @@ async function beginDepth(submissionId) {
     state.chatHistory = [{ kind: 'question', turn: started.turn }];
     renderDepth();
   } catch (error) { showError(error); }
+  finally { hideGlobalLoader(); }
 }
 
 // Evaluates the current answer and updates the live evidence panel.
@@ -284,6 +533,7 @@ async function sendAnswer(event) {
   const button = event.currentTarget.querySelector('[type="submit"]');
   button.disabled = true;
   button.textContent = 'Evaluating...';
+  showGlobalLoader('Evaluating Answer & Verifying Evidence...');
   try {
     state.answerResult = await API.submitDepthAnswer(state.sessionId, answer, state.turn?.expects === 'code' ? answer : null);
     state.chatHistory.push({ kind: 'answer', answer, evaluation: state.answerResult.evaluation });
@@ -292,12 +542,13 @@ async function sendAnswer(event) {
     if (state.answerResult.status === 'done') await API.finishDepth(state.sessionId);
     renderDepth();
   } catch (error) { showError(error); }
+  finally { hideGlobalLoader(); }
 }
 
 // Loads and draws candidates with expandable evidence on the shortlist.
 async function renderShortlist() {
   const [job, list] = await Promise.all([API.getJob(state.selectedJobId), API.getShortlist(state.selectedJobId)]);
-  const cards = list.candidates.map((candidate) => `<article class="candidate-row"><div class="rank-cell"><span>RANK</span><strong>#${candidate.rank}</strong></div><div class="candidate-overview"><div class="candidate-name-row"><h2>${escapeHTML(candidate.name)}</h2><span class="recommendation rec-${escapeHTML(candidate.recommendation)}">${escapeHTML(candidate.recommendation.replaceAll('_', ' '))}</span></div><div class="score-track"><i style="width:${candidate.overall_score}%"></i></div><div class="candidate-meta"><span>${candidate.overall_score}<small> / 100</small></span><span>${Math.round(candidate.confidence * 100)}% confidence</span><span>${escapeHTML(candidate.candidate_id)}</span></div><p class="candidate-summary">${escapeHTML(candidate.summary)}</p><div class="strength-concerns"><div><span class="list-label">STRENGTH SIGNAL</span><p>${escapeHTML(candidate.strengths[0] ?? 'No strengths recorded')}</p></div><div><span class="list-label">OPEN QUESTION</span><p>${escapeHTML(candidate.concerns[0] ?? 'No concerns recorded')}</p></div></div><details class="evidence-details"><summary><span>Evidence quotes</span><span>${candidate.evidence.length} VERIFIED <b>＋</b></span></summary><div class="evidence-list">${candidate.evidence.map((item) => `<blockquote><p>“${escapeHTML(item.quote)}”</p><footer><span>${escapeHTML(item.claim)}</span><span>TURN ${String(item.turn_number).padStart(2, '0')} · ${item.score}/5</span></footer></blockquote>`).join('')}</div></details></div><div class="candidate-profile"><span class="metric-label">SKILL PROFILE</span>${Object.entries(candidate.skill_profile).map(([skill, value]) => `<div class="profile-row"><span>${escapeHTML(skill)}</span><b>${Number(value).toFixed(1)}</b></div>`).join('')}</div></article>`);
+  const cards = list.candidates.map((candidate) => `<article class="candidate-row"><div class="rank-cell"><span>RANK</span><strong>#${candidate.rank}</strong></div><div class="candidate-overview"><div class="candidate-name-row"><h2>${escapeHTML(candidate.name)}</h2><span class="recommendation rec-${escapeHTML(candidate.recommendation)}">${escapeHTML(candidate.recommendation.replaceAll('_', ' '))}</span></div><div class="score-track"><i style="width:${candidate.overall_score}%"></i></div><div class="candidate-meta"><span>${candidate.overall_score}<small> / 100</small></span><span>${Math.round(candidate.confidence * 100)}% confidence</span><span>${escapeHTML(candidate.candidate_id)}</span></div><p class="candidate-summary">${escapeHTML(candidate.summary)}</p><div class="strength-concerns"><div><span class="list-label">STRENGTH SIGNAL</span><p>${escapeHTML(candidate.strengths[0] ?? 'No strengths recorded')}</p></div><div><span class="list-label">OPEN QUESTION</span><p>${escapeHTML(candidate.concerns[0] ?? 'No concerns recorded')}</p></div></div><details class="evidence-details"><summary><span>Evidence quotes</span><span>${candidate.evidence.length} VERIFIED <b>＋</b></span></summary><div class="evidence-list">${candidate.evidence.map((item) => `<blockquote><p>“${escapeHTML(item.quote)}”</p>${item.source_file_path ? `<div style="font-size: 11px; margin-top: 8px; color: #10b981; font-family: monospace;">↳ Verified in: ${escapeHTML(item.source_file_path)}${item.source_lines ? ` (lines ${escapeHTML(item.source_lines)})` : ''}</div>` : ''}<footer><span>${escapeHTML(item.claim)}</span><span>TURN ${String(item.turn_number).padStart(2, '0')} · ${item.score}/5</span></footer></blockquote>`).join('')}</div></details></div><div class="candidate-profile"><span class="metric-label">SKILL PROFILE</span>${Object.entries(candidate.skill_profile).map(([skill, value]) => `<div class="profile-row"><span>${escapeHTML(skill)}</span><b>${Number(value).toFixed(1)}</b></div>`).join('')}</div></article>`);
   shell(`${heading('05 / EVIDENCE REVIEW', 'Shortlist<span class="heading-dot">.</span>', `${escapeHTML(job.title)} / ${escapeHTML(job.company)} · Ranked by evidence, not resume polish.`, '<span class="review-stamp"><i class="status-dot online"></i> HUMAN REVIEW</span>')}
     <div class="section-rail"><span>RANKED CANDIDATES</span><span>UPDATED ${new Date(list.generated_at).toLocaleDateString('en-US', { month: 'short', day: '2-digit' }).toUpperCase()}</span></div>
     <section class="shortlist-list">${cards.length ? cards.join('') : '<div class="empty-state">No completed depth checks yet. Finish a session to include a candidate here.</div>'}</section>
@@ -325,7 +576,7 @@ async function renderGraph() {
     ...graph.edges.map((edge, index) => ({ data: { id: `edge-${index}`, source: edge.source, target: edge.target, label: edge.type } }))
   ];
   cytoscape({ container: document.querySelector('#graph-canvas'), elements, layout: { name: 'cose', animate: true, animationDuration: 600, padding: 64, nodeRepulsion: 15000, idealEdgeLength: 175 }, style: [
-    { selector: 'node', style: { 'background-color': 'data(color)', label: 'data(label)', color: darkTheme ? '#e6eaf2' : '#0f172a', 'font-family': 'Manrope, Inter, sans-serif', 'font-size': 14, 'font-weight': 600, 'text-wrap': 'wrap', 'text-max-width': 145, width: 'mapData(weight, 0.4, 1, 112, 160)', height: 'mapData(weight, 0.4, 1, 62, 82)', shape: 'round-rectangle', padding: 12, 'border-width': 3, 'border-color': darkTheme ? '#111a2e' : '#ffffff', 'text-valign': 'center', 'text-halign': 'center', 'text-outline-width': 0 } },
+    { selector: 'node', style: { 'background-color': 'data(color)', label: 'data(label)', color: '#090e0b', 'font-family': 'Manrope, Inter, sans-serif', 'font-size': 14, 'font-weight': 700, 'text-wrap': 'wrap', 'text-max-width': 180, width: 'label', height: 'label', shape: 'round-rectangle', padding: '14px', 'border-width': 3, 'border-color': darkTheme ? '#111a2e' : '#ffffff', 'text-valign': 'center', 'text-halign': 'center', 'text-outline-width': 0 } },
     { selector: 'edge', style: { label: 'data(label)', color: darkTheme ? '#cbd5e1' : '#334155', 'font-family': 'Inter, sans-serif', 'font-size': 12, 'font-weight': 500, 'text-background-color': darkTheme ? '#111a2e' : '#ffffff', 'text-background-opacity': 0.96, 'text-background-padding': 4, 'text-border-width': 1, 'text-border-color': darkTheme ? '#243049' : '#e2e8f0', 'text-border-opacity': 1, width: 2.5, 'line-color': darkTheme ? '#64748b' : '#94a3b8', 'target-arrow-color': darkTheme ? '#94a3b8' : '#64748b', 'target-arrow-shape': 'triangle', 'arrow-scale': 1.4, 'curve-style': 'bezier', opacity: 0.95 } },
     { selector: 'node:selected', style: { 'border-color': darkTheme ? '#818cf8' : '#4338ca', 'border-width': 4, 'overlay-opacity': 0.1, 'overlay-color': darkTheme ? '#818cf8' : '#4338ca' } }
   ] });

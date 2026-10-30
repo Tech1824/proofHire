@@ -4,7 +4,7 @@ from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from backend.routes import health, jobs, candidates, tasks, submissions, depth, shortlist
+from backend.routes import health, auth, jobs, candidates, tasks, submissions, depth, shortlist, voice
 
 app = FastAPI(title="ProofHire API")
 
@@ -21,7 +21,9 @@ async def startup_event():
     if os.getenv("USE_FAKES", "false").lower() != "true":
         try:
             from db import seed
-            seed.reset_and_seed()
+            from db.crud import get_job
+            if not get_job("job_1"):
+                seed.reset_and_seed()
         except ImportError:
             pass
 
@@ -48,9 +50,11 @@ async def global_exception_handler(request: Request, exc: Exception):
     )
 
 app.include_router(health.router)
+app.include_router(auth.router)
 app.include_router(jobs.router)
 app.include_router(candidates.router)
 app.include_router(tasks.router)
 app.include_router(submissions.router)
 app.include_router(depth.router)
 app.include_router(shortlist.router)
+app.include_router(voice.router)

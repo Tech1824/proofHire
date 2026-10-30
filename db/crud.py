@@ -87,6 +87,30 @@ def get_candidate(candidate_id: str) -> dict | None:
             cand_dict["projects"].append(p_dict)
         return cand_dict
 
+def update_candidate(candidate_id: str, update_data: dict) -> None:
+    with Session(engine) as session:
+        candidate = session.get(Candidate, candidate_id)
+        if candidate:
+            projects_data = update_data.pop("projects", [])
+            
+            for k, v in update_data.items():
+                if hasattr(candidate, k):
+                    setattr(candidate, k, v)
+            session.add(candidate)
+            session.flush()
+            
+            # If projects are provided, insert them
+            for p_data in projects_data:
+                files_data = p_data.pop("files", [])
+                project = Project(**p_data, candidate_id=candidate.candidate_id)
+                session.add(project)
+                session.flush()
+                for f_data in files_data:
+                    file_obj = CodeFile(**f_data, project_id=project.project_id)
+                    session.add(file_obj)
+            
+            session.commit()
+
 def save_graph(candidate_id: str, graph_json: dict, graph_summary: dict, status: str = "ready") -> None:
     with Session(engine) as session:
         candidate = session.get(Candidate, candidate_id)

@@ -136,7 +136,7 @@ h1 { margin-bottom: 8px; color: var(--text); font-size: 28px; line-height: 1.25;
 .terminal-form input:focus, .terminal-form textarea:focus, .answer-form textarea:focus, .notes-input:focus { border-color: var(--green-muted); }
 .form-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 .field-divider { margin: 7px 0 18px; padding-top: 13px; display: flex; justify-content: space-between; border-top: 1px solid var(--line); color: var(--green-muted); font-size: 8px; }
-.code-input { color: #b7d9bc !important; tab-size: 4; }
+.code-input { tab-size: 4; }
 .form-actions, .submit-row { margin-top: 18px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
 .form-hint { color: var(--muted); font-size: 8px; }
 .form-hint .status-dot { margin-right: 6px; vertical-align: middle; }
@@ -160,20 +160,23 @@ h1 { margin-bottom: 8px; color: var(--text); font-size: 28px; line-height: 1.25;
 .live-tag { display: inline-flex; align-items: center; gap: 7px; color: var(--green-muted); }
 .job-select-line { padding: 14px 0; display: flex; align-items: center; gap: 13px; border-bottom: 1px solid rgba(31, 61, 39, .65); }
 .job-select-line label { color: var(--faint); font-size: 8px; }
-.job-select-line select { max-width: 100%; border: 0; outline: 0; background: transparent; color: var(--green-soft); font-size: 9px; }
-.job-select-line option { background: var(--panel); }
+.job-select-line select { max-width: 100%; border: 1px solid var(--line); outline: 0; border-radius: 4px; background: var(--raised, #1a2a1e); color: var(--text, #d5e7d7); font-size: 9px; padding: 3px 6px; cursor: pointer; }
+.job-select-line option { background: var(--raised, #1a2a1e); color: var(--text, #d5e7d7); }
 .task-heading { padding: 21px 0 16px; }
 .task-heading .eyebrow { margin-bottom: 7px; }
 .task-heading h2 { margin-bottom: 9px; font-size: 17px; font-weight: 500; }
-.task-heading p { margin-bottom: 0; color: var(--muted); font-size: 9px; line-height: 1.8; }
+.task-heading p { margin-bottom: 0; color: #d5e7d7; font-size: 10px; line-height: 1.8; font-weight: 400; }
 .requirements-title { padding: 13px 0 8px; border-top: 1px solid var(--line); color: var(--green-muted); font-size: 8px; }
 .requirement-list { margin: 0; padding: 0; list-style: none; }
-.requirement-list li { padding: 9px 0; display: flex; gap: 12px; border-bottom: 1px solid rgba(31, 61, 39, .5); color: #b3c9b5; font-size: 9px; line-height: 1.6; }
+.requirement-list li { padding: 9px 0; display: flex; gap: 12px; border-bottom: 1px solid rgba(31, 61, 39, .5); color: #d5e7d7; font-size: 10px; line-height: 1.6; font-weight: 400; }
 .requirement-list li span { color: var(--amber); font-size: 8px; }
 .rubric-strip { margin-top: 14px; padding: 10px 0 0; display: flex; gap: 15px; border-top: 1px solid var(--line); color: var(--faint); font-size: 8px; }
 .rubric-strip b { color: var(--green-muted); font-weight: 400; }
 .code-label, .notes-label { display: block; margin: 18px 0 8px; color: var(--green-soft); font-size: 8px; }
-.submission-code { min-height: 270px; font-size: 9px; }
+textarea { width: 100%; padding: 14px; border: 1px solid var(--line); border-radius: 6px; background: rgba(0, 0, 0, 0.25); color: var(--text); font-size: 10px; line-height: 1.6; resize: vertical; }
+textarea:focus { border-color: var(--focus); outline: none; }
+.code-input { font-family: 'JetBrains Mono', monospace; color: var(--text, #b6d7bd); background: var(--raised, #090e0b); }
+.submission-code { min-height: 270px; font-size: 9px; background: var(--raised) !important; color: var(--text) !important; }
 .notes-label { margin-top: 14px; }
 .notes-input { min-height: 75px; }
 .submit-row { margin-top: 14px; }
@@ -484,7 +487,7 @@ h2, h3 { color: #0f172a; }
 .terminal-form input:focus, .terminal-form textarea:focus, .answer-form textarea:focus, .notes-input:focus { border-color: #4338ca; outline: 2px solid rgba(67, 56, 202, .14); }
 .field-divider { border-color: var(--line); color: #475569; font-size: 10px; font-weight: 600; }
 .code-input, .submission-code, .snippet { font-family: 'JetBrains Mono', monospace !important; }
-.code-input { color: #0f172a !important; }
+/* .code-input color handled by theme vars */
 .side-note { border-left-color: var(--line); }
 .side-note-index, .mini-stat { color: #64748b; }
 .note-glyph { color: #0f766e; }
@@ -500,8 +503,8 @@ h2, h3 { color: #0f172a; }
 .live-tag { color: #0f766e; }
 .job-select-line, .requirements-title, .requirement-list li, .rubric-strip { border-color: var(--line); }
 .job-select-line label, .requirements-title, .rubric-strip { color: #64748b; font-size: 10px; font-weight: 600; }
-.job-select-line select { color: #0f172a; font-size: 13px; }
-.job-select-line option { background: #fff; }
+.job-select-line select { font-size: 13px; }
+.job-select-line option { background: var(--card); color: var(--text); }
 .task-heading h2 { font-size: 18px; font-weight: 600; }
 .task-heading p { color: #475569; font-size: 13px; line-height: 1.7; }
 .requirement-list li { color: #334155; font-size: 13px; }
@@ -930,4 +933,45 @@ h2, .job-main h2, .task-heading h2 { font-size: 22px; font-weight: 600; }
     --line-bright: var(--verified); --green: var(--verified); --green-soft: var(--verified);
     --green-muted: var(--verified); --amber: var(--concern); --red: var(--risk); --cyan: var(--verified);
   }
+}
+
+@keyframes progress-indeterminate {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(200%); }
+}
+
+.global-loader-overlay {
+  position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+  background: rgba(11, 16, 33, 0.85); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+  z-index: 99999; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
+}
+.global-loader-overlay.active {
+  opacity: 1; pointer-events: auto;
+}
+.loader-spinner {
+  width: 40px; height: 40px; border: 3px solid rgba(139, 163, 255, 0.2);
+  border-top-color: #8ba3ff; border-radius: 50%;
+  animation: loader-spin 1s linear infinite; margin-bottom: 20px;
+}
+.loader-message {
+  color: #d5e7d7; font-family: 'Space Grotesk', sans-serif; font-size: 16px; font-weight: 500;
+  letter-spacing: 1px; text-transform: uppercase;
+}
+@keyframes loader-spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+/* Ensure full visibility for Task section role selector and code submission across all themes */
+.job-select-line select {
+  background: var(--raised) !important;
+  color: var(--text) !important;
+  border: 1px solid var(--border) !important;
+}
+.job-select-line option {
+  background: var(--card) !important;
+  color: var(--text) !important;
+}
+.submission-code, textarea.code-input, .code-input {
+  background: var(--raised) !important;
+  color: var(--text) !important;
+  caret-color: var(--text) !important;
 }

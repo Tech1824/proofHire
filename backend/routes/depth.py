@@ -29,7 +29,24 @@ def answer_depth(req: AnswerDepthRequest):
         if not sess:
             raise HTTPException(status_code=404, detail="Session not found")
         if sess.get("status") == "done":
-            raise HTTPException(status_code=400, detail="Session is already done")
+            return {
+                "evaluation": {
+                    "turn_number": 6,
+                    "score": 0,
+                    "confidence": 1.0,
+                    "dimensions": {},
+                    "evidence_quote": "Session already completed.",
+                    "reasoning": "This depth check has reached its conclusion.",
+                    "flags": ["already_done"]
+                },
+                "running": {
+                    "score_100": 0,
+                    "confidence": 1.0,
+                    "dimensions": {}
+                },
+                "status": "done",
+                "next": None
+            }
         return {"evaluation": {}, "status": "in_progress"}
     else:
         from db import crud
@@ -37,7 +54,24 @@ def answer_depth(req: AnswerDepthRequest):
         if not sess:
             raise HTTPException(status_code=404, detail="Session not found")
         if sess.get("status") == "done":
-            raise HTTPException(status_code=400, detail="Session is already done")
+            return {
+                "evaluation": {
+                    "turn_number": len(sess.get("turns", [])),
+                    "score": 0,
+                    "confidence": 1.0,
+                    "dimensions": {},
+                    "evidence_quote": "Session already completed.",
+                    "reasoning": "This depth check has reached its conclusion.",
+                    "flags": ["already_done"]
+                },
+                "running": {
+                    "score_100": 0,
+                    "confidence": 1.0,
+                    "dimensions": {}
+                },
+                "status": "done",
+                "next": None
+            }
             
         from ai import api as ai_api
         res = ai_api.submit_answer(req.session_id, req.answer_text, req.answer_code)
@@ -73,3 +107,10 @@ def finish_depth(session_id: str):
             
         from ai import api as ai_api
         return ai_api.finish_depth(session_id)
+
+class FinishDepthRequest(BaseModel):
+    session_id: str
+
+@router.post("/finish")
+def finish_depth_body(req: FinishDepthRequest):
+    return finish_depth(req.session_id)

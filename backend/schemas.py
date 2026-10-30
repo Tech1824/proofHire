@@ -45,8 +45,9 @@ class CandidateCreate(BaseModel):
     name: str
     email: str
     github_url: Optional[str] = None
-    linkedin_text: str
-    projects: List[ProjectCreate]
+    github_token: Optional[str] = None
+    linkedin_text: str = ""
+    projects: List[ProjectCreate] = []
 
 class GraphSummary(BaseModel):
     nodes: int
@@ -56,7 +57,7 @@ class GraphSummary(BaseModel):
 class CandidateCreateResponse(BaseModel):
     candidate_id: str
     graph_status: str
-    graph_summary: GraphSummary
+    graph_summary: Optional[GraphSummary] = None
 
 class CandidateResponse(CandidateCreate):
     candidate_id: str

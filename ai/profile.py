@@ -1,11 +1,26 @@
 import json
-from pydantic import BaseModel
+from pydantic import BaseModel, model_validator
+from typing import Any
 from ai.llm import complete_json
 
 class SummarySchema(BaseModel):
     summary: str
 
-SUMMARY_SYSTEM_PROMPT = """You are a senior hiring manager writing a plain-English summary (3-4 sentences). Use ONLY the evidence provided below. Quote nothing that is not listed. Be objective and concise."""
+    @model_validator(mode='before')
+    @classmethod
+    def sanitize_summary(cls, data: Any) -> Any:
+        if isinstance(data, str):
+            return {"summary": data}
+        if isinstance(data, list):
+            return {"summary": " ".join(str(x) for x in data)}
+        return data
+
+SUMMARY_SYSTEM_PROMPT = """You are a senior hiring manager writing an objective, plain-English summary (3-4 sentences).
+STRICT EVIDENCE CONSTRAINTS:
+1. Synthesize ONLY the verified evidence quotes and concrete skill profile scores provided below.
+2. Quote NOTHING that is not explicitly in the Evidence list.
+3. NEVER assume or invent past employers, university degrees, years of experience, or external technologies not mentioned.
+4. If reasoning or communication was rated low, note it plainly as an open question."""
 
 def compute_profile(session: dict) -> dict:
     turns = session.get("turns", [])
@@ -24,12 +39,20 @@ def compute_profile(session: dict) -> dict:
     evidence_list = []
 
     for t in turns:
-        eval_dict = t.get("evaluation") or {}
+        eval_dict = t.get("evaluation")
+        if not eval_dict:
+            continue
+            
         confidences.append(eval_dict.get("confidence", 0.0))
         
         flags = eval_dict.get("flags", [])
+        turn_score = eval_dict.get("score", 0)
+        
         if "contradicts_claim" in flags:
             ownership_score = max(0.0, ownership_score - 2.0)
+        elif turn_score <= 1:
+            # If they can't answer basic questions about their own code, they lose ownership credit
+            ownership_score = max(0.0, ownership_score - 1.0)
             
         for d, s in eval_dict.get("dimensions", {}).items():
             if d in dim_scores:
@@ -40,7 +63,9 @@ def compute_profile(session: dict) -> dict:
                 "claim": f"Performance on turn {t.get('turn_number', '?')}",
                 "quote": eval_dict.get("evidence_quote"),
                 "turn_number": t.get("turn_number"),
-                "score": eval_dict.get("score", 0)
+                "score": eval_dict.get("score", 0),
+                "source_file_path": eval_dict.get("source_file_path"),
+                "source_lines": eval_dict.get("source_lines")
             })
 
     # Averages
@@ -62,16 +87,21 @@ def compute_profile(session: dict) -> dict:
     active_weights = {k: v for k, v in raw_weights.items() if k in skill_profile}
     total_weight = sum(active_weights.values())
     
-    if total_weight > 0:
+    turn_scores = [t.get("evaluation", {}).get("score", 0) for t in turns if t.get("evaluation")]
+    base_avg = sum(turn_scores) / len(turn_scores) if turn_scores else 0.0
+    
+    if total_weight > 0 and len(skill_profile) > 1: # more than just ownership
         normalized_weights = {k: v / total_weight for k, v in active_weights.items()}
         weighted_mean = sum(skill_profile[k] * normalized_weights[k] for k in active_weights)
+        final_mean = (weighted_mean + base_avg) / 2
     else:
-        weighted_mean = 0.0
+        final_mean = base_avg
 
-    overall_score = round(100 * weighted_mean / 5)
+    overall_score = round(100 * final_mean / 5)
     
-    avg_conf = sum(confidences) / len(confidences) if confidences else 0.0
-    confidence = avg_conf * min(1.0, num_turns / 5.0)
+    answered_turns = len(confidences)
+    avg_conf = sum(confidences) / answered_turns if answered_turns > 0 else 0.0
+    confidence = avg_conf * min(1.0, answered_turns / 5.0)
     
     if confidence < 0.5:
         recommendation = "needs_more_evidence"

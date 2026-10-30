@@ -56,16 +56,32 @@ def get_graph_view(candidate_id: str) -> dict:
     if not data:
         return {"nodes": [], "edges": []}
     
-    # Rename links to edges only here
-    edges = data.pop("links", [])
-    data["edges"] = edges
+    # NetworkX >= 3.0 uses 'edges', older versions use 'links'
+    if "links" in data:
+        data["edges"] = data.pop("links")
+    elif "edges" not in data:
+        data["edges"] = []
+        
     return data
 
 def generate_task(job: dict) -> dict:
+    import ast
     # A single "smart" call to generate a task
     system = f"You are generating a software engineering task for a hackathon. Return a valid JSON object matching exactly this schema: {TaskSchema.schema_json()}"
     user = f"Job title: {job.get('title')}\nRequired skills: {', '.join(job.get('required_skills', []))}\nDescription: {job.get('description')}"
-    res = complete_json("smart", system, user, TaskSchema)
+    # Force a unique cache key so it always generates a fresh task instead of returning the cached one
+    res = complete_json("smart", system, user, TaskSchema, cache_key_extra=str(time.time()))
+    
+    # Ground truth validation: ensure Python starter code contains valid syntax
+    if res.get("language", "").lower() == "python" and res.get("starter_code"):
+        try:
+            ast.parse(res["starter_code"])
+        except SyntaxError as e:
+            print(f"Warning: LLM generated invalid Python syntax for starter code: {e}")
+            res["starter_code"] = (
+                f"# Starter template for {job.get('title', 'Engineering')} task\n\n"
+                f"def solve():\n    \"\"\"Implement your solution here.\"\"\"\n    pass\n"
+            )
     return res
 
 def add_submission_to_graph(submission_id: str) -> dict:
@@ -83,6 +99,19 @@ def add_submission_to_graph(submission_id: str) -> dict:
         build_graph(cand_id)
         
     return {"graph_updated": True, "stats": {"files": len(sub.get("files", [])), "functions": 4}}
+
+def _extract_grounded_snippet(context: dict, node_ref: str) -> dict | None:
+    for n in context.get("nodes", []):
+        if n.get("id") == node_ref or n.get("type") in ["function", "class"]:
+            code_text = n.get("code")
+            if code_text and len(code_text.strip()) > 5:
+                clean_path = n.get("id", "").split("::")[0].replace("func:", "").replace("class:", "").replace("file:", "")
+                return {
+                    "path": clean_path or "solution.py",
+                    "start_line": 1,
+                    "code": code_text[:600]
+                }
+    return None
 
 def start_depth(submission_id: str) -> dict:
     max_turns = 6
@@ -113,15 +142,20 @@ def start_depth(submission_id: str) -> dict:
     context = subgraph_for_node(g, node_ref)
     
     question = generate_question(job, next_action["level"], next_action["type"], context, "Start of interview.")
+    code_snippet = _extract_grounded_snippet(context, node_ref)
     
     turn = {
         "turn_number": 1,
         "type": next_action["type"],
         "level": next_action["level"],
         "node_ref": node_ref,
-        "question_text": question["text"],
-        "expects": question["expects"]
+        "question_text": question.get("text", question.get("question_text", "Fallback")),
+        "text": question.get("text", question.get("question_text", "Fallback")),
+        "expects": question.get("expects", "text"),
+        "code_snippet": code_snippet
     }
+    print(f"DEBUG: question = {question}")
+
     
     state["asked_nodes"].append(node_ref)
     crud.update_session_state(session["session_id"], state)
@@ -169,6 +203,7 @@ def submit_answer(session_id: str, answer_text: str, answer_code: str | None) ->
     context = subgraph_for_node(g, current_turn.get("node_ref"))
     
     evaluation = judge_answer(current_turn, answer_text, answer_code, context)
+    evaluation["turn_number"] = turn_number
     
     # Update state
     state["scores"] = state.get("scores", []) + [evaluation["score"]]
@@ -195,7 +230,16 @@ def submit_answer(session_id: str, answer_text: str, answer_code: str | None) ->
     crud.update_turn_with_answer(session_id, turn_number, answer_text, answer_code, evaluation, meta)
     
     if should_stop(state):
-        return finish_depth(session_id)
+        res = finish_depth(session_id)
+        scores = state.get("scores", [0])
+        res["evaluation"] = evaluation
+        res["running"] = {
+            "score_100": int(sum(scores) / max(len(scores), 1) * 20),
+            "confidence": state.get("confidences", [0.8])[-1],
+            "dimensions": evaluation.get("dimensions", {})
+        }
+        res["meta"] = meta
+        return res
         
     # Generate next turn
     state["turn_number"] += 1
@@ -204,21 +248,26 @@ def submit_answer(session_id: str, answer_text: str, answer_code: str | None) ->
     next_context = subgraph_for_node(g, node_ref)
     
     question = generate_question(job, next_action["level"], next_action["type"], next_context, f"Last score: {evaluation['score']}")
+    code_snippet = _extract_grounded_snippet(next_context, node_ref)
     
     next_turn = {
         "turn_number": state["turn_number"],
         "type": next_action["type"],
         "level": next_action["level"],
         "node_ref": node_ref,
-        "question_text": question["text"],
-        "expects": question["expects"]
+        "question_text": question.get("text", question.get("question_text", "Fallback")),
+        "text": question.get("text", question.get("question_text", "Fallback")),
+        "expects": question.get("expects", "text"),
+        "code_snippet": code_snippet
     }
+    print(f"DEBUG: next_turn question = {question}")
     
     state.setdefault("asked_nodes", []).append(node_ref)
     crud.update_session_state(session_id, state)
     crud.add_turn(session_id, next_turn)
     
-    running_profile = compute_profile(session) # computes off saved turns
+    updated_session = crud.get_session(session_id)
+    running_profile = compute_profile(updated_session) # computes off saved turns
     
     return {
         "evaluation": evaluation,

@@ -34,7 +34,11 @@ async function request(path, options = {}) {
     headers: { 'Content-Type': 'application/json', ...options.headers }
   });
   const body = await response.json();
-  if (!response.ok) throw new Error(body?.error?.message ?? `Request failed (${response.status})`);
+  if (!response.ok) {
+    const detail = body?.detail ?? body?.error?.message ?? body?.message ?? `Request failed (${response.status})`;
+    const msg = Array.isArray(detail) ? detail.map(e => e?.msg ?? JSON.stringify(e)).join('; ') : String(detail);
+    throw new Error(msg);
+  }
   return body;
 }
 
@@ -88,9 +92,11 @@ export function getCandidate(candidateId) {
 // Retrieves a candidate's knowledge graph.
 export function getCandidateGraph(candidateId) {
   if (!usesMocks()) return request(`/candidates/${candidateId}/graph`);
+  const cand = candidates.find(c => c.candidate_id === candidateId);
+  const candName = cand ? cand.name : 'Asha Rao';
   return mock({
     nodes: [
-      { id: candidateId, type: 'candidate', label: 'Asha Rao', weight: 1 },
+      { id: candidateId, type: 'candidate', label: candName, weight: 1 },
       { id: 'project:limiter', type: 'project', label: 'Rate limiter', weight: 0.9 },
       { id: 'file:limiter.py', type: 'file', label: 'limiter.py', weight: 0.8 },
       { id: 'func:allow_request', type: 'function', label: 'allow_request', weight: 0.95 },
@@ -140,7 +146,7 @@ export function startDepth(submissionId) {
 
 // Evaluates one answer and returns the running score, evidence, and next turn.
 export function submitDepthAnswer(sessionId, answer, code = null) {
-  if (!usesMocks()) return request('/depth/answer', { method: 'POST', body: JSON.stringify({ session_id: sessionId, answer, code }) });
+  if (!usesMocks()) return request('/depth/answer', { method: 'POST', body: JSON.stringify({ session_id: sessionId, answer_text: answer, answer_code: code }) });
   const session = sessionState.get(sessionId);
   if (!session) return Promise.reject(new Error('Depth session not found. Start a new session.'));
   const turnNumber = session.turn.turn_number;
