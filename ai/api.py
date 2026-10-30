@@ -92,11 +92,34 @@ def add_submission_to_graph(submission_id: str) -> dict:
     cand_id = sub.get("candidate_id")
     cand = crud.get_candidate(cand_id)
     if cand:
-        # Rebuild graph including submission files
-        # For MVP we can just do a full rebuild if submission files are in candidate's project
-        # In reality, we'd add submission files to graph explicitly.
-        # Here we just mock the update stats.
-        build_graph(cand_id)
+        # Load or create graph
+        g_data = crud.load_graph(cand_id)
+        g = nx.node_link_graph(g_data) if g_data else nx.DiGraph()
+        
+        # Add submission files to the candidate's graph
+        from ai.graph import _parse_python_file
+        for f in sub.get("files", []):
+            path = f.get("path", "solution.py")
+            content = f.get("content", "")
+            file_node_id = f"file:submission:{path}"
+            g.add_node(file_node_id, type="file", label=path, source="submission")
+            _parse_python_file(g, file_node_id, content, path)
+            
+        skills = [d.get("label") for n, d in g.nodes(data=True) if d.get("type") == "skill"]
+        summary = {"nodes": g.number_of_nodes(), "edges": g.number_of_edges(), "skills": skills}
+        crud.save_graph(cand_id, nx.node_link_data(g), summary)
+
+    # Dispatch asynchronous deep evaluation via Heavy Model tier in background
+    import threading
+    from ai.evaluator import evaluate_task_code
+    def _async_eval():
+        task = crud.get_task(sub.get("task_id")) or {}
+        code = "\n\n".join(f.get("content", "") for f in sub.get("files", []))
+        analysis = evaluate_task_code(task, code, sub.get("notes"))
+        crud.cache_set(f"sub_eval:{submission_id}", "heavy", analysis)
+        
+    t = threading.Thread(target=_async_eval, daemon=True)
+    t.start()
         
     return {"graph_updated": True, "stats": {"files": len(sub.get("files", [])), "functions": 4}}
 
@@ -137,17 +160,22 @@ def start_depth(submission_id: str) -> dict:
     cand = crud.get_candidate(sub.get("candidate_id"))
     g = nx.node_link_graph(crud.load_graph(cand.get("candidate_id"))) if cand else nx.DiGraph()
     
-    next_action = pick_next(state, g, job)
+    # Retrieve heavy model task analysis if already available
+    task_eval = crud.cache_get(f"sub_eval:{submission_id}")
+    
+    next_action = pick_next(state, g, job, task_eval)
     node_ref = next_action["node_ref"]
     context = subgraph_for_node(g, node_ref)
     
-    question = generate_question(job, next_action["level"], next_action["type"], context, "Start of interview.")
+    question = generate_question(job, next_action["level"], next_action["type"], context, "Start of interview.", next_action.get("probe_hint"))
     code_snippet = _extract_grounded_snippet(context, node_ref)
     
     turn = {
         "turn_number": 1,
         "type": next_action["type"],
         "level": next_action["level"],
+        "phase": next_action.get("phase", "provenance"),
+        "phase_label": next_action.get("phase_label", "PHASE 1: PROVENANCE"),
         "node_ref": node_ref,
         "question_text": question.get("text", question.get("question_text", "Fallback")),
         "text": question.get("text", question.get("question_text", "Fallback")),
@@ -243,17 +271,22 @@ def submit_answer(session_id: str, answer_text: str, answer_code: str | None) ->
         
     # Generate next turn
     state["turn_number"] += 1
-    next_action = pick_next(state, g, job)
+    
+    # Retrieve heavy model task analysis for Phase 2 probing
+    task_eval = crud.cache_get(f"sub_eval:{session.get('submission_id')}")
+    next_action = pick_next(state, g, job, task_eval)
     node_ref = next_action["node_ref"]
     next_context = subgraph_for_node(g, node_ref)
     
-    question = generate_question(job, next_action["level"], next_action["type"], next_context, f"Last score: {evaluation['score']}")
+    question = generate_question(job, next_action["level"], next_action["type"], next_context, f"Last score: {evaluation['score']}", next_action.get("probe_hint"))
     code_snippet = _extract_grounded_snippet(next_context, node_ref)
     
     next_turn = {
         "turn_number": state["turn_number"],
         "type": next_action["type"],
         "level": next_action["level"],
+        "phase": next_action.get("phase", "task_validation"),
+        "phase_label": next_action.get("phase_label", "PHASE 2: CODE VERIFICATION"),
         "node_ref": node_ref,
         "question_text": question.get("text", question.get("question_text", "Fallback")),
         "text": question.get("text", question.get("question_text", "Fallback")),

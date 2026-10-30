@@ -1,98 +1,105 @@
 import random
 
 def should_stop(state: dict) -> bool:
-    turns_done = state.get("turn_number", 0) - 1 # assuming turn_number is the *next* turn to be asked
     max_turns = state.get("max_turns", 6)
-    
-    # Actually if turn_number is the current turn index (1-based)
     turns = len(state.get("scores", []))
     
     if turns >= max_turns:
         return True
         
     confidences = state.get("confidences", [])
-    if turns >= 4 and (sum(confidences) / len(confidences) >= 0.8 if confidences else False):
+    if turns >= 5 and (sum(confidences) / len(confidences) >= 0.85 if confidences else False):
         return True
         
-    flags = state.get("last_flags", [])
-    if turns >= 2 and flags == ["empty", "empty"]: # Simplification for "two empty answers in a row"
-        # We would need to track history of flags properly. For MVP, if last two turns scored 0, we can stop.
-        scores = state.get("scores", [])
-        if len(scores) >= 2 and scores[-1] == 0 and scores[-2] == 0:
-            return True
+    scores = state.get("scores", [])
+    if len(scores) >= 2 and scores[-1] == 0 and scores[-2] == 0:
+        return True
             
     return False
 
-def pick_next(state: dict, g, job: dict) -> dict:
+def pick_next(state: dict, g, job: dict, task_eval: dict | None = None) -> dict:
     asked_nodes = state.get("asked_nodes", [])
+    turns_done = len(state.get("scores", []))
+    current_turn = turns_done + 1
     
-    # Calculate priorities
+    # ── TWO-PHASE DEPTH CHECK ────────────────────────────────────────────────
+    # Phase 1 (Turns 1 - 3): Portfolio & Provenance Verification (GitHub repos, files, claims)
+    # Phase 2 (Turns 4 - 6): Task Solution & Code Verification (Guided by Heavy Model)
+    phase = "provenance" if current_turn <= 3 else "task_validation"
+    
+    submission_nodes = [
+        n for n, d in g.nodes(data=True) 
+        if d.get("source") == "submission" or "solution.py" in n or "limiter.py" in n or "submission" in str(d.get("type", ""))
+    ]
+    portfolio_nodes = [
+        n for n in g.nodes() 
+        if n not in submission_nodes and not n.startswith("skill:")
+    ]
+    
+    if phase == "provenance" and portfolio_nodes:
+        target_pool = portfolio_nodes
+    elif submission_nodes:
+        target_pool = submission_nodes
+    else:
+        target_pool = [n for n in g.nodes() if not n.startswith("skill:")] or list(g.nodes())
+    
+    # Calculate priorities within target pool
     best_node = None
     best_priority = -1.0
     
-    for node, data in g.nodes(data=True):
+    for node in target_pool:
         if node in asked_nodes and asked_nodes.count(node) >= 2:
             continue
-            
+        data = g.nodes[node] if node in g else {}
         weight = data.get("weight", 0.1)
-        
-        uncertainty = 1.0
-        if node in asked_nodes:
-            # Did they give a strong answer or a vague answer?
-            # We would need to map node to its score, but for simplicity:
-            last_score = state.get("scores", [0])[-1] if state.get("scores") else 0
-            if last_score >= 4:
-                uncertainty = 0.2
-            else:
-                uncertainty = 0.6
-                
+        uncertainty = 0.4 if node in asked_nodes else 1.0
         priority = weight * uncertainty
         if priority > best_priority:
             best_priority = priority
             best_node = node
             
     if not best_node:
-        # Fallback to random node
-        nodes = list(g.nodes())
-        best_node = random.choice(nodes) if nodes else "unknown"
+        available = [n for n in target_pool if n not in asked_nodes] or target_pool or list(g.nodes())
+        best_node = random.choice(available) if available else "unknown"
 
     level = state.get("level", 1)
-    
-    # Apply level rules based on last score
     scores = state.get("scores", [])
     if scores:
         last_score = scores[-1]
         flags = state.get("last_flags", [])
-        
         if last_score in [4, 5]:
             level = min(5, level + 1)
-            q_type = "question"
-        elif last_score == 3:
-            q_type = "question"
         elif last_score in [1, 2] or "vague" in flags:
             best_node = asked_nodes[-1] if asked_nodes else best_node
-            q_type = "question"
         elif last_score == 0 or "empty" in flags:
             level = max(1, level - 1)
-            q_type = "question"
+
+    # Determine question type
+    if current_turn == 6:
+        q_type = "modify"
+    elif current_turn == 5 and phase == "task_validation":
+        q_type = "debug"
     else:
         q_type = "question"
-        
-    # Special turns
-    turns = len(scores)
-    if turns >= 2:
-        # turn 3 or later (since turns starts at 0 for the check, 2 means 3rd turn)
-        claims = [n for n, d in g.nodes(data=True) if d.get("type") == "claim"]
-        unasked_claims = [c for c in claims if c not in asked_nodes]
-        if unasked_claims:
-            best_node = unasked_claims[0]
-            
-    if level in [4, 5]:
-        q_type = "modify" if level == 4 else "debug"
+
+    # Surgical probe hint from heavy model evaluation if in phase 2
+    probe_hint = None
+    if phase == "task_validation" and task_eval:
+        probes = task_eval.get("surgical_probes", [])
+        vulns = task_eval.get("edge_case_vulnerabilities", [])
+        if current_turn == 4 and probes:
+            probe_hint = probes[0]
+        elif current_turn == 5 and vulns:
+            probe_hint = f"Focus on this detected vulnerability: {vulns[0]}"
+        elif len(probes) > 1:
+            probe_hint = probes[1]
 
     return {
         "node_ref": best_node,
         "level": level,
         "type": q_type,
-        "reason": f"Priority {best_priority:.2f}, level {level}"
+        "phase": phase,
+        "phase_label": "PHASE 1: PROVENANCE" if phase == "provenance" else "PHASE 2: CODE VERIFICATION",
+        "probe_hint": probe_hint,
+        "reason": f"Phase {phase}, priority {best_priority:.2f}, level {level}"
     }
