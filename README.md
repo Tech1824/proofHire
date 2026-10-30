@@ -111,54 +111,110 @@ flowchart TD
 
 ---
 
-### Step 1: Clone the Repository
+### Quick Directory & Terminal Cheatsheet
+
+| Process | Working Directory | Command to Start | Live URL |
+| :--- | :--- | :--- | :--- |
+| **Terminal 1: Backend** | `proofHire/` (Root) | `python -m uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload` | [`http://localhost:8000`](http://localhost:8000) |
+| **Terminal 2: Frontend** | `proofHire/frontend/` | `npm run dev -- --host 0.0.0.0 --port 4321` | [`http://localhost:4321`](http://localhost:4321) |
+
+---
+
+### Step 1: Clone the Repository & Enter Directory
+Open your terminal (PowerShell, Bash, or Command Prompt):
 ```bash
+# Clone the repository
 git clone https://github.com/Tech1824/proofHire.git
+
+# Enter the project root directory
 cd proofHire
 ```
+> 📍 **Current Working Directory:** `.../proofHire/`
 
 ---
 
-### Step 2: Configure Environment Variables
-Create a `.env` file in the project root:
-```env
-# Optional Gemini API key (defaults to deterministic high-performance fixtures if omitted)
-GEMINI_API_KEY=your_gemini_api_key_here
-PUBLIC_USE_MOCKS=false
-```
+### Step 2: Configure Environment Variables (`.env`)
+ProofHire includes a pre-configured template file named `.env.example` in the `proofHire/` root directory.
+
+1. **Create your `.env` file** (must be named exactly `.env` with a leading dot, located in `proofHire/`):
+   ```bash
+   # On Windows (cmd):
+   copy .env.example .env
+
+   # On Windows (PowerShell) or macOS / Linux:
+   cp .env.example .env
+   ```
+
+2. **Open `.env` in any text editor and configure your key:**
+   ```env
+   # 1. Google Gemini API Key (for live AI generation)
+   # Get a free key at: https://aistudio.google.com/app/apikey
+   GEMINI_API_KEY=your_actual_gemini_api_key_here
+
+   # 2. Platform Settings
+   PUBLIC_USE_MOCKS=false
+   ```
+   > 💡 **Offline Mode / No API Key?**  
+   > If you do not have a Gemini API key or leave `GEMINI_API_KEY` blank, **ProofHire automatically runs in offline mode using pre-warmed, deterministic senior engineering models with zero downtime!**
 
 ---
 
-### Step 3: Set Up and Run the Python Backend
-In your terminal:
+### Step 3: Run the Python Backend (Terminal 1)
+In your first terminal, make sure you are in the **`proofHire/` root directory**:
+
 ```bash
-# 1. Install dependencies
+# 1. Install backend dependencies (run from proofHire/)
 pip install -r requirements.txt
 
-# 2. Seed database with real-world demo roles and candidates (Arjun, Asha, Ravi)
+# 2. Seed database with real-world demo roles and candidates (Dev Patel, Arjun, Asha, Ravi, Liam)
 python seed_db.py
 
 # 3. Start the FastAPI backend server with auto-reload
 python -m uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload
 ```
-> The backend server will be running live at **`http://localhost:8000`**.  
-> Interactive OpenAPI documentation is available at **`http://localhost:8000/docs`**.
+* **Expected Output:**
+  ```text
+  INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+  INFO:     Started reloader process using WatchFiles
+  ```
+* The backend is now live at **`http://localhost:8000`**.  
+* Interactive Swagger API documentation is available at **`http://localhost:8000/docs`**.
 
 ---
 
-### Step 4: Set Up and Run the Astro Frontend
-In a **new terminal**:
-```bash
-# Navigate to the frontend directory
-cd frontend
+### Step 4: Run the Astro Frontend (Terminal 2)
+Open a **new terminal tab or window**:
 
-# Install Node dependencies
+```bash
+# 1. Navigate to the frontend directory
+cd proofHire/frontend
+
+# (Or if your terminal is already inside proofHire, simply run: cd frontend)
+
+# 2. Install Node dependencies (run from proofHire/frontend/)
 npm install
 
-# Start the Astro dev server
+# 3. Start the Astro development server
 npm run dev -- --host 0.0.0.0 --port 4321
 ```
-> The candidate desk will be running live at **`http://localhost:4321`**.
+* **Expected Output:**
+  ```text
+  astro ready in ~250 ms
+  ┃ Local    http://localhost:4321/
+  ```
+* The candidate desk is now live at **`http://localhost:4321`**.
+
+---
+
+### 🛠️ Common Troubleshooting
+
+* **`ModuleNotFoundError: No module named 'backend'`**:  
+  Make sure you execute the uvicorn command from the **`proofHire/` root directory**, NOT from inside `backend/` or `frontend/`.
+* **`python` vs `python3`**:  
+  On macOS or Linux, replace `python` and `pip` with `python3` and `pip3` (e.g. `python3 seed_db.py`).
+* **Port `8000` or `4321` already in use**:  
+  Another background process is running on that port. Stop existing processes or run uvicorn on an alternative port:  
+  `python -m uvicorn backend.main:app --host 0.0.0.0 --port 8001 --reload`
 
 ---
 
