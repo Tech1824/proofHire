@@ -214,3 +214,4 @@ proofHire/
 ## 🛡️ License
 
 MIT License. Designed and built with ❤️ for evidence-first software engineering.
+
