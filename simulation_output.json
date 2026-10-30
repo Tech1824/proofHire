@@ -1,0 +1,336 @@
+{
+  "test_takers": [
+    {
+      "name": "Dev Patel",
+      "role": "Senior Distributed Systems Engineer",
+      "cand_id": "cand_7ce4bb33",
+      "overall_score": 53,
+      "recommendation": "maybe",
+      "rank": 5,
+      "turns": [
+        {
+          "turn": 1,
+          "answer": "In my limiter.py file, the Event class defines eve...",
+          "score": 3,
+          "reasoning": "0",
+          "flags": [
+            "off_topic",
+            "evasive"
+          ]
+        },
+        {
+          "turn": 2,
+          "answer": "To validate event_type, I enforce an Enum whitelis...",
+          "score": 3,
+          "reasoning": "The candidate's answer is completely off-topic for the question asked. The question asked about structuring asyncio event loop concurrency with Redis sliding-window limiters, but the candidate talked about Pydantic field validators and event types.",
+          "flags": [
+            "off_topic",
+            "incorrect"
+          ]
+        },
+        {
+          "turn": 3,
+          "answer": "For high-volume concurrency, TokenBucketLimiter us...",
+          "score": 3,
+          "reasoning": "2",
+          "flags": [
+            "off_topic"
+          ]
+        },
+        {
+          "turn": 4,
+          "answer": "If Redis is used for horizontal scaling, I replace...",
+          "score": 3,
+          "reasoning": "The candidate provided a precise and correct solution for handling a global state bottleneck by proposing a Redis Lua script for atomic operations, replacing the local asyncio.Lock. This demonstrates strong architectural awareness for distributed systems and horizontal scaling.",
+          "flags": []
+        },
+        {
+          "turn": 5,
+          "answer": "A key edge case is clock drift across distributed ...",
+          "score": 3,
+          "reasoning": "0",
+          "flags": [
+            "off_topic",
+            "incorrect"
+          ]
+        },
+        {
+          "turn": 6,
+          "answer": "The primary trade-off of this token bucket over a ...",
+          "score": 1,
+          "reasoning": "1",
+          "flags": [
+            "off_topic"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Sneha Iyer",
+      "role": "Backend Intern (High-Throughput APIs)",
+      "cand_id": "cand_b7b8fc1a",
+      "overall_score": 38,
+      "recommendation": "no",
+      "rank": 7,
+      "turns": [
+        {
+          "turn": 1,
+          "answer": "The Event class has event_type which is a string, ...",
+          "score": 3,
+          "reasoning": "0",
+          "flags": [
+            "off_topic",
+            "incorrect"
+          ]
+        },
+        {
+          "turn": 2,
+          "answer": "I would check if event_type is not empty by doing ...",
+          "score": 3,
+          "reasoning": "0",
+          "flags": [
+            "off_topic",
+            "incorrect"
+          ]
+        },
+        {
+          "turn": 3,
+          "answer": "My SimpleLimiter stores request counts in a Python...",
+          "score": 3,
+          "reasoning": "The candidate's answer is completely off-topic. The question asked how to structure a basic FastAPI router, but the candidate provided an explanation about a rate limiter using a Python dictionary.",
+          "flags": [
+            "off_topic"
+          ]
+        },
+        {
+          "turn": 4,
+          "answer": "I haven't worked with Redis Lua scripts yet, but I...",
+          "score": 3,
+          "reasoning": "2",
+          "flags": [
+            "evasive"
+          ]
+        },
+        {
+          "turn": 5,
+          "answer": "I'm not sure how to handle clock drift or multi-se...",
+          "score": 3,
+          "reasoning": "The candidate admitted they did not know the answer and provided an off-topic response about clock drift and multi-server synchronization rather than explaining how the `Event` class handles window expiration or `self.counts` tracking.",
+          "flags": [
+            "off_topic",
+            "dont_know",
+            "evasive"
+          ]
+        },
+        {
+          "turn": 6,
+          "answer": "dk",
+          "score": 0,
+          "reasoning": "Candidate was unable to explain their implementation regarding 'code' ('dk'). Evasive or non-responsive answers receive 0/5 for code provenance.",
+          "flags": [
+            "evasive",
+            "dont_know",
+            "off_topic"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Carlos Mendoza",
+      "role": "Frontend Systems Architect",
+      "cand_id": "cand_1eef20e7",
+      "overall_score": 56,
+      "recommendation": "maybe",
+      "rank": 4,
+      "turns": [
+        {
+          "turn": 1,
+          "answer": "The fields on Event are event_type as string, user...",
+          "score": 3,
+          "reasoning": "0",
+          "flags": [
+            "off_topic",
+            "evasive",
+            "incorrect"
+          ]
+        },
+        {
+          "turn": 2,
+          "answer": "In TypeScript or frontend schemas, I use Zod for r...",
+          "score": 3,
+          "reasoning": "1",
+          "flags": [
+            "off_topic",
+            "evasive"
+          ]
+        },
+        {
+          "turn": 3,
+          "answer": "The ClientEventStream buffers events in self.buffe...",
+          "score": 3,
+          "reasoning": "0",
+          "flags": [
+            "off_topic",
+            "incorrect"
+          ]
+        },
+        {
+          "turn": 4,
+          "answer": "To handle high throughput on the client, I debounc...",
+          "score": 3,
+          "reasoning": "1",
+          "flags": [
+            "off_topic",
+            "incorrect"
+          ]
+        },
+        {
+          "turn": 5,
+          "answer": "If the network disconnects, events are staged in I...",
+          "score": 3,
+          "reasoning": "0",
+          "flags": [
+            "off_topic",
+            "incorrect"
+          ]
+        },
+        {
+          "turn": 6,
+          "answer": "The main trade-off is eventual delivery: if the br...",
+          "score": 3,
+          "reasoning": "1",
+          "flags": [
+            "off_topic",
+            "evasive"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Liam O'Connor",
+      "role": "Senior Distributed Systems Engineer",
+      "cand_id": "cand_17140600",
+      "overall_score": 25,
+      "recommendation": "no",
+      "rank": 11,
+      "turns": [
+        {
+          "turn": 1,
+          "answer": "dk",
+          "score": 0,
+          "reasoning": "Candidate was unable to explain their implementation regarding 'text' ('dk'). Evasive or non-responsive answers receive 0/5 for code provenance.",
+          "flags": [
+            "evasive",
+            "dont_know",
+            "off_topic"
+          ]
+        },
+        {
+          "turn": 2,
+          "answer": "It's just standard code from standard best practic...",
+          "score": 3,
+          "reasoning": "0",
+          "flags": [
+            "evasive"
+          ]
+        },
+        {
+          "turn": 3,
+          "answer": "idk I found this on GitHub.",
+          "score": 3,
+          "reasoning": "The candidate explicitly admitted to not knowing the answer and confessed that the code they provided in a previous turn was found on GitHub. This constitutes a complete lack of technical understanding and honesty regarding their own implementation.",
+          "flags": [
+            "dont_know",
+            "evasive"
+          ]
+        },
+        {
+          "turn": 4,
+          "answer": "no idea how the locking works.",
+          "score": 3,
+          "reasoning": "The candidate admitted they have no idea how the locking works, directly showing an inability to explain the required implementation for the distributed rate limiter. This warrants a score of 0 with the dont_know flag.",
+          "flags": [
+            "dont_know",
+            "evasive"
+          ]
+        },
+        {
+          "turn": 5,
+          "answer": "skip",
+          "score": 0,
+          "reasoning": "Candidate was unable to explain their implementation regarding 'text' ('skip'). Evasive or non-responsive answers receive 0/5 for code provenance.",
+          "flags": [
+            "evasive",
+            "dont_know",
+            "off_topic"
+          ]
+        },
+        {
+          "turn": 6,
+          "answer": "dk",
+          "score": 0,
+          "reasoning": "This depth check has reached its conclusion.",
+          "flags": [
+            "already_done"
+          ]
+        }
+      ]
+    }
+  ],
+  "normal_explorers": [
+    {
+      "name": "Maya Lin",
+      "type": "Curious First-Time Candidate",
+      "action": "Browse Jobs, Test 1-Click Demo Sign-in, Inspect Knowledge Graph",
+      "reaction": "Immediate understanding of the workflow. The 1-click Arjun demo made it crystal clear how an assessment transforms into AST nodes and interview questions.",
+      "friction_score": 1,
+      "clarity_rating": "9/10"
+    },
+    {
+      "name": "Tunde Adebayo",
+      "type": "Self-Taught Python Engineer",
+      "action": "Upload Resume, Review Auto-Extracted Skills, Test Code Editor Auto-Save",
+      "reaction": "Delighted that the code editor preserves draft code across tab navigation. The font size upgrade (15px) feels soothing and easy to read.",
+      "friction_score": 1,
+      "clarity_rating": "9.5/10"
+    },
+    {
+      "name": "Sarah Jenkins",
+      "type": "Career Transitioner / Learning-Focused",
+      "action": "Check Depth History Ledger, Click 'View Model Answer & Learn' on Questions",
+      "reaction": "The 'View Model Answer & Learn' feature is incredible! Instead of feeling rejected, I learned exact concurrency invariants, Pydantic field validators, and interview pitfalls.",
+      "friction_score": 0,
+      "clarity_rating": "10/10"
+    },
+    {
+      "name": "Kenji Sato",
+      "type": "Pragmatic Senior Engineer",
+      "action": "Audit Anti-Hallucination Guardrails, Check Verbatim Evidence Quotes",
+      "reaction": "Appreciated that the evaluator quotes verbatim words from my answers rather than inventing claims. Rubric breakdown gives transparency missing in other AI tools.",
+      "friction_score": 1,
+      "clarity_rating": "9/10"
+    },
+    {
+      "name": "Priya Sharma",
+      "type": "Accessibility & Multi-Role Reviewer",
+      "action": "Test Navigation Shortcuts (Alt+1-6), Contrast, Role Switcher, Sidebar Collapse",
+      "reaction": "Zero visual stress. High-contrast typography and clean dark theme slate colors (#cbd5e1) make prolonged review painless.",
+      "friction_score": 0,
+      "clarity_rating": "10/10"
+    }
+  ],
+  "recruiter": {
+    "name": "Marcus Vance",
+    "title": "VP of Talent / Lead Technical Recruiter",
+    "company": "FinLeaf Infrastructure",
+    "actions_performed": [
+      "Loaded pipeline dashboard with 17 active candidate profiles.",
+      "Filtered pipeline for Job 1. Found 16 candidates.",
+      "Shortlisted Dev Patel after verifying AST token bucket and concurrency explanations.",
+      "Rejected Liam O'Connor due to flagged evasive answers and lack of code provenance.",
+      "Shortlisted Dev Patel after verifying AST token bucket and concurrency explanations.",
+      "Rejected Liam O'Connor due to flagged evasive answers and lack of code provenance."
+    ],
+    "shortlist_count": 12
+  }
+}

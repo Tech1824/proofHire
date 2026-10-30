@@ -373,11 +373,9 @@ def save_profile(session_id: str, candidate_id: str, job_id: str, profile: dict)
             existing.job_id = job_id
             session.add(existing)
 
-        # Synchronize candidate row directly so scores and status are immediately in sync across both portals
+        # Synchronize candidate row directly so status is immediately in sync across both portals
         cand = session.get(Candidate, candidate_id)
         if cand:
-            cand.proof_score = profile.get("overall_score", cand.proof_score)
-            cand.readiness_rating = profile.get("recommendation", cand.readiness_rating)
             if cand.status in [None, "New", "Invited", "In Progress", ""]:
                 cand.status = "Assessed"
             session.add(cand)
