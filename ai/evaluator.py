@@ -73,6 +73,16 @@ CANDIDATE SUBMITTED CODE:
 """
     try:
         result = complete_json("heavy", EVALUATOR_SYSTEM_PROMPT, user_prompt, TaskCodeEvaluationSchema)
+        if not result.get("surgical_probes") and result.get("edge_case_vulnerabilities"):
+            result["surgical_probes"] = [
+                f"In your code, how did you handle or plan to mitigate: {v.split(':')[0]}?"
+                for v in result["edge_case_vulnerabilities"][:3]
+            ]
+        elif not result.get("surgical_probes"):
+            result["surgical_probes"] = [
+                "What architectural trade-offs did you consider when implementing this logic?",
+                "How does your implementation handle extreme scale or memory constraints?"
+            ]
         return result
     except Exception as e:
         # Graceful fallback heuristic
