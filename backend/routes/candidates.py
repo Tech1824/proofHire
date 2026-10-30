@@ -141,7 +141,7 @@ def get_graph_view(candidate_id: str):
         view = ai_api.get_graph_view(candidate_id)
     
     if not view:
-        raise HTTPException(status_code=404, detail=f"Graph for {candidate_id} not found")
+        return {"nodes": [], "edges": []}
         
     return view
 

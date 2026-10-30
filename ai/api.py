@@ -158,6 +158,21 @@ def _extract_grounded_snippet(context: dict, node_ref: str) -> dict | None:
     return None
 
 def start_depth(submission_id: str) -> dict:
+    sub = crud.get_submission(submission_id)
+    if not sub:
+        demo_sub = crud.get_submission("sub_arjun_1")
+        if demo_sub:
+            sub = demo_sub
+            submission_id = "sub_arjun_1"
+        else:
+            from sqlmodel import select
+            from db.models import Submission
+            with crud.Session(crud.engine) as s:
+                first_sub = s.exec(select(Submission)).first()
+                if first_sub:
+                    sub = first_sub.model_dump()
+                    submission_id = first_sub.submission_id
+
     max_turns = 6
     session = crud.create_session(submission_id, max_turns)
     
@@ -170,16 +185,16 @@ def start_depth(submission_id: str) -> dict:
         "last_flags": [],
         "dimension_scores": {}
     }
-    
-    sub = crud.get_submission(submission_id)
     job_id = "job_1"
     if sub:
         task = crud.get_task(sub.get("task_id"))
         if task:
             job_id = task.get("job_id", "job_1")
     job = crud.get_job(job_id) or {}
-    cand = crud.get_candidate(sub.get("candidate_id"))
-    g = nx.node_link_graph(crud.load_graph(cand.get("candidate_id"))) if cand else nx.DiGraph()
+    cand = crud.get_candidate(sub.get("candidate_id")) if sub else None
+    cand_id = cand.get("candidate_id") if cand else None
+    g_data = crud.load_graph(cand_id) if cand_id else None
+    g = nx.node_link_graph(g_data) if g_data else nx.DiGraph()
     
     # Retrieve heavy model task analysis if already available
     task_eval = crud.cache_get(f"sub_eval:{submission_id}")

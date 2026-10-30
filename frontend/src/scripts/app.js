@@ -765,6 +765,23 @@ async function renderDepth() {
   const isDone = result?.status === 'done' || (!turn && session);
   const completedAnswers = state.chatHistory.filter(e => e.kind === 'answer');
 
+  const emptyChatHtml = state.submissionId ? `
+    <div class="chat-empty">
+      <div class="terminal-prompt">$ depth-check --ready</div>
+      <h2>Ready to test understanding.</h2>
+      <p>Interrogation will proceed using your submitted assessment code.</p>
+      <button class="button button-primary" id="start-session">Start depth check <span>↗</span></button>
+    </div>` : `
+    <div class="chat-empty">
+      <div class="terminal-prompt">$ depth-check --awaiting-submission</div>
+      <h2>Awaiting Assessment Submission.</h2>
+      <p>Depth Check conducts an adaptive Socratic interview grounded in your submitted code. Submit your assessment or explore with a verified demo profile.</p>
+      <div style="display: flex; gap: 12px; margin-top: 14px; flex-wrap: wrap;">
+        <a href="#task" class="button button-primary">🚀 Write Assessment Solution ↗</a>
+        <button class="button button-outline" id="use-demo-submission-btn">⚡ Use Demo Submission (Arjun Mehta) ↗</button>
+      </div>
+    </div>`;
+
   shell(`${heading('04 / TECHNICAL CONVERSATION', 'Depth check<span class="heading-dot">.</span>', 'Questions follow the candidate’s own work. Scores stay attached to exact answer evidence.', session ? `<button class="button button-quiet" id="end-session">Finish session</button>` : '')}
     <div class="depth-layout">
       <section class="chat-panel panel">
@@ -781,7 +798,7 @@ async function renderDepth() {
         </div>
 
         ${state.showDepthHistory ? renderDepthHistoryView(completedAnswers) : `
-          <div class="chat-scroll" id="chat-scroll">${session ? `<div class="chat-message system-message"><span class="message-stamp">PROOFHIRE / INTERVIEWER</span><p class="typewriter">${escapeHTML(turn?.text ?? (result?.status === 'done' ? 'Depth check complete. Your answers are ready for recruiter review.' : 'Session complete.'))}</p>${turn?.code_snippet ? `<pre class="snippet"><span>${escapeHTML(turn.code_snippet.path)}:${turn.code_snippet.start_line}</span><code>${escapeHTML(turn.code_snippet.code)}</code></pre>` : ''}</div>${result ? `<div class="chat-message answer-message"><span class="message-stamp">CANDIDATE / TURN ${result.evaluation.turn_number}</span><p>${escapeHTML(result.evaluation.evidence_quote || 'No answer provided.')}</p><span class="answer-score">SCORE ${result.evaluation.score}/5 · ${escapeHTML(result.evaluation.flags.join(', ') || 'NO FLAGS')}</span></div><div class="chat-message system-message follow-up"><span class="message-stamp">PROOFHIRE / NEXT</span><p class="typewriter">${escapeHTML(result.next?.text ?? 'Depth check complete. The evidence is ready for recruiter review.')}</p></div>` : ''}` : '<div class="chat-empty"><div class="terminal-prompt">$ depth-check --start</div><h2>Ready to test understanding.</h2><p>Start with the submitted solution, then follow the evidence one answer at a time.</p><button class="button button-primary" id="start-session">Start depth check <span>↗</span></button></div>'}</div>
+          <div class="chat-scroll" id="chat-scroll">${session ? `<div class="chat-message system-message"><span class="message-stamp">PROOFHIRE / INTERVIEWER</span><p class="typewriter">${escapeHTML(turn?.text ?? (result?.status === 'done' ? 'Depth check complete. Your answers are ready for recruiter review.' : 'Session complete.'))}</p>${turn?.code_snippet ? `<pre class="snippet"><span>${escapeHTML(turn.code_snippet.path)}:${turn.code_snippet.start_line}</span><code>${escapeHTML(turn.code_snippet.code)}</code></pre>` : ''}</div>${result ? `<div class="chat-message answer-message"><span class="message-stamp">CANDIDATE / TURN ${result.evaluation.turn_number}</span><p>${escapeHTML(result.evaluation.evidence_quote || 'No answer provided.')}</p><span class="answer-score">SCORE ${result.evaluation.score}/5 · ${escapeHTML(result.evaluation.flags.join(', ') || 'NO FLAGS')}</span></div><div class="chat-message system-message follow-up"><span class="message-stamp">PROOFHIRE / NEXT</span><p class="typewriter">${escapeHTML(result.next?.text ?? 'Depth check complete. The evidence is ready for recruiter review.')}</p></div>` : ''}` : emptyChatHtml}</div>
           ${session && !isDone ? `<form id="answer-form" class="answer-form"><label for="candidate-answer">${turn?.expects === 'code' ? 'CODE RESPONSE' : 'YOUR RESPONSE'}</label>${turn?.expects === 'code' ? '<textarea id="candidate-answer" name="answer" class="code-input" rows="4" placeholder="Write or paste a small code change..."></textarea>' : '<textarea id="candidate-answer" name="answer" rows="3" placeholder="Explain your reasoning, referring to the submitted code..."></textarea>'}<div class="answer-controls"><span class="form-hint">ENTER TO SEND · SHIFT+ENTER FOR NEW LINE</span><button class="button button-primary" type="submit">Send answer <span>↗</span></button></div></form><div class="voice-controls" style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border-color);"><button class="button button-outline" id="start-voice-call" type="button">🎙️ Start Voice-to-Voice Call (Alpha)</button><div id="voice-status" style="margin-top: 8px; font-size: 14px; font-family: monospace; color: var(--accent-color);"></div></div>` : session ? `<div class="session-complete"><i class="status-dot online"></i> <strong>SESSION COMPLETE</strong> · EVIDENCE SAVED<div style="margin-top: 14px; display: flex; gap: 10px; align-items: center;"><a href="#shortlist" class="button button-primary">Review in Shortlist →</a><button class="button button-quiet" id="restart-depth" type="button">Start new session ↻</button></div></div>` : ''}
         `}
       </section>
@@ -865,6 +882,13 @@ async function renderDepth() {
   });
 
   document.querySelector('#start-session')?.addEventListener('click', () => beginDepth(state.submissionId));
+  document.querySelector('#use-demo-submission-btn')?.addEventListener('click', async () => {
+    state.submissionId = 'sub_arjun_1';
+    state.candidateId = 'cand_arjun';
+    localStorage.setItem('proofhire-sub', 'sub_arjun_1');
+    localStorage.setItem('proofhire-cand', 'cand_arjun');
+    await beginDepth('sub_arjun_1');
+  });
   document.querySelector('#restart-depth')?.addEventListener('click', async () => {
     state.sessionId = null;
     localStorage.removeItem('proofhire-session');
@@ -1178,7 +1202,10 @@ function renderDepthHistoryView(completedAnswers) {
 
 // Starts a new session and displays its first question.
 async function beginDepth(submissionId) {
-  if (!submissionId) { showError("No submission found. Please complete the assessment first."); return; }
+  if (!submissionId) {
+    submissionId = state.submissionId || 'sub_arjun_1';
+    state.submissionId = submissionId;
+  }
   showGlobalLoader('Initializing Depth Check...');
   try {
     state.sessionId = null;
@@ -1486,18 +1513,71 @@ async function renderShortlist() {
 async function renderGraph() {
   const candidateId = state.candidateId;
   if (!candidateId) {
-    shell(`${heading('06 / KNOWLEDGE GRAPH', 'Evidence Graph<span class="heading-dot">.</span>', 'Visualizing the candidate’s project architecture and profile claims.')}
-      <div class="empty-state">No candidate profile loaded. Go to <a href="#candidate">Candidate Sign In & Profile</a> to select or create a profile.</div>`);
+    shell(`${heading('06 / KNOWLEDGE GRAPH', 'Evidence Graph<span class="heading-dot">.</span>', 'Visualizing project architecture and claimed skills in a semantic network.')}
+      <div class="empty-state" style="padding: 40px 20px; text-align: center; border: 1px dashed var(--border); border-radius: 12px; background: var(--card); margin-top: 20px;">
+        <div style="font-size: 36px; margin-bottom: 12px;">🕸️</div>
+        <h2 style="margin-bottom: 8px; font-size: 20px; color: var(--text);">No Candidate Profile Loaded</h2>
+        <p style="max-width: 520px; margin: 0 auto 20px; font-size: 14px; color: var(--muted); line-height: 1.6;">
+          The knowledge graph maps candidate code repositories, AST functions, and claimed skills into a semantic network. Sign in to your candidate account or preview a verified demo graph.
+        </p>
+        <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+          <button class="button button-primary" id="load-sample-graph-btn">⚡ Preview Sample Graph (Arjun Mehta) ↗</button>
+          <a href="#candidate" class="button button-outline">👤 Sign In / Create Profile ↗</a>
+          <a href="#task" class="button button-quiet">≡ Go to Assessment ↗</a>
+        </div>
+      </div>`);
+    document.querySelector('#load-sample-graph-btn')?.addEventListener('click', () => {
+      state.candidateId = 'cand_arjun';
+      state.submissionId = 'sub_arjun_1';
+      localStorage.setItem('proofhire-cand', 'cand_arjun');
+      renderGraph();
+    });
     return;
   }
-  const [candidate, graph] = await Promise.all([API.getCandidate(candidateId), API.getCandidateGraph(candidateId)]);
-  state.candidate = candidate;
+
+  let candidate = state.candidate;
+  let graph = { nodes: [], edges: [] };
+  try {
+    const [candRes, graphRes] = await Promise.all([
+      API.getCandidate(candidateId).catch(() => candidate || { name: 'Candidate', graph_status: 'ready' }),
+      API.getCandidateGraph(candidateId).catch(() => ({ nodes: [], edges: [] }))
+    ]);
+    candidate = candRes;
+    graph = graphRes || { nodes: [], edges: [] };
+    state.candidate = candidate;
+  } catch (err) {
+    console.warn("Failed to load graph data", err);
+  }
+
+  if (!graph.nodes || graph.nodes.length === 0) {
+    shell(`${heading('06 / KNOWLEDGE GRAPH', 'Evidence Graph<span class="heading-dot">.</span>', 'Visualizing project architecture and claimed skills in a semantic network.')}
+      <div class="empty-state" style="padding: 40px 20px; text-align: center; border: 1px dashed var(--border); border-radius: 12px; background: var(--card); margin-top: 20px;">
+        <div style="font-size: 36px; margin-bottom: 12px;">⚙️</div>
+        <h2 style="margin-bottom: 8px; font-size: 20px; color: var(--text);">Graph Not Built Yet for ${escapeHTML(candidate?.name || 'Candidate')}</h2>
+        <p style="max-width: 520px; margin: 0 auto 20px; font-size: 14px; color: var(--muted); line-height: 1.6;">
+          ProofHire builds your interactive knowledge graph automatically when you sync your GitHub repositories or submit an assessment. No repositories or code submissions have been ingested for this profile yet.
+        </p>
+        <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+          <a href="#candidate" class="button button-primary">🔄 Sync GitHub Projects in Profile ↗</a>
+          <a href="#task" class="button button-outline">≡ Start Practical Assessment ↗</a>
+          <button class="button button-quiet" id="load-sample-graph-btn">⚡ Preview Sample Graph (Arjun Mehta) ↗</button>
+        </div>
+      </div>`);
+    document.querySelector('#load-sample-graph-btn')?.addEventListener('click', () => {
+      state.candidateId = 'cand_arjun';
+      state.submissionId = 'sub_arjun_1';
+      localStorage.setItem('proofhire-cand', 'cand_arjun');
+      renderGraph();
+    });
+    return;
+  }
+
   const darkTheme = document.documentElement.dataset.theme === 'dark';
   const colorMap = darkTheme
     ? { candidate: '#8fa0ff', project: '#34d8a0', file: '#aeb6c2', function: '#34d8a0', class: '#8fa0ff', skill: '#ff8a1e', claim: '#ff5c7a' }
     : { candidate: '#3d5afe', project: '#0b7a5a', file: '#5d667c', function: '#0b7a5a', class: '#2a3fd6', skill: '#9a4a00', claim: '#c21e3a' };
   shell(`${heading('06 / KNOWLEDGE MAP', 'Work graph<span class="heading-dot">.</span>', 'A compact map of code, skills, and profile claims used to find relevant questions.', '<a href="#depth" class="button button-outline">Open depth check <span>↗</span></a>')}
-    <div class="graph-layout"><section class="graph-panel panel"><div class="panel-topline"><span>NODE-LINK VIEW / ${escapeHTML(candidate.name)}</span><span>${graph.nodes.length} NODES · ${graph.edges.length} EDGES</span></div><div id="graph-canvas" class="graph-canvas" role="img" aria-label="Candidate project knowledge graph"></div><div class="graph-legend">${Object.entries(colorMap).map(([type, color]) => `<span><i style="--legend-color:${color}"></i>${escapeHTML(type)}</span>`).join('')}</div></section><aside class="graph-aside panel"><div class="panel-topline"><span>GRAPH SUMMARY</span><span class="live-tag"><i class="status-dot online"></i> ${escapeHTML(candidate.graph_status ?? 'ready')}</span></div><div class="graph-summary-number"><strong>${candidate.graph_summary?.nodes ?? graph.nodes.length}</strong><span>nodes indexed</span></div><div class="graph-summary-number"><strong>${candidate.graph_summary?.edges ?? graph.edges.length}</strong><span>relationships found</span></div><div class="graph-skills"><span class="metric-label">MATCHED SKILLS</span><div class="skill-list">${(candidate.graph_summary?.skills ?? []).map((skill) => `<span class="skill-tag">${escapeHTML(skill)}</span>`).join('')}</div></div><div class="token-note"><span>WHY GRAPH CONTEXT</span><p>Focused retrieval helps each question use the smallest relevant part of the candidate’s work, dramatically reducing LLM token consumption and improving speed.</p><div class="token-note-metric"><b>EFFICIENT</b><span>sample context vs full project</span></div></div></aside></div>`);
+    <div class="graph-layout"><section class="graph-panel panel"><div class="panel-topline"><span>NODE-LINK VIEW / ${escapeHTML(candidate?.name || 'Candidate')}</span><span>${graph.nodes.length} NODES · ${graph.edges.length} EDGES</span></div><div id="graph-canvas" class="graph-canvas" role="img" aria-label="Candidate project knowledge graph"></div><div class="graph-legend">${Object.entries(colorMap).map(([type, color]) => `<span><i style="--legend-color:${color}"></i>${escapeHTML(type)}</span>`).join('')}</div></section><aside class="graph-aside panel"><div class="panel-topline"><span>GRAPH SUMMARY</span><span class="live-tag"><i class="status-dot online"></i> ${escapeHTML(candidate?.graph_status ?? 'ready')}</span></div><div class="graph-summary-number"><strong>${candidate?.graph_summary?.nodes ?? graph.nodes.length}</strong><span>nodes indexed</span></div><div class="graph-summary-number"><strong>${candidate?.graph_summary?.edges ?? graph.edges.length}</strong><span>relationships found</span></div><div class="graph-skills"><span class="metric-label">MATCHED SKILLS</span><div class="skill-list">${(candidate?.graph_summary?.skills ?? []).map((skill) => `<span class="skill-tag">${escapeHTML(skill)}</span>`).join('')}</div></div><div class="token-note"><span>WHY GRAPH CONTEXT</span><p>Focused retrieval helps each question use the smallest relevant part of the candidate’s work, dramatically reducing LLM token consumption and improving speed.</p><div class="token-note-metric"><b>EFFICIENT</b><span>sample context vs full project</span></div></div></aside></div>`);
   const elements = [
     ...graph.nodes.map((node) => ({ data: { id: node.id, label: node.label, type: node.type, weight: node.weight, color: colorMap[node.type] ?? (darkTheme ? '#94a3b8' : '#64748b') } })),
     ...graph.edges.map((edge, index) => ({ data: { id: `edge-${index}`, source: edge.source, target: edge.target, label: edge.type } }))
@@ -1508,6 +1588,7 @@ async function renderGraph() {
     { selector: 'node:selected', style: { 'border-color': darkTheme ? '#818cf8' : '#4338ca', 'border-width': 4, 'overlay-opacity': 0.1, 'overlay-color': darkTheme ? '#818cf8' : '#4338ca' } }
   ] });
 }
+
 
 // Types each visible interviewer message with a restrained terminal cadence.
 function typewriterVisible() {
