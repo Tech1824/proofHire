@@ -10,8 +10,9 @@ from db.models import (
     DepthSession, QaTurn, Profile, LlmCache, Setting, Company, User
 )
 
-sqlite_file_name = "proofhire.db"
-sqlite_url = f"sqlite:///{sqlite_file_name}"
+from pathlib import Path as _Path
+DB_PATH = _Path(__file__).resolve().parent.parent / "proofhire.db"
+sqlite_url = f"sqlite:///{DB_PATH.as_posix()}"
 
 @event.listens_for(Engine, "connect")
 def _set_sqlite_pragma(dbapi_connection, connection_record):

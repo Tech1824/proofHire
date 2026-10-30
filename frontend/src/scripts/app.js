@@ -612,7 +612,7 @@ function renderCandidate() {
 async function renderTask() {
   const job = state.jobs.find((item) => item.job_id === state.selectedJobId) ?? state.jobs[0] ?? { job_id: 'job_1', title: 'Senior Distributed Systems Engineer', company: 'FinLeaf Infrastructure', required_skills: [] };
   
-  if (!state.task) {
+  if (!state.task || state.task.job_id !== state.selectedJobId) {
     try {
       state.task = await API.getTaskForJob(state.selectedJobId);
     } catch (e) {
